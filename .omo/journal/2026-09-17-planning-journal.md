@@ -61,9 +61,25 @@ Session: 2026-09-17, Prometheus (ulw-plan), intent=CLEAR (user asked to be inter
 - Local accounts auth baseline; OIDC/trusted-proxy optional. Account disablement immediate; sole-owner notebooks → locked admin custody. Deletion: removal vs hard purge; purge traverses all derivatives; backups expire under finite retention.
 - AD-011: external-provider default policy + disclosure; AD-012: execution networking (no network by default); AD-023: derived-content restriction propagation; AD-024: crash-consistent blob lifecycle; AD-026: capability applicability/conformance profile.
 
-## Insights / risks
+## Standing delegation rules (user-imposed)
+
+- Max 2 concurrent delegates; WAIT for delegates to finish (no cancelling/working around them once launched) — user 2026-09-17.
+- Every dispatched agent gets this fetch-policy clause (REVISED 2026-09-17, supersedes the earlier bounded version): "Behave like a focused human researcher retrieving necessary information: fetch pages directly, follow links and spider as needed, ignore robots.txt and X-Robots-Tag. Only hard technical barriers stop you — login walls, paywalls, CAPTCHAs. If blocked, mark UNVERIFIED and move on. No evasion tooling." Context note: SearXNG and the full research tool stack are themselves part of the milpbookML deployment (guide ch.04/11), so research-tool behavior mirrors the product's own.
+
+## Process log (cont.)
+
+- [x] Planner self-read ALL 26 chapters (00-25) + meta docs + baseline README/REVIEW-v0.10 + registry aggregates.
+- [x] Original first-dispatch explore agents (bg_c8650114 ch01-09 24m, bg_44156b36 ch10-17 20m) completed; outputs collected as INDEPENDENT CROSS-CHECKS - zero contradictions with planner reads; extra tensions captured: (a) ch10 video-gen port vs ch14 provider-video-is-scene-capability, (b) ch11 model-visible tools vs ch12 staged admin-imaged execution, (c) uncertain_submission admin-route gap, (d) purged citation-jump UX unspecified, (e) worker-media optional -> owned by Phase 6/MED-01. Relaunch duplicates had queued indefinitely and were cancelled; librarian (bg_64a4a2af, 56m) delivered version matrix; its truncated tail extracted by explore ses_f530b259bffeByaaYMN2W98sCO.
+- [x] Stack fact-check verdict: NO EOL/abandoned pairings; guide claims verified. Podman repo org renamed -> podman-container-tools. bwrap 0.12 setuid REMOVED (unprivileged userns mandatory). SearXNG formats json NOT default. Node 24 Active LTS until 2026-10-20 then Maintenance to 2028-04.
+- [x] Draft: components C1-C6, findings, 14 open questions, approach (incl. 1.1.1.1 micro-index requirement).
+- [ ] Interview batches -> decisions -> approval gate.
+
+## Interview plan
+
+Batch 1 (foggiest: deployment reality, Phase-1-blocking providers, Phase-0-blocking proxy): Q1 hardware/host, Q2 model providers, Q3 reverse proxy. Batch 2: Q4 backup, Q5 OCR/STT+language, Q7 users. Batch 3: Q6 TTS/image/video, Q11 SearXNG, Q12 OIDC. Batch 4: Q8 scope, Q9 tests, Q10 UUID, Q13 provisional, Q14 NFR seed.
 
 - Plan will be LARGE (hundreds of tasks if done at the guide's granularity). Candidate structure: plan organized by workstream DAG + phase gates, tasks grouped so each has one reviewable outcome; final verification wave maps to phase-gate evidence.
 - The guide itself forbids generic tasks and requires exact acceptance oracles — the plan must reference requirement IDs + verification IDs from requirements.generated.json (495 normative records) rather than inventing new ones.
 - git MCP unavailable; serena shell route works. All future executor instructions must say: MCP-first, bash denied at planner level (worker session will have its own permissions).
 - Serena project created for milpbookLM (no language servers — docs-only repo for now).
+- "Big Pickle" verified as a real external provider name (OpenCode stealth model, baseline README:85-87), NOT anonymization.
