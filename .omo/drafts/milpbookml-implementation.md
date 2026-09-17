@@ -110,28 +110,30 @@ Q14 NFR SEED SCALE: ch21 reference seed (25u/250nb/5k src/2M chunks/20k artifact
 
 ## Approval gate (historical record)
 status: approved (2026-09-17, "go on then, looks good from here")
-approach (as approved, N3b sentence corrected 2026-09-17): One decision-complete work plan for the ENTIRE milpbookML v1.2 FINAL guide (Phases 0-7, all 21 workstreams, 61 capabilities, all 495 normative requirements assigned exactly once), structured as execution waves following the PLANNING-HANDOFF workstream DAG. Per-phase gate tasks (11/20/25/30/36/39/44/48) carry their own phase evidence at each phase exit; the final verification wave F1-F4 audits compliance/quality/manual-QA/scope after all 55 tasks; ch.25 release gates + ch.21 NFR gates + deploy/restore drills run in wave-8 tasks. Every task row (- [ ] N.) carries a 3-level micro-index (task.action.sub-step) enumerating every action/sub-step, each leaf mapped to ARCH-/TECH- requirement IDs (exact contiguous runs from .omo/research/registry-digest.md) and VER-*/test-path/evidence oracles from requirements.generated.json; master index appendix maps the full numbering tree to tasks. User process rules baked in: journal, git, MCP-before-bash (planner AND executor), max 2 delegates, delegation maximized.
+approach (as approved, corrected per review rr-02): One decision-complete work plan for the ENTIRE milpbookML v1.2 FINAL guide (Phases 0-7, all 22 workstreams, 61 capabilities, all 495 normative requirements each assigned to exactly one owner except declared shared cross-cutting records), structured as execution waves following the PLANNING-HANDOFF workstream DAG. Per-phase gate tasks (11/20/25/30/36/39/44/48) carry their own phase evidence at each phase exit; the final verification wave F1-F4 audits compliance/quality/manual-QA/scope after all 55 tasks; ch.25 release gates + ch.21 NFR gates + deploy/restore drills run in wave-8 tasks. Every task row (- [ ] N.) carries a 3-level micro-index (task.action.sub-step) enumerating every action/sub-step, each leaf mapped to ARCH-/TECH- requirement IDs (exact contiguous runs from .omo/research/registry-digest.md) and VER-*/test-path/evidence oracles from requirements.generated.json; master index appendix maps the full numbering tree to tasks. User process rules baked in: journal, git, MCP-before-bash (planner AND executor), max 2 delegates, delegation maximized.
 default-confirmed items (accepted at approval): full Phase 0-7 scope in ONE plan; guide test regime (contract-first + deterministic fakes + agent-executed QA per task); UUIDv4 pre-insert + PG-side uuidv7() per TAD-011; provisional caps (realtime voice, recorded capture, evolving notes, editable study aids) stay disabled behind flags; late/optional caps (public notebooks, featured, analytics, connectors, starter artifacts) stay disabled; NFR seed at ch.21 reference scale; Big Pickle+Muse Spark as external fallbacks with disclosure; interactive audio advanced/provider-dependent (needs realtime duplex provider - default disabled unless local stack covers it).
 
 ## Review round state (review_required=true)
 ROUND rr-milpbooklm-20260917-01: SUPERSEDED → round_status: inconclusive (both background tasks died mid-flight ~2026-09-17T18:0xZ, registry purged them: "Task not found" for bg_ec4fd699/bg_6916f5d6 and both session receipts ses_f4f8f33b4ffe2IKh2y6O62U7iG/ses_f4f8f32ffffeTy04R0LRgRWXVJ; no terminal verdicts. User ordered restart). No plan change occurred (sha256 re-verified ee96d26d before rr-02 init).
 
+ROUND rr-milpbooklm-20260917-02: CLOSED → both lanes changes_requested (defect lists + verdicts recorded below; transcripts in tool-output/). ALL 11 cited defects fixed in plan + digest this commit; plan sha256 moved ee96d26d→484036d5. Per the dual-review contract both lanes are resubmitted FRESH against the corrected plan.
+
 ```json
 {
   "transition": "replace",
   "phase": "review_round_initialized",
-  "applies_when": ["start_fresh_review_round"],
+  "applies_when": ["retry_after_plan_change"],
   "atomic": true,
   "review_required": true,
   "plan_path": ".omo/plans/milpbookml-implementation.md",
-  "plan_sha256": "ee96d26daf5e48dc7ed0a47c3093b796b0f80e5432b570c7eafa032510756a1f",
-  "review_round_id": "rr-milpbookml-20260917-02",
+  "plan_sha256": "484036d501065b36bd8b8d7a7bea725dee212f7cb25bb787a327c9f2b4e5b430",
+  "review_round_id": "rr-milpbookml-20260917-03",
   "round_status": "active",
   "completion_cas": ["status=in_flight", "workspace_root", "runtime_home", "target", "launch_id", "round_id", "plan_sha256", "session", "receipt_identity=session", "live_plan_sha256=plan_sha256", "echoed_binding", "terminal_transition=in_flight->approved|changes_requested|inconclusive"],
   "pending-action": "review .omo/plans/milpbookml-implementation.md",
   "review": {
-    "momus": { "status": "in_flight", "workspace_root": "/home/srcds/dev/milpbookLM", "runtime_home": null, "target": ".omo/plans/milpbookml-implementation.md", "round_id": "rr-milpbooklm-20260917-02", "plan_sha256": "ee96d26daf5e48dc7ed0a47c3093b796b0f80e5432b570c7eafa032510756a1f", "launch_id": "launch-momus-rr02-20260917T1830Z", "session": "ses_f4f5a257fffeUPa0oQUHbPyOc0", "result": null },
-    "independent": { "status": "in_flight", "workspace_root": "/home/srcds/dev/milpbookLM", "runtime_home": null, "target": ".omo/plans/milpbookml-implementation.md", "round_id": "rr-milpbooklm-20260917-02", "plan_sha256": "ee96d26daf5e48dc7ed0a47c3093b796b0f80e5432b570c7eafa032510756a1f", "launch_id": "launch-oracle-rr02-20260917T1830Z", "session": "ses_f4f5a2467ffe8ZokHpcgIVC8m6", "result": null }
+    "momus": { "status": "launching", "workspace_root": "/home/srcds/dev/milpbookLM", "runtime_home": null, "target": ".omo/plans/milpbookml-implementation.md", "round_id": "rr-milpbooklm-20260917-03", "plan_sha256": "484036d501065b36bd8b8d7a7bea725dee212f7cb25bb787a327c9f2b4e5b430", "launch_id": "launch-momus-rr03-20260917T2016Z", "session": null, "result": null },
+    "independent": { "status": "launching", "workspace_root": "/home/srcds/dev/milpbookLM", "runtime_home": null, "target": ".omo/plans/milpbookml-implementation.md", "round_id": "rr-milpbooklm-20260917-03", "plan_sha256": "484036d501065b36bd8b8d7a7bea725dee212f7cb25bb787a327c9f2b4e5b430", "launch_id": "launch-oracle-rr03-20260917T2016Z", "session": null, "result": null }
   }
 }
 ```

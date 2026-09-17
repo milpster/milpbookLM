@@ -18,21 +18,21 @@ Your next move: run the dual high-accuracy review (next step in this session), t
 
 ## Scope
 ### Must have
-The complete milpbookML v1.2 FINAL specification implemented across Phases 0–7 per `milpbookml-implementation-guide/PLANNING-HANDOFF.md`: all 21 workstreams (FND-01..07, MOD-01, ING-01/02, IDX-01, RAG-01, UI-01, RSR-01, EXE-01, STD-01/02/03, MED-01, COL-01, OPS-01, SCOPE-GUARD), all 44 stable/core capabilities plus cinematic_video (the one advanced/provider-dependent capability enabled locally per D9; interactive_audio_overview stays disabled — see guardrails) from `capabilities.generated.json`, and all 495 normative requirements from `requirements.generated.json` assigned exactly once to a task or gate (ID runs per `.omo/research/registry-digest.md`). Stack and decisions frozen per TAD-001..012 plus user decisions D1–D11 in `.omo/drafts/milpbookml-implementation.md` (this host, llama.cpp→Big Pickle→Muse Spark, Caddy, pgBackRest+restic, Tesseract+whisper.cpp, DE+EN mandatory, team from day one, local-first media incl. Cinematic, SearXNG minimal, OIDC deferred, serial inference orchestration).
+The complete milpbookML v1.2 FINAL specification implemented across Phases 0–7 per `milpbookml-implementation-guide/PLANNING-HANDOFF.md`: all 22 workstreams (FND-01..07, MOD-01, ING-01/02, IDX-01, RAG-01, UI-01, RSR-01, EXE-01, STD-01/02/03, MED-01, COL-01, OPS-01, SCOPE-GUARD — matching the handoff's 22-row table), all 44 stable/core capabilities plus cinematic_video (the one advanced/provider-dependent capability enabled locally per D9; interactive_audio_overview stays disabled — see guardrails) from `capabilities.generated.json`, and all 495 normative requirements from `requirements.generated.json` each assigned to exactly one owning task or gate except DECLARED shared cross-cutting records (distribution in the master index below; ID runs per `.omo/research/registry-digest.md`). Stack and decisions frozen per TAD-001..012 plus user decisions D1–D11 in `.omo/drafts/milpbookml-implementation.md` (this host, llama.cpp→Big Pickle→Muse Spark, Caddy, pgBackRest+restic, Tesseract+whisper.cpp, DE+EN mandatory, team from day one, local-first media incl. Cinematic, SearXNG minimal, OIDC deferred, serial inference orchestration).
 ### Must NOT have (guardrails, anti-slop, scope boundaries)
 Kubernetes, Kafka, Redis (except SearXNG-internal limiter — OFF per D7), Elasticsearch/OpenSearch, standalone vector DB, MinIO, knowledge graph, plugin marketplace/public SDK, runtime code loading, native mobile/PWA clients, SaaS billing/multi-tenant orgs, Google ecosystem coupling, pixel-perfect UI cloning, BrowserOS dependency (PARITY-SCOPE-AUDIT.md exclusions). No generic tasks ("implement backend"); every task cites requirement-ID runs + VER oracles. No placeholder adapters presented as implemented; no unclassified requirements; no unexplained SHOULD deviations; no float of pinned versions past locks. No external transmission without persisted disclosure. Territorial license clauses are not a decision factor (user framing, 2026-09-17).
 
 **Explicitly disabled capability set (declared, never silent — each gets a conformance.json entry + cap.* flag and NO implementation task):** `cap.realtime_notebook_voice_chat` (provisional), `cap.recorded_audio_capture` (provisional), `cap.evolving_note_integration` (provisional), `cap.editable_study_aids_and_performance_follow_up` (provisional), `cap.public_notebooks` (late/optional), `cap.featured_published_notebooks` (late/optional), `cap.usage_analytics` (late/optional), `cap.restricted_connector_sources` (late/optional), `cap.source_optional_authenticated_restricted_repositories_through_generic_connectors` (late/optional), `cap.source_optional_cloud_document_storage_connectors_implemented_through_adapters` (late/optional), `cap.starter_artifacts` (late/optional), `cap.interactive_audio_overview` (advanced/provider-dependent — DISABLED, reason "no realtime-duplex provider in selected local profile"; scaffolding + ephemerality tests only, task 43; MAN-002 interactive leg + MAN-009 conditional N/A), and the 4 deliberate non-targets (`cap.native_mobile_client`, `cap.pwa_offline_client`, `cap.google_account_coupling`, `cap.third_party_plugin_marketplace`). **Enabled despite registry optionality:** `cap.cinematic_video` (advanced/provider-dependent — claimed by the local Wan 2.2 profile per D9 ⇒ FULL Phase-6 obligations: E2E-013 + MAN-003/MAN-010, task 42; benchmark may DOWNGRADE it to disabled with recorded evidence, never silently). **Privacy-class guardrails:** Muse Spark Contributor tier FORBIDDEN (trains on data); Big Pickle = restricted/unknown privacy class + time-limited availability ⇒ routing rule "Big Pickle lapse → route direct to Muse Spark Standard". **Ordering rule:** the component ledger (C1–C6) is a topology view only — waves follow the dependency matrix; no task starts before its PLANNING-HANDOFF DAG prerequisites complete; per-phase gate tasks (11/20/25/30/36/39/44/48) are hard checkpoints, not deferred to the end.
 
 ## Verification strategy
-> Zero human intervention - all verification is agent-executed.
+> Zero human intervention - all verification is agent-executed, except manual-perceptual MAN records which carry recorded human sign-off per ch25 (the sole exception; operator signs the task-54 matrix).
 - Test decision: contract-tests-first + tests-alongside (guide-mandated: contract/failure tests before or alongside adapters; regression test per deterministic defect fix). Frameworks: pytest + Hypothesis + pytest-asyncio (≥8.4) + coverage + Ruff + mypy + import-linter; Vitest + Testing Library + MSW + axe-core; Playwright Test (Chromium+Firefox); OpenAPI 3.1 diff; Semgrep/Bandit-class; mutation on policy/state/provenance/purge code; crash/fault injection on jobs/blobs/outbox (guide ch25 toolchain).
 - Requirement ledger: `requirements.generated.json` is the seed committed to the implementation repo; `tools/spec/extract_requirements.py` re-census fails CI on drift; every task's acceptance maps to VER-* IDs / test_path / evidence_path (`artifacts/verification/VER-*.json`) from the registry — the plan never invents new oracles. Tiers: pull_request=155, nightly=166, release_candidate=170, review=4 (registry digest Table C).
 - Evidence: <attemptDir>/task-<N>-milpbookml-implementation.<ext> (attemptDir = currentAttemptDir from 'omo ulw-loop status --json', .omo/evidence/ulw/<session>/<goalId>/a<attempt>; outside ulw-loop use .omo/evidence/) — each task additionally writes its guide-mandated artifacts/verification/*.json evidence records.
 - Phase gates: each phase ends with a gate task running the full applicable tier set + conformance.json emission + gate report (PLANNING-HANDOFF.md phase table; ch22).
 - E2E journeys E2E-001..013 and manual runbooks MAN-001..010 preserved verbatim with recorded executions (ch25); manual cases run only where the oracle is perceptual/a11y/hardware (agent-executed where possible, human-signoff recorded as evidence files).
-- E2E journey → owning task map: E2E-001→17; E2E-002→13/20(text+PDF legs), 21/22/23(families), 25(full); E2E-003→31/35; E2E-004→32/35; E2E-005→45/46; E2E-006→34/35 (study flows); E2E-007→14/24 (refresh/version races); E2E-008→27/28/29/30; E2E-009→5/18 (failure/reconnect/cancel + browser resync); E2E-010→24/4 (purge + account lifecycle); E2E-011→10/19 (provider policy/disclosure); E2E-012→50/51 (upgrade/recovery); E2E-013→40/41/42/44.
-- MAN runbook → owning task map: MAN-001→50 (backup/restore operator drill); MAN-002→40 (audio intelligibility); MAN-003→33/35/37/38/42 (reports/slides/infographics/video rendering quality); MAN-004→18/49 (responsive/browser-compat + NFR manual a11y legs); MAN-005→18/49 (accessibility manual checks); MAN-006→16 (citation viewer accuracy); MAN-007→35/52 (browser compatibility matrix); MAN-008→8 (installation/upgrade operator runbook); MAN-009→43 (N/A-disabled w/ registry reference); MAN-010→41/42 (video synchronization/legibility/captions). All records assembled + audited by task 54.
+- E2E journey → owning task map (names per arch-baseline ch25 journey table): E2E-001→17; E2E-002→13/20(text+PDF legs), 21/22/23(families), 25(full); E2E-003→31/35; E2E-004→32/35; E2E-005→45/46; E2E-006→14/24 (refresh/version race); E2E-007→34/35 (study flows); E2E-008→27/28/29/30; E2E-009→5/18 (failure/reconnect/cancel + browser resync); E2E-010→24/4 (purge + account lifecycle); E2E-011→10/19 (provider policy/disclosure); E2E-012→50/51 (upgrade/recovery); E2E-013→40/41/42/44.
+- MAN runbook → owning task map (names per arch-baseline ch25 runbook table): MAN-001→17/20 (first-use source-to-citation workflow); MAN-002→40 (Audio Overview intelligibility; interactive leg N/A-disabled, recorded by task 43); MAN-003→33/35/37/38/42 (video/slides/infographic/report rendering quality); MAN-004→18/49 (keyboard/focus/screen-reader accessibility); MAN-005→18/49 (responsive web workflow); MAN-006→10/17/19 (external-provider disclosure and policy); MAN-007→5/49/51 (long-running work and recovery); MAN-008→50 (backup/restore operator drill, 50.3.2); MAN-009→43 (realtime interruption, N/A-disabled w/ registry reference); MAN-010→41/42 (video synchronization/legibility/captions). Browser-compatibility matrix (Chromium+Firefox) and installation/upgrade checks are plan-internal QA legs (tasks 18/35 and 8/51), NOT spec MAN ids. All records assembled + audited by task 54.
 - NFR envelope discipline: all ch21 performance gates run PINNED to the reference envelope — cgroup memory.max=16GiB, CPU quota=8 cores, exactly 1 API process + 2 ordinary worker slots (task 49), evidence header records actual kernel/arch/Podman/PG/model/fixture versions; the host MEETS-OR-EXCEEDS the profile (64 GiB), never "exactly".
 
 ## Execution strategy
@@ -43,7 +43,7 @@ Numbering scheme: `<task>.<action>.<sub-step>` where task = the `- [ ] N.` row n
 
 | Wave | Tasks | Phase gate | Coverage (components → digest Table A rows) |
 | --- | --- | --- | --- |
-| 0 Harness | 1–11 | 11 | platform_core(58), domain_model(20), jobs_events(27), auth_sharing(33), deployment(23)+ARCH-05-001, adapter_contracts(4), model_platform(29), capability_registry(12 partial) |
+| 0 Harness | 1–11 | 11 | platform_core(58), domain_model(20), jobs_events(27), auth_sharing(33), deployment(23 incl. ARCH-05-001), adapter_contracts(4), model_platform(29), capability_registry(12 partial) |
 | 1 Source→chat | 12–20 | 20 | source_ingestion(20), canonical_provenance(10), knowledge_indexing(11), grounded_chat(18), web_client(11), decisions(4), capability_registry(12 rest) |
 | 2 Universal ingestion | 21–25 | 25 | source_ingestion family rest, security_privacy SSRF/blob subsets |
 | 3 Research/execution | 26–30 | 30 | agentic_research(13), code_execution(18), security_privacy sandbox/browser subsets |
@@ -54,66 +54,68 @@ Numbering scheme: `<task>.<action>.<sub-step>` where task = the `- [ ] N.` row n
 | 8 Release | 49–55 | 53 | nonfunctional(47), testing_release(52), evaluation(9), roadmap(6), security_privacy purge/audit subsets |
 | Final | F1–F4 | — | cross-cutting audit of all above |
 
-Cross-cutting (assigned to their primary owning task, verified at F1): evaluation(9)→ARCH-18-* owned by tasks 19 (corpora) + 20 (EVAL-GATE-001 v1) + 49 (RC re-run) with locked quality report per ch25; roadmap(6)→ARCH-22-* owned by the per-phase gate tasks 11/20/25/30/36/39/44/48 + release audit 53 (each phase exit publishes its evidence + conformance per ch22); decisions(4)→ARCH-23-001..004 owned by the ADR-producing tasks 19 (models), 8 (proxy+backup pre-work), 50 (backup), 23 (OCR/STT), 38/40/42 (media), 10 (orchestrator) with evidence in docs/evidence/; adapter_contracts(4)→ARCH-20-001..004 owned by task 10 (provider contract suite) + task 1 (forbidden-import enforcement); security_privacy(51)→ARCH-19-001..051 distributed: secrets/audit/CSP→7, blob-integrity→6, SSRF→22, upload/browser isolation→13/28, prompt-injection→27, purge→24, sandbox→29, sharing-privacy→45, plus per-task authz/privacy fields — F1 audits the full 51-ID coverage against the master index. narrative ARCH-00-001..012→task 2 census (tier=none, recorded); anomalies ARCH-05-001→task 3, ARCH-14-001→task 31 (recorded per digest Table D). Every digest Table A component row is thus claimed by ≥1 task; F1's compliance script enforces zero orphans + exactly-once.
+Cross-cutting (assigned to their primary owning task, verified at F1): evaluation(9)→ARCH-18-* owned by tasks 19 (corpora) + 20 (EVAL-GATE-001 v1) + 49 (RC re-run) with locked quality report per ch25; roadmap(6)→ARCH-22-* owned by the per-phase gate tasks 11/20/25/30/36/39/44/48 + release audit 53 (each phase exit publishes its evidence + conformance per ch22); decisions(4)→ARCH-23-001..004 owned by the ADR-producing tasks 19 (models), 8 (proxy+backup pre-work), 50 (backup), 23 (OCR/STT), 38/40/42 (media), 10 (orchestrator) with evidence in docs/evidence/; adapter_contracts(4)→ARCH-20-001..004 owned by task 10 (provider contract suite) + task 1 (forbidden-import enforcement); security_privacy(51)→ARCH-19-001..051 distributed: secrets/audit/CSP→7, blob-integrity→6, SSRF→22, upload/browser isolation→13/28, prompt-injection→27, purge→24, sandbox→29, sharing-privacy→45, plus per-task authz/privacy fields — F1 audits the full 51-ID coverage against the master index. narrative ARCH-00-001..012→task 2 census (tier=none, recorded); anomalies ARCH-05-001→task 3, ARCH-14-001→task 31 (recorded per digest Table D). Every digest Table A component row is thus claimed by ≥1 task; F1's compliance script enforces zero orphans + exactly-once OUTSIDE the declared shared set. **Canonical-label rule:** where digest Table D anomaly mappings disagree with `requirements.generated.json` component labels (ARCH-05-001, ARCH-01-002..004, ARCH-14-001), the canonical JSON labels govern F1's component join (canonical totals: platform_core 61, deployment 22, domain_model 21, capability_registry 9, media_generation 16, studio_artifacts 15); the digest anomaly mappings stay recorded for traceability. **Declared shared cross-cutting records** (exempt from exactly-once; primary owner first): TECH-00-001..003, ARCH-00-049..050, TECH-02-001..002 → tasks 1/2/9 (platform + registry bootstrap, each asserting from its own angle); ARCH-05-001 → task 8 (task 3 references); ARCH-04 backup/upgrade records → tasks 8 (deployment platform) / 50 (backup) / 51 (upgrade); ARCH-14-001 → task 31 (artifact schema record) + task 40 (media_generation row, canonical label); evaluation(9), roadmap(6), decisions(4), adapter_contracts(4), security_privacy(51) as distributed above. **Per-component subset splits** (subset owner named; F1 resolves membership via canonical component labels + Table B capability keys): source_ingestion → 12 acquisition / 13 parse / 21 office / 22 web / 23 media / 24 purge-closure; domain_model → 3 core / 14 active-version; auth_sharing → 4 core / 45 share / 46 copy; grounded_chat → 16 core / 17 surface / 32 note-pinning; studio_artifacts → 31 framework / 32 notes / 33 reports / 34 study / 37 slides / 38 infographics; model_platform → 10 core / 42 video-port; media_generation → 40 audio / 41 video-composition / 42 generative+cinematic / 43 realtime-posture; deployment → 8 / 50 / 51 / 52; platform_core+capability_registry → 1 / 2 / 9.
 
 ### Dependency matrix
-| Todo | Depends on | Blocks | Can parallelize with |
+| Todo | Depends on | Blocks (direct dependants) | Can parallelize with |
 | --- | --- | --- | --- |
-| 1 (FND-01) | — | 2,3,8,9 | — |
-| 2 (FND-02) | 1 | 9,10,11 | 3,4 |
-| 3 (FND-03) | 1 | 4,5,6,12 | 2 |
-| 4 (FND-04) | 3 | 5,9,11,18 | 5,6,7 |
-| 5 (FND-05) | 3,4 | 12,13,26 | 6,7 |
-| 6 (FND-06) | 3 | 12,13,29 | 4,5,7 |
-| 7 (FND-07) | 1,4 | 10,26 | 5,6 |
-| 8 (OPS-01a) | 1 | 11,20,25,30,49 | 2..7 |
-| 9 (SCOPE-GUARD) | 2 | all gates | 10 |
-| 10 (MOD-01 core) | 2,7 | 15,16,17,19 | 8,9 |
-| 11 (Phase-0 gate) | 1..10 | Wave 1 | — |
+| 1 (FND-01) | — | 2,3,7,8 | — |
+| 2 (FND-02) | 1 | 9,10,18 | 3,4 |
+| 3 (FND-03) | 1 | 4,5,6,50,51 | 2 |
+| 4 (FND-04) | 3 | 5,7,17,18,45,46 | 5,6,7 |
+| 5 (FND-05) | 3,4 | 12,18,26,29,31 | 6,7 |
+| 6 (FND-06) | 3 | 12,31,50 | 4,5,7 |
+| 7 (FND-07) | 1,4 | 10,26,29 | 5,6 |
+| 8 (OPS-01a) | 1 | 28,29,49,50,51,52 | 2..7 |
+| 9 (SCOPE-GUARD) | 2 | 43,47 | 10 |
+| 10 (MOD-01 core) | 2,7 | 15,16,19,26,42,43 | 8,9 |
+| 11 (Phase-0 gate) | 1..10 | Wave 1 (gate) | — |
 | 12 (ING-01a) | 5,6 | 13,14 | — (after gate) |
-| 13 (ING-01b) | 12 | 14,15,21 | 14 |
-| 14 (ING-01c) | 12,13 | 15,24,32 | 13 |
-| 15 (IDX-01) | 10,14 | 16,17 | 16 pre-work |
-| 16 (RAG-01a) | 10,15 | 17,20,27 | 17 |
-| 17 (RAG-01b) | 4,16 | 18,20 | 18 |
-| 18 (UI-01) | 2,4,5 | 20,35,43 | 19 |
-| 19 (MOD-01 ADRs) | 10 | 20 | 18 |
-| 20 (Phase-1 gate) | 12..19 | Wave 2 | — |
+| 13 (ING-01b) | 12 | 14 | 14 |
+| 14 (ING-01c) | 12,13 | 15,21,22,23 | 13 |
+| 15 (IDX-01) | 10,14 | 16,21 | 16 pre-work |
+| 16 (RAG-01a) | 10,15 | 17,31,45 | 17 |
+| 17 (RAG-01b) | 4,16 | 20 (gate) | 18 |
+| 18 (UI-01) | 2,4,5 | 32,35 | 19 |
+| 19 (MOD-01 ADRs) | 10 | 20 (gate),33,38,40 | 18 |
+| 20 (Phase-1 gate) | 12..19 | Wave 2 (gate),54 | — |
 | 21 (ING-02a) | 14,15 | 24 | 22,23 |
 | 22 (ING-02b) | 14 | 24,26 | 21,23 |
-| 23 (ING-02c) | 14 | 24 | 21,22 |
-| 24 (ING-02d) | 21,22,23 | 25 | — |
-| 25 (Phase-2 gate) | 21..24 | Wave 3 | — |
-| 26 (RSR-01a) | 5,7,10,22 | 27,30 | 27,28,29 |
-| 27 (RSR-01b) | 26 | 30 | 28,29 |
-| 28 (RSR-01c) | 8,26 | 30 | 27,29 |
-| 29 (EXE-01) | 5,7,8 | 30 | 26..28 |
-| 30 (Phase-3 gate) | 26..29 | Wave 4 | — |
-| 31 (STD-01) | 5,6,16 | 32,33,34,35 | — |
-| 32 (STD-02a) | 18,31 | 35 | 33,34 |
-| 33 (STD-02b) | 19,31 | 35,36 | 32,34 |
+| 23 (ING-02c) | 14 | 24,37,40,41 | 21,22 |
+| 24 (ING-02d) | 21,22,23 | 25 (gate) | — |
+| 25 (Phase-2 gate) | 21..24 | Wave 3 (gate),54 | — |
+| 26 (RSR-01a) | 5,7,10,22 | 27,28 | 27,28,29 |
+| 27 (RSR-01b) | 26 | 30 (gate) | 28,29 |
+| 28 (RSR-01c) | 8,26 | 30 (gate) | 27,29 |
+| 29 (EXE-01) | 5,7,8 | 30 (gate),42 | 26..28 |
+| 30 (Phase-3 gate) | 26..29 | Wave 4 (gate),54 | — |
+| 31 (STD-01) | 5,6,16 | 32,33,34,37,38,40,41,45,46 | — |
+| 32 (STD-02a) | 18,31 | 35,46 | 33,34 |
+| 33 (STD-02b) | 19,31 | 35 | 32,34 |
 | 34 (STD-02c) | 31 | 35 | 32,33 |
-| 35 (studio UI+exports) | 18,32,33,34 | 36 | — |
-| 36 (Phase-4 gate) | 31..35 | Wave 5 | — |
-| 37 (STD-03a) | 23,31 | 39 | 38 |
-| 38 (STD-03b) | 19,31 | 39 | 37 |
-| 39 (Phase-5 gate) | 37,38 | Wave 6 | — |
-| 40 (MED-01a) | 19,31,23 | 44 | 41,42 |
-| 41 (MED-01b) | 23,31 | 44 | 40,42 |
-| 42 (MED-01c) | 10,29 | 44 | 40,41 |
-| 43 (MED-01d posture) | 9,10 | 44 | 40..42 |
-| 44 (Phase-6 gate) | 40..43 | Wave 7 | — |
-| 45 (COL-01a) | 4,16,31 | 48 | 46,47 |
-| 46 (COL-01b) | 4,31,32 | 48 | 45,47 |
-| 47 (COL-01c posture) | 9 | 48 | 45,46 |
-| 48 (Phase-7 gate) | 45..47 | Wave 8 | — |
+| 35 (studio UI+exports) | 18,32,33,34 | 36 (gate) | — |
+| 36 (Phase-4 gate) | 31..35 | Wave 5 (gate),54 | — |
+| 37 (STD-03a) | 23,31 | 39 (gate) | 38 |
+| 38 (STD-03b) | 19,31 | 39 (gate) | 37 |
+| 39 (Phase-5 gate) | 37,38 | Wave 6 (gate),54 | — |
+| 40 (MED-01a) | 19,23,31 | 41,44 (gate) | 42,43 |
+| 41 (MED-01b) | 23,31,40 | 44 (gate) | 42,43 |
+| 42 (MED-01c) | 10,29 | 44 (gate) | 40,41,43 |
+| 43 (MED-01d posture) | 9,10 | 44 (gate) | 40,41,42 |
+| 44 (Phase-6 gate) | 40..43 | Wave 7 (gate),54 | — |
+| 45 (COL-01a) | 4,16,31 | 48 (gate) | 46,47 |
+| 46 (COL-01b) | 4,31,32 | 48 (gate) | 45,47 |
+| 47 (COL-01c posture) | 9 | 48 (gate) | 45,46 |
+| 48 (Phase-7 gate) | 45..47 | Wave 8,49,54,55 | — |
 | 49 (OPS-01b NFR) | 8,48 | 53 | 50,51,52,54,55 |
 | 50 (OPS-01c backup) | 3,6,8 | 53 | 49,51,52 |
 | 51 (OPS-01d upgrade) | 3,8 | 53 | 49,50,52 |
 | 52 (OPS-01e supply chain) | 8 | 53 | 49..51 |
-| 53 (release-gate audit) | 49..52 | F1..F4 | — |
+| 53 (release-gate audit) | 49..52,54 | F1..F4 | — |
 | 54 (manual runbooks) | 20,25,30,36,39,44,48 | 53 | 49..52 |
 | 55 (docs+ADR index) | 48 | F4 | 49..53 |
+
+Blocks column = DIRECT dependants only (tasks listing X in their Depends on); a completed gate additionally releases its successor wave; Depends on / per-task Blocked by is authoritative for ordering.
 
 ## Todos
 > Implementation + Test = ONE todo. Never separate.
@@ -312,7 +314,7 @@ Cross-cutting (assigned to their primary owning task, verified at F1): evaluatio
   What to do / Must NOT do: EPUB EbookLib + hardened XML/HTML extraction (reject unsafe archive expansion/external fetches); HTML selectolax/lxml + readability; web-URL acquisition via the DEDICATED fetch service (built here, reused by research ch11): URL normalization, resolve+validate all candidate addresses (reject loopback/private/link-local/multicast/metadata ranges + embedded credentials + unsafe ports/schemes), connect to validated NUMERIC address preserving validated Host/SNI (no second uncontrolled DNS lookup — custom transport on httpx/httpcore), re-validate every redirect, cap bytes/time/redirects, identify+extract in isolation, record timestamp/redirect-chain/final-URL/headers/content-hash; web locators (canonical URL + capture ts + DOM/heading path). Proxy-destination enforcement hooks. MUST NOT: use an unmodified convenience client for URL fetching; render raw source HTML in app origin.
   Micro-index: 22.1 fetch service (22.1.1 address validation; 22.1.2 pinned-connection transport; 22.1.3 redirect revalidation; 22.1.4 caps+recording) · 22.2 EPUB (22.2.1 safe expansion; 22.2.2 extraction) · 22.3 HTML snapshot + locators · 22.4 SSRF suite (22.4.1 private-range matrix; 22.4.2 redirect-to-private; 22.4.3 DNS-rebinding simulation).
   Parallelization: Wave 2 | Blocked by: 14 | Blocks: 24,26
-  References: guide/06 (URL acquisition); guide/11-agent-research-runtime.md (fetching section — normative for the service); guide/19 (SSRF rules); REFERENCE-DEPENDENCIES HTTP row; requirements ARCH-06 web subset + ARCH-19 SSRD subset; capabilities source_epub_files, source_web_urls.
+  References: guide/06 (URL acquisition); guide/11-agent-research-runtime.md (fetching section — normative for the service); guide/19 (SSRF rules); REFERENCE-DEPENDENCIES HTTP row; requirements ARCH-06 web subset + ARCH-19 SSRF subset; capabilities source_epub_files, source_web_urls.
   Acceptance criteria (agent-executable): SSRF denial suite green (all private/link-local/metadata targets refused pre-connect — asserted at transport level, not just config); redirect-to-private refused; rebinding test (DNS answers public then private) refused; EPUB hostile-archive corpus safe.
   QA scenarios: happy — snapshot golden (evidence VER batch); failure — redirect chain ending at 169.254.169.254 blocked (evidence denial log). Evidence <attemptDir>/task-22-milpbookml-implementation.json
   Commit: Y | feat(ingestion): ING-02b EPUB/HTML + hardened fetch service (ARCH-06/19 subsets)
@@ -331,7 +333,7 @@ Cross-cutting (assigned to their primary owning task, verified at F1): evaluatio
   Micro-index: 24.1 refresh (24.1.1 manual refresh; 24.1.2 failure retention) · 24.2 rebuild-all-families proof · 24.3 purge (24.3.1 traversal; 24.3.2 transactional marks; 24.3.3 async erase + report) · 24.4 corpus+eval expansion.
   Parallelization: Wave 2 | Blocked by: 21,22,23 | Blocks: 25
   References: guide/06/07 (refresh, purge); guide/19 (purge section); baseline README AD-015/016; requirements ARCH-06/07 purge subsets + security_privacy purge records (ARCH-19 purge subset).
-  Acceptance criteria (agent-executable): purge-closure test — ingest→index→generate artifact→cite→purge source → every derivative (chunks, vectors, artifact rendition, cache row) erased/tombstoned and cited-jump returns purge state; refresh-race suite (concurrent refresh+query) green; INGEST-GOLDEN full corpus green.
+  Acceptance criteria (agent-executable): purge-closure test — ingest→index→generate artifact→cite→purge source → every derivative (chunks, vectors, artifact rendition, cache row) erased/tombstoned and cited-jump returns purge state; refresh-race suite (concurrent refresh+query) green; E2E-006 refresh/version-race journey green (w/ task 14); INGEST-GOLDEN full corpus green.
   QA scenarios: happy — purge report complete (evidence VER purge batch); failure — derivative discovered post-purge → test fails (evidence audit diff). Evidence <attemptDir>/task-24-milpbookml-implementation.json
   Commit: Y | feat(ingestion): ING-02d refresh/rebuild/purge closure (ARCH-06/07/19 subsets)
 
@@ -421,22 +423,22 @@ Cross-cutting (assigned to their primary owning task, verified at F1): evaluatio
   Micro-index: 34.1 tables (34.1.1 extraction+provenance; 34.1.2 render) · 34.2 mind maps (34.2.1 graph build; 34.2.2 node-to-chat) · 34.3 flashcards/quizzes (34.3.1 schemas+validation; 34.3.2 progress state; 34.3.3 session snapshots) · 34.4 study isolation tests.
   Parallelization: Wave 4 | Blocked by: 31 | Blocks: 35
   References: guide/13 (required controls list); requirements studio study subset; capabilities data_tables, mind_maps, flashcards, quizzes (Table B).
-  Acceptance criteria (agent-executable): per-user study-state isolation test (two actors, independent progress); validation rejects bad quizzes/distractors; study flows E2E (E2E-006 study journeys per ch25 list).
+  Acceptance criteria (agent-executable): per-user study-state isolation test (two actors, independent progress); validation rejects bad quizzes/distractors; study flows E2E (E2E-007 study journeys per ch25 list).
   QA scenarios: happy — study suite green (evidence VER batch); failure — cross-user progress leak → test fails (evidence state diff). Evidence <attemptDir>/task-34-milpbookml-implementation.json
   Commit: Y | feat(studio): STD-02c tables/mind-maps/flashcards/quizzes + study state (studio study subset)
 
 - [ ] 35. Studio UI integration + DOCX/PDF exports (isolated renderer) + E2E-003/004
   What to do / Must NOT do: Studio surfaces in the shell (generate/revise/status/view/export/share entry points per ch16 artifacts route family incl. per-user study state views); export renderer service (Pandoc/LibreOffice/PDF renderer in isolated renderer workers per REFERENCE-DEPENDENCIES) producing DOCX/PDF for reports/notes/tables; rendered files validated + provenance-linked before publication; MAN-003 runbook records for report/slide rendering quality. E2E-003 (studio generation) + E2E-004 (notes) green. MUST NOT: render office/PDF in API/worker-core processes.
-  Micro-index: 35.1 routes+views (35.1.1 artifact families UI; 35.1.2 study state UI) · 35.2 renderer workers (35.2.1 pandoc/LO/PDF isolation; 35.2.2 validation+provenance link) · 35.3 exports flow · 35.4 E2E-003/004 wiring.
+  Micro-index: 35.1 routes+views (35.1.1 artifact families UI; 35.1.2 study state UI) · 35.2 renderer workers (35.2.1 pandoc/LO/PDF isolation; 35.2.2 validation+provenance link) · 35.3 exports flow · 35.4 E2E-003/004/007 wiring.
   Parallelization: Wave 4 | Blocked by: 18,32,33,34 | Blocks: 36
   References: guide/13/16; REFERENCE-DEPENDENCIES (office/PDF exports row); requirements studio + web_client subsets.
-  Acceptance criteria (agent-executable): E2E-003/004 green incl. export download w/ revalidated restrictions; renderer sandbox isolation proven (no egress, limits); DOCX/PDF goldens.
+  Acceptance criteria (agent-executable): E2E-003/004/007 green incl. export download w/ revalidated restrictions; renderer sandbox isolation proven (no egress, limits); DOCX/PDF goldens.
   QA scenarios: happy — journeys green (evidence VER batch); failure — renderer timeout → artifact failed state w/ retry path (evidence job log). Evidence <attemptDir>/task-35-milpbookml-implementation.json
   Commit: Y | feat(studio): studio UI + isolated renderers + exports (studio/web subsets)
 
 - [ ] 36. Phase-4 gate — Text/data studio evidence
   What to do / Must NOT do: Phase 4 exit: notes, reports, Interactive Learning Overview, tables, mind maps, flashcards, quizzes pass provenance/export/study-state E2E; conformance + gate report.
-  Micro-index: 36.1 evidence assembly · 36.2 E2E-003/004/006 · 36.3 conformance+report.
+  Micro-index: 36.1 evidence assembly · 36.2 E2E-003/004/007 · 36.3 conformance+report.
   Parallelization: Wave 4 | Blocked by: 31..35 | Blocks: Wave 5
   References: PLANNING-HANDOFF Phase 4 row; digest Table B phase-4 capabilities (8).
   Acceptance criteria (agent-executable): PHASE-GATE-001 phase-4 green; gate report artifacts/verification/phase-4-gate.json.
@@ -474,7 +476,7 @@ Cross-cutting (assigned to their primary owning task, verified at F1): evaluatio
   What to do / Must NOT do: worker-media container (FFmpeg isolated, codec/container allowlists, explicit argv — no shell interpolation); Audio Overview pipeline: evidence-backed script w/ speaker turns → citation/language/safety validation → synthesize segments via LOCAL TTS (Piper DE+EN voices; Kokoro-class optional second) through the orchestrator (serial GPU/CPU policy) → normalize/concatenate → duration/container validation → publish canonical audio + transcript/timeline with segment-level provenance (transcript spans → evidence → media time ranges); modes Deep Dive/Brief/Critique/Debate; rights/safety per-asset records (origin, license assertion, provider safety outcome, user status; refusal = terminal explainable state, never silent substitution). MUST NOT: append audio-overview content to conversations; compose media in API process.
   Micro-index: 40.1 media worker (40.1.1 ffmpeg allowlists; 40.1.2 argv discipline) · 40.2 TTS provider (40.2.1 Piper adapter + ADR six fields; 40.2.2 DE/EN voice selection) · 40.3 audio pipeline (40.3.1 script gen + validation; 40.3.2 segment synthesis; 40.3.3 concat/validate/publish; 40.3.4 provenance timeline) · 40.4 modes · 40.5 rights/safety records.
   Parallelization: Wave 6 | Blocked by: 19,23,31 | Blocks: 44
-  References: guide/14-media-realtime.md (audio section); guide/13 (audio recipe controls); REFERENCE-DEPENDENCIES media composition row; D9; capability audio_overview (E2E-013, MAN-002).
+  References: guide/14-media-realtime.md (audio section); guide/13 (audio recipe controls); REFERENCE-DEPENDENCIES media composition row; D9; capability audio_overview (E2E-013, MAN-002); requirements ARCH-14-001..016 (component media_generation — canonical requirements.generated.json labels govern F1's join; digest Table A row media_generation + Table D anomaly #3 recorded) — task 40 owns the audio subset; 41/42/43 own video-composition/generative+cinematic/realtime-posture subsets per the master-index split.
   Acceptance criteria (agent-executable): audio golden E2E (DE + EN): script→audio→transcript timeline asserts provenance spans; duration/container validation green; MAN-002 runbook executed+recorded; refusal case produces terminal explainable state.
   QA scenarios: happy — audio E2E green (evidence VER batch + MAN-002 record); failure — TTS provider failure mid-generation → resumable/failed state, prior ready version retained (evidence job log). Evidence <attemptDir>/task-40-milpbookml-implementation.json
   Commit: Y | feat(media): MED-01a Audio Overview + local TTS (media audio subset)
@@ -482,7 +484,7 @@ Cross-cutting (assigned to their primary owning task, verified at F1): evaluatio
 - [ ] 41. MED-01b — Video Overview: storyboard composition pipeline (Explainer/Short)
   What to do / Must NOT do: Structured storyboard (scenes, narration, evidence, on-screen text, asset rights metadata); narration via local TTS; scene rendering: compositional (slides/text/image assets via renderer + FFmpeg composition) as the BASE path; A/V duration/codec/caption validation; publish renditions only after safety+provenance checks; async provider-recovery semantics (remote op IDs, staged results, polling available) — contract-level for external video providers; captions; Explainer + Short modes. MUST NOT: block publication pipeline on optional generative scenes (task 42 adds them as enhancement); compose in-process.
   Micro-index: 41.1 storyboard schema+planner · 41.2 composition renderer (41.2.1 asset staging; 41.2.2 ffmpeg composition; 41.2.3 captions) · 41.3 validation+safety+publish · 41.4 async remote-op contracts · 41.5 Explainer/Short modes.
-  Parallelization: Wave 6 | Blocked by: 23,31 | Blocks: 44
+  Parallelization: Wave 6 | Blocked by: 23,31,40 (media worker + TTS adapter from 40) | Blocks: 44
   References: guide/14 (video section); guide/10 (remote media ops); capabilities video_overview (E2E-013, MAN-003/010); D9.
   Acceptance criteria (agent-executable): compositional video E2E green (storyboard→assets→composition→validated renditions w/ captions, DE+EN); remote-op fake suite (staged completion, timeout, cancel, best-effort cancel) green; safety-refusal terminal state test.
   QA scenarios: happy — video E2E green (evidence VER batch); failure — remote provider hang → polling timeout + honest failed state (evidence op log). Evidence <attemptDir>/task-41-milpbookml-implementation.json
@@ -597,7 +599,7 @@ Cross-cutting (assigned to their primary owning task, verified at F1): evaluatio
   Commit: Y | chore(release): release-gate audit + evidence bundle (testing_release)
 
 - [ ] 54. Manual runbook matrix MAN-001..010 — execution records
-  What to do / Must NOT do: Execute and record every applicable manual case with the ch25 record form (build, environment, browser/OS/hardware, tester, timestamp, result, deviations, evidence): citation-viewer accuracy; responsive/accessibility (MAN-004/005 incl. keyboard/screen-reader/zoom/contrast); audio intelligibility (MAN-002); realtime interruption (N/A-disabled w/ registry reference); slides/infographics (MAN-003); video synchronization/legibility/captions (MAN-010); browser compatibility (Chromium+Firefox); external-provider disclosure UX; backup/restore operator drill (MAN-001 leg); installation/upgrade. Conditional N/A ONLY with registry-declared disabled capability reference (realtime/recorded/editable-aids/optional set). Signed versioned records in docs/evidence/.
+  What to do / Must NOT do: Execute and record every applicable manual case with the ch25 record form (build, environment, browser/OS/hardware, tester, timestamp, result, deviations, evidence), named per the arch-baseline ch25 runbook table: first-use source-to-citation workflow (MAN-001); audio intelligibility (MAN-002); video/slides/infographic/report rendering quality (MAN-003); keyboard/focus/screen-reader accessibility incl. zoom/contrast (MAN-004); responsive web workflow (MAN-005); external-provider disclosure and policy (MAN-006); long-running work and recovery (MAN-007); backup/restore operator drill (MAN-008, leg of task 50.3.2); realtime interruption (MAN-009, N/A-disabled w/ registry reference); video synchronization/legibility/captions (MAN-010). Plan-internal (non-MAN) legs also recorded: browser-compatibility matrix Chromium+Firefox (tasks 18/35) and installation/upgrade checks (tasks 8/51). Conditional N/A ONLY with registry-declared disabled capability reference (realtime/recorded/editable-aids/optional set). Signed versioned records in docs/evidence/.
   Micro-index: 54.1 per-case execution (54.1.1..54.1.10 one per MAN id) · 54.2 record form + signing · 54.3 N/A legality links.
   Parallelization: Wave 8 | Blocked by: 20,25,30,36,39,44,48 | Blocks: 53
   References: guide/25 (manual runbook section + MAN retention); digest Table B manual-test column mapping (MAN-002/003/004/005/009/010).

@@ -4,6 +4,8 @@ Source: explore agent ses_f505bfae8ffecoO0AizC9cOu54 (bg_ba82594b), 2026-09-17, 
 Canonical files: milpbookml-implementation-guide/requirements.generated.json (507 records; 16 TECH-* + 491 ARCH-*), capabilities.generated.json (61 records).
 NOTE: aggregate class counts differ by ±1 between two independent counts (planner: must_not 78/should 142; agent: must_not 79/should 141 — both sum 507). Plan cites exact ID ranges, not aggregates, so immaterial; flagged for honesty.
 
+**CANONICAL-LABEL CORRECTION (2026-09-17, dual-review round rr-02, oracle defect 6):** `requirements.generated.json` component labels are CANONICAL wherever the Table A grouping or Table D anomaly mappings disagree. Verified against the JSON directly: ARCH-05-001 → domain_model (not deployment), ARCH-14-001 → media_generation (not studio_artifacts), ARCH-01-002..004 → platform_core (not capability_registry). Canonical component totals: platform_core 61, deployment 22, domain_model 21, capability_registry 9, media_generation 16, studio_artifacts 15 (all other rows unchanged; total stays 507). Table A below is preserved as originally derived for traceability; the plan's master index carries the canonical-label rule and the F1 compliance join uses canonical labels. Every ID remains covered by the plan either way.
+
 ## TABLE A — per implementation_component (23 distinct; sorted by count desc)
 IDs are complete contiguous runs per component (no gaps → no (skip) markers needed).
 
