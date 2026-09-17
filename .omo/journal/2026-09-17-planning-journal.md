@@ -82,9 +82,23 @@ Session: 2026-09-17, Prometheus (ulw-plan), intent=CLEAR (user asked to be inter
 - USER LICENSE FRAMING (2026-09-17): territorial exclusions (EU/UK/etc.) are NOT a decision factor for this deployment.
 - Cinematic verdict: ENABLED locally, marginal-but-real envelope (5B 720p + 14B 480p + storyboard composition + RIFE + Real-ESRGAN), honest conformance descriptor records envelope.
 
-## Interview plan (updated)
+## Process log (cont. 2)
 
-Batch 1 DONE (Q1 hardware, Q2 models, Q3 Caddy). Batch 2 DONE (Q4 pgBackRest+restic, Q5 Tesseract+whisper.cpp + multilingual DE/EN mandatory, Q6 team-from-day-one). Batch 3 DONE (Q7 local media incl. Cinematic enabled, Q8 SearXNG minimal, Q9 OIDC deferred). Remaining: default-confirmations folded into approval brief (scope 0-7, test regime, TAD-011 UUID, provisional caps disabled, NFR seed scale) -> awaiting-approval.
+- [x] APPROVAL GRANTED 2026-09-17 ("go on then, looks good from here").
+- [x] Plan scaffolded (.omo/plans/milpbookml-implementation.md) + Metis round-1 dispatched (bg_cc931a68, ses_f4fe78083ffeA88KmsDKssbRGy, 40m).
+- [x] Plan CONTENT complete: 55 tasks in 9 waves + F1-F4 + master index + E2E-001..013/MAN-001..010 maps + dependency matrix + TL;DR. 640 lines.
+- [x] Metis round-1 verdict: 29 findings (8 HIGH, 12 MEDIUM, 9 LOW) — extracted verbatim via explore (ses_f4fc1bb8affes4zXhiRyJQzOWE); full text in /home/srcds/.local/share/opencode/tool-output/tool_0b03dd9cf00169nmpIAwtzIHK6 lines 579-749.
+- [x] ALL 29 findings folded: already-satisfied ones verified (per-phase gates, UI-01/MOD-01 placement, conformance emitter, cinematic obligations, host probes); deltas applied (Scope OUT explicit cap list incl. interactive-audio declaration + cinematic full-obligations + privacy-class guardrails; E2E/MAN maps; NFR 16GiB cgroup pinning + D1 correction; BM25 gate 15.7; orchestrator ADR 10.6 w/ ch15-only preemption; Caddy cert pinned 8.2.1; task-19 live probes + Big Pickle lapse rule + full PH:91 ADR fields; task-42.0 prereq benchmark + provider-port registration; whisper device benchmark 23.3.0; restic target 50.1.0; D6 rephrased scripted-multi-account+one-operator-drill; Node pins in 1.1.2; master-index orphan-component + ARCH-19 51-record coverage; draft hygiene: D4 dedup, D2 embedding/reranker+lapse+fields, D6/D7/D8/D9 Q-numbers recited, D1 meets-or-exceeds).
+- [x] Committed: c4bd749.
+
+## RESUME POINT (after compaction)
+
+NEXT ACTIONS in order:
+1. Metis round 2: CONTINUE session ses_f4fe78083ffeA88KmsDKssbRGy (task_id continuation; run_in_background=true, then WAIT via background_output) — prompt: verify each of your 29 findings against UPDATED /home/srcds/dev/milpbookLM/.omo/plans/milpbookml-implementation.md (640 lines) + updated draft; report remaining-unaddressed + new findings; iterate until Metis satisfied (user mandate: "iterate with metis until satisfied").
+2. After Metis clean: structural self-check of plan (column-zero - [ ] N. / F<n>. grammar, headers order, HR6 TL;DR-first).
+3. Dual high-accuracy review (review_required=true): initialize review-round state in draft (plan_sha256 = sha256 of plan file), dispatch momus + independent oracle TOGETHER with the ulw-plan intake contract (literals, not references); both must approve; fix + resubmit until both OK; then final live sha256 validation.
+4. Handoff per full-workflow Phase 4 (CLEAR + review_required): present plan summary + review result, execution via $start-work milpbookml-implementation (--worktree/--make-pr/--ship options).
+STANDING RULES for all dispatches: fetch-policy clause (focused human researcher, robots ignored, hard barriers stop), max 2 concurrent, WAIT for completion (no premature cancel), MCP-before-bash (bash DENIED to planner; serena_execute_shell_command is the shell route; git via serena shell with -c user identity).
 
 Batch 1 (foggiest: deployment reality, Phase-1-blocking providers, Phase-0-blocking proxy): Q1 hardware/host, Q2 model providers, Q3 reverse proxy. Batch 2: Q4 backup, Q5 OCR/STT+language, Q7 users. Batch 3: Q6 TTS/image/video, Q11 SearXNG, Q12 OIDC. Batch 4: Q8 scope, Q9 tests, Q10 UUID, Q13 provisional, Q14 NFR seed.
 
