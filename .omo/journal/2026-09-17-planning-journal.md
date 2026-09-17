@@ -46,6 +46,21 @@ Session: 2026-09-17, Prometheus (ulw-plan), intent=CLEAR (user asked to be inter
 7. Single-user vs multi-user deployment reality for v1 acceptance (spec is multi-user; acceptance "production-equivalent" — confirm operator context).
 8. Phase scope of THIS plan: all phases 0-7 in one plan (guide demands "every applicable capability assigned exactly once") vs phased delivery gates.
 
+## Registry statistics (computed from generated JSON, 2026-09-17)
+
+- Capabilities 61: stable/core 44, late/optional 7, provisional/announced 4, advanced/provider-dependent 2, deliberate-non-target 4. By phase: P1=15, P2=13, P3=4, P4=8, P5=2, P6=4, P7=11, no-phase=4. By workstream: ING-02=14, STD-02=9, MED-01=6, RAG-01=6, COL-01=5, UI-01=4, SCOPE-GUARD=4, ING-01=4, RSR-01=3, STD-01=2, STD-03=2, EXE-01=1, MOD-01=1 (FND/OPS workstreams own no capabilities — pure infrastructure).
+- Requirements 507 total: must 264, must_not 78, should 142, should_not 11, narrative 12 → 495 normative, 342 hard (must/must_not). By chapter: ch00=53, ch04=22, ch05=21, ch06=20, ch09=18, ch10=29, ch12=18, ch15=27, ch17=33, ch19=51, ch21=47, ch25=52 (heavytails).
+- Verification tiers: pull_request 155, nightly 166, release_candidate 170, review 4, none 12. Levels: meta 108, security 102, e2e 79, performance_manual 47, integration 35, contract 33, fault 27, property 21, golden 10, evaluation 9, automated_manual 16, analysis 4, architecture 4.
+- Every requirement record carries: verification_ids (VER-*), test_path, fixture, oracle, execution_tier, evidence_path (artifacts/verification/VER-*.json), result=not_run. The PLAN must reference these, not invent new oracles.
+
+## Architecture baseline highlights (baseline README + REVIEW-v0.10)
+
+- Central rule: no model vendor/embedding/search/media/connector/storage backend may enter the notebook domain model.
+- "OpenCode Big Pickle" = free limited-time external OpenAI-compatible stealth model; treated as replaceable external/bootstrap/fallback candidate, NEVER trusted/local default, not a dependency. Data-use caveat noted.
+- Ordinary chat = tool-free, notebook-grounded; explicit selected notes are version-pinned prompt context. Agentic Chat = separate tool-capable path.
+- Local accounts auth baseline; OIDC/trusted-proxy optional. Account disablement immediate; sole-owner notebooks → locked admin custody. Deletion: removal vs hard purge; purge traverses all derivatives; backups expire under finite retention.
+- AD-011: external-provider default policy + disclosure; AD-012: execution networking (no network by default); AD-023: derived-content restriction propagation; AD-024: crash-consistent blob lifecycle; AD-026: capability applicability/conformance profile.
+
 ## Insights / risks
 
 - Plan will be LARGE (hundreds of tasks if done at the guide's granularity). Candidate structure: plan organized by workstream DAG + phase gates, tasks grouped so each has one reviewable outcome; final verification wave maps to phase-gate evidence.
