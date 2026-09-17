@@ -107,6 +107,12 @@ Session: 2026-09-17, Prometheus (ulw-plan), intent=CLEAR (user asked to be inter
 - [x] rr-03 DISPATCHED fresh (both lanes, plan 484036d5): momus ses_f4efbad6cffe8Y69kF0KJrXCq (bg_071edcf8, launch-momus-rr03-20260917T2016Z); oracle ses_f4efbad5effercuHEjkJehc5kW (bg_d58baa97, launch-oracle-rr03-20260917T2016Z). Receipts recorded in draft.
 - NEXT: on rr-03 verdicts -> if both APPROVED: final live sha256 == 484036d5 -> Phase-4 handoff; else fix + rr-04. STANDING: never cancel lanes on elapsed time; wait for system notifications.
 
+## Process log (cont. 5 — rr-03 verdicts + USER HALT)
+
+- [x] rr-03 BOTH LANES COMPLETED (echoed binding + digest 484036d5 verified): momus = CHANGES_REQUESTED (3 defects: phantom TECH-01-001/002 IDs in tasks 1/17; ~25 stale Blocks fields violating L118 direct-dependants rule — my rr-02 fix rebuilt the MATRIX but not the per-task row Blocks; L57 ARCH-05-001 owner self-contradiction). oracle = CHANGES_REQUESTED (6 defects: same Blocks staleness; matrix rows 26/33/34 gate omissions; success-criterion-3 contradicts cinematic downgrade path; wave-8 "OPS-01b..f" phantom label; stale "task 29/39" refs; Caddy unpinned). KEY: authoritative Depends/Blocked-by side verified 100% consistent by BOTH lanes — no ordering hazard; remaining issues are traceability/labeling. Oracle remediation estimate: <1h mechanical.
+- [x] USER HALT: "stop before running the high accuracy reviews" -> NO rr-04 dispatched. Results + union fix list recorded in draft; committed.
+- RESUME POINT: (1) apply union fix list (draft carries it verbatim): remap TECH-01 refs, regenerate ALL Blocks fields (55 task rows + matrix, consistent gate convention), align L57 first clause, downgrade-aware success criterion 3, wave-8 label fix, drop "/39", pin Caddy v2; (2) re-hash plan, init rr-04, dispatch BOTH lanes fresh; (3) on both APPROVED -> final live sha256 validation -> Phase-4 handoff. Plan sha256 at halt: 484036d5, tree clean.
+
 Batch 1 (foggiest: deployment reality, Phase-1-blocking providers, Phase-0-blocking proxy): Q1 hardware/host, Q2 model providers, Q3 reverse proxy. Batch 2: Q4 backup, Q5 OCR/STT+language, Q7 users. Batch 3: Q6 TTS/image/video, Q11 SearXNG, Q12 OIDC. Batch 4: Q8 scope, Q9 tests, Q10 UUID, Q13 provisional, Q14 NFR seed.
 
 - Plan will be LARGE (hundreds of tasks if done at the guide's granularity). Candidate structure: plan organized by workstream DAG + phase gates, tasks grouped so each has one reviewable outcome; final verification wave maps to phase-gate evidence.
