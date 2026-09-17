@@ -114,22 +114,24 @@ approach (as approved, N3b sentence corrected 2026-09-17): One decision-complete
 default-confirmed items (accepted at approval): full Phase 0-7 scope in ONE plan; guide test regime (contract-first + deterministic fakes + agent-executed QA per task); UUIDv4 pre-insert + PG-side uuidv7() per TAD-011; provisional caps (realtime voice, recorded capture, evolving notes, editable study aids) stay disabled behind flags; late/optional caps (public notebooks, featured, analytics, connectors, starter artifacts) stay disabled; NFR seed at ch.21 reference scale; Big Pickle+Muse Spark as external fallbacks with disclosure; interactive audio advanced/provider-dependent (needs realtime duplex provider - default disabled unless local stack covers it).
 
 ## Review round state (review_required=true)
+ROUND rr-milpbooklm-20260917-01: SUPERSEDED → round_status: inconclusive (both background tasks died mid-flight ~2026-09-17T18:0xZ, registry purged them: "Task not found" for bg_ec4fd699/bg_6916f5d6 and both session receipts ses_f4f8f33b4ffe2IKh2y6O62U7iG/ses_f4f8f32ffffeTy04R0LRgRWXVJ; no terminal verdicts. User ordered restart). No plan change occurred (sha256 re-verified ee96d26d before rr-02 init).
+
 ```json
 {
   "transition": "replace",
   "phase": "review_round_initialized",
-  "applies_when": ["complete_plan_after_review_request"],
+  "applies_when": ["start_fresh_review_round"],
   "atomic": true,
   "review_required": true,
   "plan_path": ".omo/plans/milpbookml-implementation.md",
   "plan_sha256": "ee96d26daf5e48dc7ed0a47c3093b796b0f80e5432b570c7eafa032510756a1f",
-  "review_round_id": "rr-milpbookml-20260917-01",
+  "review_round_id": "rr-milpbookml-20260917-02",
   "round_status": "active",
   "completion_cas": ["status=in_flight", "workspace_root", "runtime_home", "target", "launch_id", "round_id", "plan_sha256", "session", "receipt_identity=session", "live_plan_sha256=plan_sha256", "echoed_binding", "terminal_transition=in_flight->approved|changes_requested|inconclusive"],
   "pending-action": "review .omo/plans/milpbookml-implementation.md",
   "review": {
-    "momus": { "status": "in_flight", "workspace_root": "/home/srcds/dev/milpbookLM", "runtime_home": null, "target": ".omo/plans/milpbookml-implementation.md", "round_id": "rr-milpbookml-20260917-01", "plan_sha256": "ee96d26daf5e48dc7ed0a47c3093b796b0f80e5432b570c7eafa032510756a1f", "launch_id": "launch-momus-rr01-20260917T1735Z", "session": "ses_f4f8f33b4ffe2IKh2y6O62U7iG", "result": null },
-    "independent": { "status": "in_flight", "workspace_root": "/home/srcds/dev/milpbookLM", "runtime_home": null, "target": ".omo/plans/milpbookml-implementation.md", "round_id": "rr-milpbookml-20260917-01", "plan_sha256": "ee96d26daf5e48dc7ed0a47c3093b796b0f80e5432b570c7eafa032510756a1f", "launch_id": "launch-oracle-rr01-20260917T1735Z", "session": "ses_f4f8f32ffffeTy04R0LRgRWXVJ", "result": null }
+    "momus": { "status": "in_flight", "workspace_root": "/home/srcds/dev/milpbookLM", "runtime_home": null, "target": ".omo/plans/milpbookml-implementation.md", "round_id": "rr-milpbooklm-20260917-02", "plan_sha256": "ee96d26daf5e48dc7ed0a47c3093b796b0f80e5432b570c7eafa032510756a1f", "launch_id": "launch-momus-rr02-20260917T1830Z", "session": "ses_f4f5a257fffeUPa0oQUHbPyOc0", "result": null },
+    "independent": { "status": "in_flight", "workspace_root": "/home/srcds/dev/milpbookLM", "runtime_home": null, "target": ".omo/plans/milpbookml-implementation.md", "round_id": "rr-milpbooklm-20260917-02", "plan_sha256": "ee96d26daf5e48dc7ed0a47c3093b796b0f80e5432b570c7eafa032510756a1f", "launch_id": "launch-oracle-rr02-20260917T1830Z", "session": "ses_f4f5a2467ffe8ZokHpcgIVC8m6", "result": null }
   }
 }
 ```
