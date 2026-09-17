@@ -122,6 +122,8 @@ ROUND rr-milpbooklm-20260917-03 RESULTS (recorded 2026-09-17; USER HALT: "stop b
 - UNION FIX LIST for the next round (when resumed): momus#1 phantom TECH-01 remap; momus#2+oracle#1+oracle#2 full Blocks regeneration (all 55 task rows + matrix rows incl. consistent gate convention); momus#3 L57 first-clause align; oracle#3 success-criterion-3 downgrade-aware wording; oracle#4 wave-8 label "OPS-01b..e + release/docs tasks 53-55"; oracle#5 drop "/39"; oracle#6 pin Caddy v2 (verify current minor on-host or via REFERENCE-DEPENDENCIES discipline). Then re-hash plan, init rr-04, dispatch BOTH lanes fresh.
 - State at halt: round_status rr-03 = active, lanes terminal (changes_requested), plan sha256 484036d5 (unchanged since rr-03 dispatch), working tree clean.
 
+ROUND rr-milpbooklm-20260917-03: CLOSED → both lanes changes_requested (defect lists + union fix list recorded above). ALL rr-03 defects fixed (union list applied in full: TECH-01 phantom IDs remapped to ARCH-03/TECH-00/ARCH-09+ch01-obligation notes; ALL Blocks fields mechanically regenerated from the Depends column — 48 task rows + 27 matrix cells, gates annotated, verified spot-checks; L57 first clause aligned to task-8 owner; success criterion 3 downgrade-aware; wave-8 label corrected; both "29/39" refs cleaned; Caddy v2 major pinned). Plan sha256 moved 484036d5→3615e1cd. Both lanes resubmitted FRESH per the dual-review contract.
+
 ```json
 {
   "transition": "replace",
@@ -130,14 +132,14 @@ ROUND rr-milpbooklm-20260917-03 RESULTS (recorded 2026-09-17; USER HALT: "stop b
   "atomic": true,
   "review_required": true,
   "plan_path": ".omo/plans/milpbookml-implementation.md",
-  "plan_sha256": "484036d501065b36bd8b8d7a7bea725dee212f7cb25bb787a327c9f2b4e5b430",
-  "review_round_id": "rr-milpbookml-20260917-03",
+  "plan_sha256": "3615e1cd716dc62251f7821fc649d600883d152ef7858238bfad2538d3a9c7cd",
+  "review_round_id": "rr-milpbooklm-20260917-04",
   "round_status": "active",
   "completion_cas": ["status=in_flight", "workspace_root", "runtime_home", "target", "launch_id", "round_id", "plan_sha256", "session", "receipt_identity=session", "live_plan_sha256=plan_sha256", "echoed_binding", "terminal_transition=in_flight->approved|changes_requested|inconclusive"],
   "pending-action": "review .omo/plans/milpbookml-implementation.md",
   "review": {
-    "momus": { "status": "in_flight", "workspace_root": "/home/srcds/dev/milpbookLM", "runtime_home": null, "target": ".omo/plans/milpbookml-implementation.md", "round_id": "rr-milpbookml-20260917-03", "plan_sha256": "484036d501065b36bd8b8d7a7bea725dee212f7cb25bb787a327c9f2b4e5b430", "launch_id": "launch-momus-rr03-20260917T2016Z", "session": "ses_f4efbad6cffe8Y69kF0KJrXCq", "result": null },
-    "independent": { "status": "in_flight", "workspace_root": "/home/srcds/dev/milpbookLM", "runtime_home": null, "target": ".omo/plans/milpbookml-implementation.md", "round_id": "rr-milpbookml-20260917-03", "plan_sha256": "484036d501065b36bd8b8d7a7bea725dee212f7cb25bb787a327c9f2b4e5b430", "launch_id": "launch-oracle-rr03-20260917T2016Z", "session": "ses_f4efbad5effercuHEjkJehc5kW", "result": null }
+    "momus": { "status": "launching", "workspace_root": "/home/srcds/dev/milpbookLM", "runtime_home": null, "target": ".omo/plans/milpbookml-implementation.md", "round_id": "rr-milpbooklm-20260917-04", "plan_sha256": "3615e1cd716dc62251f7821fc649d600883d152ef7858238bfad2538d3a9c7cd", "launch_id": "launch-momus-rr04-20260917T2222Z", "session": null, "result": null },
+    "independent": { "status": "launching", "workspace_root": "/home/srcds/dev/milpbookLM", "runtime_home": null, "target": ".omo/plans/milpbookml-implementation.md", "round_id": "rr-milpbooklm-20260917-04", "plan_sha256": "3615e1cd716dc62251f7821fc649d600883d152ef7858238bfad2538d3a9c7cd", "launch_id": "launch-oracle-rr04-20260917T2222Z", "session": null, "result": null }
   }
 }
 ```
