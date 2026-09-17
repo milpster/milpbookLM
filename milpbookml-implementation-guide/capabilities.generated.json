@@ -1,0 +1,1935 @@
+{
+  "schema_version": 1,
+  "architecture": "v0.10-FINAL",
+  "capabilities": [
+    {
+      "id": "notebook_management",
+      "name": "Notebook management",
+      "classification": "stable/core",
+      "reference_maturity": "documented",
+      "phase": 1,
+      "planning_workstream": "UI-01",
+      "implementation_status": "not_started",
+      "implemented": false,
+      "enabled": false,
+      "feature_flag": "cap.notebook_management",
+      "dependencies": [
+        "postgresql",
+        "blob_store"
+      ],
+      "required_test_groups": [
+        "CAP-PROFILE-001",
+        "PHASE-GATE-001",
+        "PARITY-ACCEPTANCE-001"
+      ],
+      "automated_tests": [
+        "CAP-PROFILE-001",
+        "PHASE-GATE-001",
+        "PARITY-ACCEPTANCE-001"
+      ],
+      "manual_tests": [],
+      "evidence_status": "not_run",
+      "acceptance_evidence": [],
+      "reference_priority": "Core",
+      "reference_text": "Create, rename, delete, duplicate/copy and share notebooks; basic metadata including a user-changeable icon/emoji"
+    },
+    {
+      "id": "notebook_instructions",
+      "name": "Notebook instructions",
+      "classification": "stable/core",
+      "reference_maturity": "documented",
+      "phase": 1,
+      "planning_workstream": "RAG-01",
+      "implementation_status": "not_started",
+      "implemented": false,
+      "enabled": false,
+      "feature_flag": "cap.notebook_instructions",
+      "dependencies": [
+        "postgresql",
+        "blob_store"
+      ],
+      "required_test_groups": [
+        "CAP-PROFILE-001",
+        "PHASE-GATE-001",
+        "PARITY-ACCEPTANCE-001"
+      ],
+      "automated_tests": [
+        "CAP-PROFILE-001",
+        "PHASE-GATE-001",
+        "PARITY-ACCEPTANCE-001"
+      ],
+      "manual_tests": [],
+      "evidence_status": "not_run",
+      "acceptance_evidence": [],
+      "reference_priority": "Core/Early",
+      "reference_text": "Notebook-wide custom instructions affecting grounded chat and generation behavior"
+    },
+    {
+      "id": "notebook_overview",
+      "name": "Notebook overview",
+      "classification": "stable/core",
+      "reference_maturity": "documented",
+      "phase": 1,
+      "planning_workstream": "RAG-01",
+      "implementation_status": "not_started",
+      "implemented": false,
+      "enabled": false,
+      "feature_flag": "cap.notebook_overview",
+      "dependencies": [
+        "postgresql",
+        "blob_store",
+        "chat_provider",
+        "embedding_provider"
+      ],
+      "required_test_groups": [
+        "CAP-PROFILE-001",
+        "PHASE-GATE-001",
+        "PARITY-ACCEPTANCE-001"
+      ],
+      "automated_tests": [
+        "CAP-PROFILE-001",
+        "PHASE-GATE-001",
+        "PARITY-ACCEPTANCE-001"
+      ],
+      "manual_tests": [],
+      "evidence_status": "not_run",
+      "acceptance_evidence": [],
+      "reference_priority": "Core/Early",
+      "reference_text": "Generated notebook/source summary and suggested starting questions/actions"
+    },
+    {
+      "id": "sources",
+      "name": "Sources",
+      "classification": "stable/core",
+      "reference_maturity": "documented",
+      "phase": 1,
+      "planning_workstream": "ING-01",
+      "implementation_status": "not_started",
+      "implemented": false,
+      "enabled": false,
+      "feature_flag": "cap.sources",
+      "dependencies": [
+        "postgresql",
+        "blob_store"
+      ],
+      "required_test_groups": [
+        "CAP-PROFILE-001",
+        "PHASE-GATE-001",
+        "PARITY-ACCEPTANCE-001",
+        "E2E-002"
+      ],
+      "automated_tests": [
+        "CAP-PROFILE-001",
+        "PHASE-GATE-001",
+        "PARITY-ACCEPTANCE-001",
+        "E2E-002"
+      ],
+      "manual_tests": [],
+      "evidence_status": "not_run",
+      "acceptance_evidence": [],
+      "reference_priority": "Core",
+      "reference_text": "Upload/import heterogeneous source types; inspect, select/deselect, remove and edit local display title/metadata without mutating retained source bytes"
+    },
+    {
+      "id": "source_guide",
+      "name": "Source Guide",
+      "classification": "stable/core",
+      "reference_maturity": "documented",
+      "phase": 1,
+      "planning_workstream": "ING-01",
+      "implementation_status": "not_started",
+      "implemented": false,
+      "enabled": false,
+      "feature_flag": "cap.source_guide",
+      "dependencies": [
+        "postgresql",
+        "blob_store",
+        "chat_provider",
+        "embedding_provider"
+      ],
+      "required_test_groups": [
+        "CAP-PROFILE-001",
+        "PHASE-GATE-001",
+        "PARITY-ACCEPTANCE-001"
+      ],
+      "automated_tests": [
+        "CAP-PROFILE-001",
+        "PHASE-GATE-001",
+        "PARITY-ACCEPTANCE-001"
+      ],
+      "manual_tests": [],
+      "evidence_status": "not_run",
+      "acceptance_evidence": [],
+      "reference_priority": "Core/Early",
+      "reference_text": "Per-source automatic summary/guide plus focused source summarization"
+    },
+    {
+      "id": "source_organization",
+      "name": "Source organization",
+      "classification": "stable/core",
+      "reference_maturity": "documented",
+      "phase": 2,
+      "planning_workstream": "ING-02",
+      "implementation_status": "not_started",
+      "implemented": false,
+      "enabled": false,
+      "feature_flag": "cap.source_organization",
+      "dependencies": [
+        "postgresql",
+        "blob_store"
+      ],
+      "required_test_groups": [
+        "CAP-PROFILE-001",
+        "PHASE-GATE-001",
+        "PARITY-ACCEPTANCE-001"
+      ],
+      "automated_tests": [
+        "CAP-PROFILE-001",
+        "PHASE-GATE-001",
+        "PARITY-ACCEPTANCE-001"
+      ],
+      "manual_tests": [],
+      "evidence_status": "not_run",
+      "acceptance_evidence": [],
+      "reference_priority": "Core",
+      "reference_text": "Automatic/manual labels/categories and source selection"
+    },
+    {
+      "id": "grounded_chat",
+      "name": "Grounded chat",
+      "classification": "stable/core",
+      "reference_maturity": "documented",
+      "phase": 1,
+      "planning_workstream": "RAG-01",
+      "implementation_status": "not_started",
+      "implemented": false,
+      "enabled": false,
+      "feature_flag": "cap.grounded_chat",
+      "dependencies": [
+        "postgresql",
+        "blob_store",
+        "chat_provider",
+        "embedding_provider"
+      ],
+      "required_test_groups": [
+        "CAP-PROFILE-001",
+        "PHASE-GATE-001",
+        "PARITY-ACCEPTANCE-001",
+        "E2E-001"
+      ],
+      "automated_tests": [
+        "CAP-PROFILE-001",
+        "PHASE-GATE-001",
+        "PARITY-ACCEPTANCE-001",
+        "E2E-001"
+      ],
+      "manual_tests": [],
+      "evidence_status": "not_run",
+      "acceptance_evidence": [],
+      "reference_priority": "Core",
+      "reference_text": "Ask questions against selected notebook sources; ordinary Notebook chat stays grounded in selected notebook material and does not silently use the open web/tools. Notes may be included only when explicitly selected, and the exact note revision is pinned for the request."
+    },
+    {
+      "id": "chat_configuration",
+      "name": "Chat configuration",
+      "classification": "stable/core",
+      "reference_maturity": "documented",
+      "phase": 1,
+      "planning_workstream": "RAG-01",
+      "implementation_status": "not_started",
+      "implemented": false,
+      "enabled": false,
+      "feature_flag": "cap.chat_configuration",
+      "dependencies": [
+        "postgresql",
+        "blob_store",
+        "chat_provider",
+        "embedding_provider"
+      ],
+      "required_test_groups": [
+        "CAP-PROFILE-001",
+        "PHASE-GATE-001",
+        "PARITY-ACCEPTANCE-001"
+      ],
+      "automated_tests": [
+        "CAP-PROFILE-001",
+        "PHASE-GATE-001",
+        "PARITY-ACCEPTANCE-001"
+      ],
+      "manual_tests": [],
+      "evidence_status": "not_run",
+      "acceptance_evidence": [],
+      "reference_priority": "Core/Early",
+      "reference_text": "Standard/learning/custom conversation styles, custom instructions and shorter/default/longer response-length preference"
+    },
+    {
+      "id": "agentic_chat",
+      "name": "Agentic chat",
+      "classification": "stable/core",
+      "reference_maturity": "experimental/documented",
+      "phase": 3,
+      "planning_workstream": "RSR-01",
+      "implementation_status": "not_started",
+      "implemented": false,
+      "enabled": false,
+      "feature_flag": "cap.agentic_chat",
+      "dependencies": [
+        "postgresql",
+        "blob_store",
+        "searxng",
+        "playwright"
+      ],
+      "required_test_groups": [
+        "CAP-PROFILE-001",
+        "PHASE-GATE-001",
+        "PARITY-ACCEPTANCE-001",
+        "E2E-008"
+      ],
+      "automated_tests": [
+        "CAP-PROFILE-001",
+        "PHASE-GATE-001",
+        "PARITY-ACCEPTANCE-001",
+        "E2E-008"
+      ],
+      "manual_tests": [],
+      "evidence_status": "not_run",
+      "acceptance_evidence": [],
+      "reference_priority": "Parity",
+      "reference_text": "Explicit tool-capable chat mode backed by the agent runtime: web research, code/data analysis, generated files/charts/images and iterative artifact/file revision"
+    },
+    {
+      "id": "chat_lifecycle",
+      "name": "Chat lifecycle",
+      "classification": "stable/core",
+      "reference_maturity": "documented",
+      "phase": 1,
+      "planning_workstream": "RAG-01",
+      "implementation_status": "not_started",
+      "implemented": false,
+      "enabled": false,
+      "feature_flag": "cap.chat_lifecycle",
+      "dependencies": [
+        "postgresql",
+        "blob_store"
+      ],
+      "required_test_groups": [
+        "CAP-PROFILE-001",
+        "PHASE-GATE-001",
+        "PARITY-ACCEPTANCE-001"
+      ],
+      "automated_tests": [
+        "CAP-PROFILE-001",
+        "PHASE-GATE-001",
+        "PARITY-ACCEPTANCE-001"
+      ],
+      "manual_tests": [],
+      "evidence_status": "not_run",
+      "acceptance_evidence": [],
+      "reference_priority": "Core/Early",
+      "reference_text": "Per-user private conversation history in shared notebooks; start/reset/delete history; cancel/continue in-flight generation; preserve source/model/tool metadata"
+    },
+    {
+      "id": "citations",
+      "name": "Citations",
+      "classification": "stable/core",
+      "reference_maturity": "documented",
+      "phase": 1,
+      "planning_workstream": "RAG-01",
+      "implementation_status": "not_started",
+      "implemented": false,
+      "enabled": false,
+      "feature_flag": "cap.citations",
+      "dependencies": [
+        "postgresql",
+        "blob_store"
+      ],
+      "required_test_groups": [
+        "CAP-PROFILE-001",
+        "PHASE-GATE-001",
+        "PARITY-ACCEPTANCE-001",
+        "E2E-001"
+      ],
+      "automated_tests": [
+        "CAP-PROFILE-001",
+        "PHASE-GATE-001",
+        "PARITY-ACCEPTANCE-001",
+        "E2E-001"
+      ],
+      "manual_tests": [],
+      "evidence_status": "not_run",
+      "acceptance_evidence": [],
+      "reference_priority": "Core",
+      "reference_text": "Inline citations linked to exact text/image/source locations with hover/jump context"
+    },
+    {
+      "id": "notes",
+      "name": "Notes",
+      "classification": "stable/core",
+      "reference_maturity": "documented",
+      "phase": 4,
+      "planning_workstream": "STD-02",
+      "implementation_status": "not_started",
+      "implemented": false,
+      "enabled": false,
+      "feature_flag": "cap.notes",
+      "dependencies": [
+        "postgresql",
+        "blob_store"
+      ],
+      "required_test_groups": [
+        "CAP-PROFILE-001",
+        "PHASE-GATE-001",
+        "PARITY-ACCEPTANCE-001",
+        "E2E-004"
+      ],
+      "automated_tests": [
+        "CAP-PROFILE-001",
+        "PHASE-GATE-001",
+        "PARITY-ACCEPTANCE-001",
+        "E2E-004"
+      ],
+      "manual_tests": [],
+      "evidence_status": "not_run",
+      "acceptance_evidence": [],
+      "reference_priority": "Core/Early",
+      "reference_text": "Editable user notes; save-chat-response-to-note (reference behavior keeps saved-response notes non-editable); rich structure/citations; combine, critique, summarize, outline, study-guide and related-idea transformations; single/all-note→source conversion; export; and collaborative live updates"
+    },
+    {
+      "id": "evolving_note_integration",
+      "name": "Evolving note integration",
+      "classification": "provisional/announced",
+      "reference_maturity": "announcement/rollout",
+      "phase": 7,
+      "planning_workstream": "STD-02",
+      "implementation_status": "not_started",
+      "implemented": false,
+      "enabled": false,
+      "feature_flag": "cap.evolving_note_integration",
+      "dependencies": [
+        "postgresql",
+        "blob_store"
+      ],
+      "required_test_groups": [
+        "CAP-PROFILE-001",
+        "PHASE-GATE-001"
+      ],
+      "automated_tests": [
+        "CAP-PROFILE-001",
+        "PHASE-GATE-001"
+      ],
+      "manual_tests": [],
+      "evidence_status": "not_run",
+      "acceptance_evidence": [],
+      "reference_priority": "Provisional / announced",
+      "reference_text": "Announcement says editable notes will live alongside sources and can be chatted with, cited and built from; stable FAQ still says notes enter prompts only when specifically selected, so automatic inclusion/indexing is not assumed"
+    },
+    {
+      "id": "reports",
+      "name": "Reports",
+      "classification": "stable/core",
+      "reference_maturity": "documented",
+      "phase": 4,
+      "planning_workstream": "STD-02",
+      "implementation_status": "not_started",
+      "implemented": false,
+      "enabled": false,
+      "feature_flag": "cap.reports",
+      "dependencies": [
+        "postgresql",
+        "blob_store"
+      ],
+      "required_test_groups": [
+        "CAP-PROFILE-001",
+        "PHASE-GATE-001",
+        "PARITY-ACCEPTANCE-001"
+      ],
+      "automated_tests": [
+        "CAP-PROFILE-001",
+        "PHASE-GATE-001",
+        "PARITY-ACCEPTANCE-001"
+      ],
+      "manual_tests": [
+        "MAN-003"
+      ],
+      "evidence_status": "not_run",
+      "acceptance_evidence": [],
+      "reference_priority": "Parity",
+      "reference_text": "Document reports (FAQ, study guide, briefing, custom/suggested formats) plus a generic interactive/composite-report substrate capable of embedding Studio learning artifacts"
+    },
+    {
+      "id": "interactive_learning_overview",
+      "name": "Interactive Learning Overview",
+      "classification": "stable/core",
+      "reference_maturity": "documented",
+      "phase": 4,
+      "planning_workstream": "STD-02",
+      "implementation_status": "not_started",
+      "implemented": false,
+      "enabled": false,
+      "feature_flag": "cap.interactive_learning_overview",
+      "dependencies": [
+        "postgresql",
+        "blob_store"
+      ],
+      "required_test_groups": [
+        "CAP-PROFILE-001",
+        "PHASE-GATE-001",
+        "PARITY-ACCEPTANCE-001"
+      ],
+      "automated_tests": [
+        "CAP-PROFILE-001",
+        "PHASE-GATE-001",
+        "PARITY-ACCEPTANCE-001"
+      ],
+      "manual_tests": [],
+      "evidence_status": "not_run",
+      "acceptance_evidence": [],
+      "reference_priority": "Parity",
+      "reference_text": "Interactive report combining a textual learning overview with suggested or embedded Studio learning artifacts such as infographics, quizzes and flashcards"
+    },
+    {
+      "id": "data_tables",
+      "name": "Data tables",
+      "classification": "stable/core",
+      "reference_maturity": "documented",
+      "phase": 4,
+      "planning_workstream": "STD-02",
+      "implementation_status": "not_started",
+      "implemented": false,
+      "enabled": false,
+      "feature_flag": "cap.data_tables",
+      "dependencies": [
+        "postgresql",
+        "blob_store"
+      ],
+      "required_test_groups": [
+        "CAP-PROFILE-001",
+        "PHASE-GATE-001",
+        "PARITY-ACCEPTANCE-001"
+      ],
+      "automated_tests": [
+        "CAP-PROFILE-001",
+        "PHASE-GATE-001",
+        "PARITY-ACCEPTANCE-001"
+      ],
+      "manual_tests": [],
+      "evidence_status": "not_run",
+      "acceptance_evidence": [],
+      "reference_priority": "Parity",
+      "reference_text": "Language/custom row-column instructions, structured extraction/analysis with provenance, and spreadsheet export with citations"
+    },
+    {
+      "id": "mind_maps",
+      "name": "Mind maps",
+      "classification": "stable/core",
+      "reference_maturity": "documented",
+      "phase": 4,
+      "planning_workstream": "STD-02",
+      "implementation_status": "not_started",
+      "implemented": false,
+      "enabled": false,
+      "feature_flag": "cap.mind_maps",
+      "dependencies": [
+        "postgresql",
+        "blob_store"
+      ],
+      "required_test_groups": [
+        "CAP-PROFILE-001",
+        "PHASE-GATE-001",
+        "PARITY-ACCEPTANCE-001"
+      ],
+      "automated_tests": [
+        "CAP-PROFILE-001",
+        "PHASE-GATE-001",
+        "PARITY-ACCEPTANCE-001"
+      ],
+      "manual_tests": [],
+      "evidence_status": "not_run",
+      "acceptance_evidence": [],
+      "reference_priority": "Parity",
+      "reference_text": "Navigable concept/relationship view with zoom, expand/collapse, node→chat questioning, download and feedback"
+    },
+    {
+      "id": "flashcards",
+      "name": "Flashcards",
+      "classification": "stable/core",
+      "reference_maturity": "documented",
+      "phase": 4,
+      "planning_workstream": "STD-02",
+      "implementation_status": "not_started",
+      "implemented": false,
+      "enabled": false,
+      "feature_flag": "cap.flashcards",
+      "dependencies": [
+        "postgresql",
+        "blob_store"
+      ],
+      "required_test_groups": [
+        "CAP-PROFILE-001",
+        "PHASE-GATE-001",
+        "PARITY-ACCEPTANCE-001"
+      ],
+      "automated_tests": [
+        "CAP-PROFILE-001",
+        "PHASE-GATE-001",
+        "PARITY-ACCEPTANCE-001"
+      ],
+      "manual_tests": [],
+      "evidence_status": "not_run",
+      "acceptance_evidence": [],
+      "reference_priority": "Parity",
+      "reference_text": "Difficulty/count controls, explanations, previous/next/full-screen navigation, persisted study progress, shuffle/restart/delete/retry controls and CSV-style export"
+    },
+    {
+      "id": "quizzes",
+      "name": "Quizzes",
+      "classification": "stable/core",
+      "reference_maturity": "documented",
+      "phase": 4,
+      "planning_workstream": "STD-02",
+      "implementation_status": "not_started",
+      "implemented": false,
+      "enabled": false,
+      "feature_flag": "cap.quizzes",
+      "dependencies": [
+        "postgresql",
+        "blob_store"
+      ],
+      "required_test_groups": [
+        "CAP-PROFILE-001",
+        "PHASE-GATE-001",
+        "PARITY-ACCEPTANCE-001"
+      ],
+      "automated_tests": [
+        "CAP-PROFILE-001",
+        "PHASE-GATE-001",
+        "PARITY-ACCEPTANCE-001"
+      ],
+      "manual_tests": [],
+      "evidence_status": "not_run",
+      "acceptance_evidence": [],
+      "reference_priority": "Parity",
+      "reference_text": "Difficulty/count controls, previous/next/full-screen navigation, hints, answers/explanations, progress/results and retry/review flows"
+    },
+    {
+      "id": "editable_study_aids_and_performance_follow_up",
+      "name": "Editable study aids and performance follow-up",
+      "classification": "provisional/announced",
+      "reference_maturity": "announcement/rollout",
+      "phase": 7,
+      "planning_workstream": "STD-02",
+      "implementation_status": "not_started",
+      "implemented": false,
+      "enabled": false,
+      "feature_flag": "cap.editable_study_aids_and_performance_follow_up",
+      "dependencies": [
+        "postgresql",
+        "blob_store"
+      ],
+      "required_test_groups": [
+        "CAP-PROFILE-001",
+        "PHASE-GATE-001"
+      ],
+      "automated_tests": [
+        "CAP-PROFILE-001",
+        "PHASE-GATE-001"
+      ],
+      "manual_tests": [],
+      "evidence_status": "not_run",
+      "acceptance_evidence": [],
+      "reference_priority": "Provisional / announced",
+      "reference_text": "Announced add/edit-question flows, short-answer/multiple-select/fill-in-the-blank quiz formats, and explicitly asking chat about the current user's completed quiz/flashcard performance"
+    },
+    {
+      "id": "audio_overview",
+      "name": "Audio Overview",
+      "classification": "stable/core",
+      "reference_maturity": "documented",
+      "phase": 6,
+      "planning_workstream": "MED-01",
+      "implementation_status": "not_started",
+      "implemented": false,
+      "enabled": false,
+      "feature_flag": "cap.audio_overview",
+      "dependencies": [
+        "postgresql",
+        "blob_store",
+        "tts_provider",
+        "stt_provider"
+      ],
+      "required_test_groups": [
+        "CAP-PROFILE-001",
+        "PHASE-GATE-001",
+        "PARITY-ACCEPTANCE-001",
+        "E2E-013"
+      ],
+      "automated_tests": [
+        "CAP-PROFILE-001",
+        "PHASE-GATE-001",
+        "PARITY-ACCEPTANCE-001",
+        "E2E-013"
+      ],
+      "manual_tests": [
+        "MAN-002"
+      ],
+      "evidence_status": "not_run",
+      "acceptance_evidence": [],
+      "reference_priority": "Parity",
+      "reference_text": "Deep Dive, Brief, Critique and Debate-style generated audio"
+    },
+    {
+      "id": "interactive_audio_overview",
+      "name": "Interactive Audio Overview",
+      "classification": "advanced/provider-dependent",
+      "reference_maturity": "documented/provider-limited",
+      "phase": 6,
+      "planning_workstream": "MED-01",
+      "implementation_status": "not_started",
+      "implemented": false,
+      "enabled": false,
+      "feature_flag": "cap.interactive_audio_overview",
+      "dependencies": [
+        "postgresql",
+        "blob_store",
+        "tts_provider",
+        "stt_provider"
+      ],
+      "required_test_groups": [
+        "CAP-PROFILE-001",
+        "PHASE-GATE-001"
+      ],
+      "automated_tests": [
+        "CAP-PROFILE-001",
+        "PHASE-GATE-001"
+      ],
+      "manual_tests": [
+        "MAN-002"
+      ],
+      "evidence_status": "not_run",
+      "acceptance_evidence": [],
+      "reference_priority": "Advanced parity",
+      "reference_text": "Join/interruption/questions with Audio Overview hosts, grounded in notebook sources"
+    },
+    {
+      "id": "realtime_notebook_voice_chat",
+      "name": "Realtime notebook voice chat",
+      "classification": "provisional/announced",
+      "reference_maturity": "announcement/rollout",
+      "phase": 7,
+      "planning_workstream": "MED-01",
+      "implementation_status": "not_started",
+      "implemented": false,
+      "enabled": false,
+      "feature_flag": "cap.realtime_notebook_voice_chat",
+      "dependencies": [
+        "postgresql",
+        "blob_store",
+        "tts_provider",
+        "stt_provider"
+      ],
+      "required_test_groups": [
+        "CAP-PROFILE-001",
+        "PHASE-GATE-001"
+      ],
+      "automated_tests": [
+        "CAP-PROFILE-001",
+        "PHASE-GATE-001"
+      ],
+      "manual_tests": [
+        "MAN-009"
+      ],
+      "evidence_status": "not_run",
+      "acceptance_evidence": [],
+      "reference_priority": "Provisional / announced",
+      "reference_text": "Announced general source-grounded voice conversation with interruption and step-by-step follow-up, distinct from joining a generated Audio Overview"
+    },
+    {
+      "id": "recorded_audio_capture",
+      "name": "Recorded-audio capture",
+      "classification": "provisional/announced",
+      "reference_maturity": "announcement/rollout",
+      "phase": 7,
+      "planning_workstream": "MED-01",
+      "implementation_status": "not_started",
+      "implemented": false,
+      "enabled": false,
+      "feature_flag": "cap.recorded_audio_capture",
+      "dependencies": [
+        "postgresql",
+        "blob_store"
+      ],
+      "required_test_groups": [
+        "CAP-PROFILE-001",
+        "PHASE-GATE-001"
+      ],
+      "automated_tests": [
+        "CAP-PROFILE-001",
+        "PHASE-GATE-001"
+      ],
+      "manual_tests": [
+        "MAN-009"
+      ],
+      "evidence_status": "not_run",
+      "acceptance_evidence": [],
+      "reference_priority": "Provisional / announced",
+      "reference_text": "Announced mobile recorder for lectures/thoughts maps to an optional browser recording/import UX over the existing audio-source ingestion path; native share-sheet/offline-app behavior is not required"
+    },
+    {
+      "id": "video_overview",
+      "name": "Video Overview",
+      "classification": "stable/core",
+      "reference_maturity": "documented",
+      "phase": 6,
+      "planning_workstream": "MED-01",
+      "implementation_status": "not_started",
+      "implemented": false,
+      "enabled": false,
+      "feature_flag": "cap.video_overview",
+      "dependencies": [
+        "postgresql",
+        "blob_store",
+        "media_provider",
+        "ffmpeg"
+      ],
+      "required_test_groups": [
+        "CAP-PROFILE-001",
+        "PHASE-GATE-001",
+        "PARITY-ACCEPTANCE-001",
+        "E2E-013"
+      ],
+      "automated_tests": [
+        "CAP-PROFILE-001",
+        "PHASE-GATE-001",
+        "PARITY-ACCEPTANCE-001",
+        "E2E-013"
+      ],
+      "manual_tests": [
+        "MAN-003",
+        "MAN-010"
+      ],
+      "evidence_status": "not_run",
+      "acceptance_evidence": [],
+      "reference_priority": "Parity",
+      "reference_text": "Explainer and ~60-second Short narrated/animated visual overviews, with multilingual output where the selected media pipeline supports it"
+    },
+    {
+      "id": "cinematic_video",
+      "name": "Cinematic video",
+      "classification": "advanced/provider-dependent",
+      "reference_maturity": "documented/provider-limited",
+      "phase": 6,
+      "planning_workstream": "MED-01",
+      "implementation_status": "not_started",
+      "implemented": false,
+      "enabled": false,
+      "feature_flag": "cap.cinematic_video",
+      "dependencies": [
+        "postgresql",
+        "blob_store",
+        "media_provider",
+        "ffmpeg"
+      ],
+      "required_test_groups": [
+        "CAP-PROFILE-001",
+        "PHASE-GATE-001",
+        "E2E-013"
+      ],
+      "automated_tests": [
+        "CAP-PROFILE-001",
+        "PHASE-GATE-001",
+        "E2E-013"
+      ],
+      "manual_tests": [
+        "MAN-003",
+        "MAN-010"
+      ],
+      "evidence_status": "not_run",
+      "acceptance_evidence": [],
+      "reference_priority": "Advanced parity",
+      "reference_text": "Higher-production Cinematic overview"
+    },
+    {
+      "id": "slide_decks",
+      "name": "Slide decks",
+      "classification": "stable/core",
+      "reference_maturity": "documented",
+      "phase": 5,
+      "planning_workstream": "STD-03",
+      "implementation_status": "not_started",
+      "implemented": false,
+      "enabled": false,
+      "feature_flag": "cap.slide_decks",
+      "dependencies": [
+        "postgresql",
+        "blob_store",
+        "renderer"
+      ],
+      "required_test_groups": [
+        "CAP-PROFILE-001",
+        "PHASE-GATE-001",
+        "PARITY-ACCEPTANCE-001"
+      ],
+      "automated_tests": [
+        "CAP-PROFILE-001",
+        "PHASE-GATE-001",
+        "PARITY-ACCEPTANCE-001"
+      ],
+      "manual_tests": [
+        "MAN-003"
+      ],
+      "evidence_status": "not_run",
+      "acceptance_evidence": [],
+      "reference_priority": "Parity",
+      "reference_text": "Detailed/presenter formats, short/default/long length, structured deck generation, per-slide revision/delete/restore/reorder, slideshow viewing, feedback and PDF/PPTX export"
+    },
+    {
+      "id": "infographics",
+      "name": "Infographics",
+      "classification": "stable/core",
+      "reference_maturity": "documented",
+      "phase": 5,
+      "planning_workstream": "STD-03",
+      "implementation_status": "not_started",
+      "implemented": false,
+      "enabled": false,
+      "feature_flag": "cap.infographics",
+      "dependencies": [
+        "postgresql",
+        "blob_store",
+        "renderer"
+      ],
+      "required_test_groups": [
+        "CAP-PROFILE-001",
+        "PHASE-GATE-001",
+        "PARITY-ACCEPTANCE-001"
+      ],
+      "automated_tests": [
+        "CAP-PROFILE-001",
+        "PHASE-GATE-001",
+        "PARITY-ACCEPTANCE-001"
+      ],
+      "manual_tests": [
+        "MAN-003"
+      ],
+      "evidence_status": "not_run",
+      "acceptance_evidence": [],
+      "reference_priority": "Parity",
+      "reference_text": "Language/detail/orientation/style controls, custom prompt, zoom/view, PNG-style download and sharing"
+    },
+    {
+      "id": "artifact_lifecycle",
+      "name": "Artifact lifecycle",
+      "classification": "stable/core",
+      "reference_maturity": "documented",
+      "phase": 4,
+      "planning_workstream": "STD-01",
+      "implementation_status": "not_started",
+      "implemented": false,
+      "enabled": false,
+      "feature_flag": "cap.artifact_lifecycle",
+      "dependencies": [
+        "postgresql",
+        "blob_store"
+      ],
+      "required_test_groups": [
+        "CAP-PROFILE-001",
+        "PHASE-GATE-001",
+        "PARITY-ACCEPTANCE-001",
+        "E2E-003"
+      ],
+      "automated_tests": [
+        "CAP-PROFILE-001",
+        "PHASE-GATE-001",
+        "PARITY-ACCEPTANCE-001",
+        "E2E-003"
+      ],
+      "manual_tests": [],
+      "evidence_status": "not_run",
+      "acceptance_evidence": [],
+      "reference_priority": "Parity",
+      "reference_text": "Background generation, generate-now/deferred-generate-later scheduling, completion/unread notifications, visible custom prompt/instructions, revision, feedback, share links and downloads/exports. Exported/downloaded files are detached snapshots: later notebook edits do not synchronize into them and application ACLs cannot revoke an independent external copy."
+    },
+    {
+      "id": "starter_artifacts",
+      "name": "Starter artifacts",
+      "classification": "late/optional",
+      "reference_maturity": "documented/optional",
+      "phase": 7,
+      "planning_workstream": "STD-01",
+      "implementation_status": "not_started",
+      "implemented": false,
+      "enabled": false,
+      "feature_flag": "cap.starter_artifacts",
+      "dependencies": [
+        "postgresql",
+        "blob_store"
+      ],
+      "required_test_groups": [
+        "CAP-PROFILE-001",
+        "PHASE-GATE-001"
+      ],
+      "automated_tests": [
+        "CAP-PROFILE-001",
+        "PHASE-GATE-001"
+      ],
+      "manual_tests": [],
+      "evidence_status": "not_run",
+      "acceptance_evidence": [],
+      "reference_priority": "Late/optional parity",
+      "reference_text": "Optionally auto-generate selected starter artifacts when sources are first added"
+    },
+    {
+      "id": "source_discovery",
+      "name": "Source discovery",
+      "classification": "stable/core",
+      "reference_maturity": "documented",
+      "phase": 3,
+      "planning_workstream": "RSR-01",
+      "implementation_status": "not_started",
+      "implemented": false,
+      "enabled": false,
+      "feature_flag": "cap.source_discovery",
+      "dependencies": [
+        "postgresql",
+        "blob_store",
+        "searxng",
+        "playwright"
+      ],
+      "required_test_groups": [
+        "CAP-PROFILE-001",
+        "PHASE-GATE-001",
+        "PARITY-ACCEPTANCE-001",
+        "E2E-008"
+      ],
+      "automated_tests": [
+        "CAP-PROFILE-001",
+        "PHASE-GATE-001",
+        "PARITY-ACCEPTANCE-001",
+        "E2E-008"
+      ],
+      "manual_tests": [],
+      "evidence_status": "not_run",
+      "acceptance_evidence": [],
+      "reference_priority": "Parity",
+      "reference_text": "Fast web/connector research for candidate sources"
+    },
+    {
+      "id": "deep_research",
+      "name": "Deep Research",
+      "classification": "stable/core",
+      "reference_maturity": "documented",
+      "phase": 3,
+      "planning_workstream": "RSR-01",
+      "implementation_status": "not_started",
+      "implemented": false,
+      "enabled": false,
+      "feature_flag": "cap.deep_research",
+      "dependencies": [
+        "postgresql",
+        "blob_store",
+        "searxng",
+        "playwright"
+      ],
+      "required_test_groups": [
+        "CAP-PROFILE-001",
+        "PHASE-GATE-001",
+        "PARITY-ACCEPTANCE-001",
+        "E2E-008"
+      ],
+      "automated_tests": [
+        "CAP-PROFILE-001",
+        "PHASE-GATE-001",
+        "PARITY-ACCEPTANCE-001",
+        "E2E-008"
+      ],
+      "manual_tests": [],
+      "evidence_status": "not_run",
+      "acceptance_evidence": [],
+      "reference_priority": "Parity",
+      "reference_text": "Agentic iterative research, report creation and source import"
+    },
+    {
+      "id": "code_data_analysis",
+      "name": "Code/data analysis",
+      "classification": "stable/core",
+      "reference_maturity": "documented",
+      "phase": 3,
+      "planning_workstream": "EXE-01",
+      "implementation_status": "not_started",
+      "implemented": false,
+      "enabled": false,
+      "feature_flag": "cap.code_data_analysis",
+      "dependencies": [
+        "postgresql",
+        "blob_store",
+        "bubblewrap"
+      ],
+      "required_test_groups": [
+        "CAP-PROFILE-001",
+        "PHASE-GATE-001",
+        "PARITY-ACCEPTANCE-001",
+        "E2E-008"
+      ],
+      "automated_tests": [
+        "CAP-PROFILE-001",
+        "PHASE-GATE-001",
+        "PARITY-ACCEPTANCE-001",
+        "E2E-008"
+      ],
+      "manual_tests": [],
+      "evidence_status": "not_run",
+      "acceptance_evidence": [],
+      "reference_priority": "Parity",
+      "reference_text": "Source-grounded computation"
+    },
+    {
+      "id": "private_sharing",
+      "name": "Private sharing",
+      "classification": "stable/core",
+      "reference_maturity": "documented",
+      "phase": 7,
+      "planning_workstream": "COL-01",
+      "implementation_status": "not_started",
+      "implemented": false,
+      "enabled": false,
+      "feature_flag": "cap.private_sharing",
+      "dependencies": [
+        "postgresql",
+        "blob_store"
+      ],
+      "required_test_groups": [
+        "CAP-PROFILE-001",
+        "PHASE-GATE-001",
+        "PARITY-ACCEPTANCE-001",
+        "E2E-005"
+      ],
+      "automated_tests": [
+        "CAP-PROFILE-001",
+        "PHASE-GATE-001",
+        "PARITY-ACCEPTANCE-001",
+        "E2E-005"
+      ],
+      "manual_tests": [],
+      "evidence_status": "not_run",
+      "acceptance_evidence": [],
+      "reference_priority": "Parity",
+      "reference_text": "Viewer/editor roles and focused chat-view links"
+    },
+    {
+      "id": "public_notebooks",
+      "name": "Public notebooks",
+      "classification": "late/optional",
+      "reference_maturity": "documented/optional",
+      "phase": 7,
+      "planning_workstream": "COL-01",
+      "implementation_status": "not_started",
+      "implemented": false,
+      "enabled": false,
+      "feature_flag": "cap.public_notebooks",
+      "dependencies": [
+        "postgresql",
+        "blob_store"
+      ],
+      "required_test_groups": [
+        "CAP-PROFILE-001",
+        "PHASE-GATE-001"
+      ],
+      "automated_tests": [
+        "CAP-PROFILE-001",
+        "PHASE-GATE-001"
+      ],
+      "manual_tests": [],
+      "evidence_status": "not_run",
+      "acceptance_evidence": [],
+      "reference_priority": "Late/optional parity",
+      "reference_text": "Public/link sharing and artifact-specific public links. The reference product allows signed-out viewing of a public artifact link; our self-hosted deployment MAY expose the same behavior through the existing share-link policy, disabled by default."
+    },
+    {
+      "id": "notebook_copying",
+      "name": "Notebook copying",
+      "classification": "stable/core",
+      "reference_maturity": "documented",
+      "phase": 7,
+      "planning_workstream": "COL-01",
+      "implementation_status": "not_started",
+      "implemented": false,
+      "enabled": false,
+      "feature_flag": "cap.notebook_copying",
+      "dependencies": [
+        "postgresql",
+        "blob_store"
+      ],
+      "required_test_groups": [
+        "CAP-PROFILE-001",
+        "PHASE-GATE-001",
+        "PARITY-ACCEPTANCE-001",
+        "E2E-005"
+      ],
+      "automated_tests": [
+        "CAP-PROFILE-001",
+        "PHASE-GATE-001",
+        "PARITY-ACCEPTANCE-001",
+        "E2E-005"
+      ],
+      "manual_tests": [],
+      "evidence_status": "not_run",
+      "acceptance_evidence": [],
+      "reference_priority": "Parity",
+      "reference_text": "Owner-controlled private copies; parity default copies sources/Studio artifacts but not chat history or notes, with source access/restrictions re-evaluated"
+    },
+    {
+      "id": "featured_published_notebooks",
+      "name": "Featured/published notebooks",
+      "classification": "late/optional",
+      "reference_maturity": "documented/optional",
+      "phase": 7,
+      "planning_workstream": "COL-01",
+      "implementation_status": "not_started",
+      "implemented": false,
+      "enabled": false,
+      "feature_flag": "cap.featured_published_notebooks",
+      "dependencies": [
+        "postgresql",
+        "blob_store"
+      ],
+      "required_test_groups": [
+        "CAP-PROFILE-001",
+        "PHASE-GATE-001"
+      ],
+      "automated_tests": [
+        "CAP-PROFILE-001",
+        "PHASE-GATE-001"
+      ],
+      "manual_tests": [],
+      "evidence_status": "not_run",
+      "acceptance_evidence": [],
+      "reference_priority": "Late/optional parity",
+      "reference_text": "Curated/discoverable published notebooks if public sharing is enabled"
+    },
+    {
+      "id": "usage_analytics",
+      "name": "Usage analytics",
+      "classification": "late/optional",
+      "reference_maturity": "documented/optional",
+      "phase": 7,
+      "planning_workstream": "COL-01",
+      "implementation_status": "not_started",
+      "implemented": false,
+      "enabled": false,
+      "feature_flag": "cap.usage_analytics",
+      "dependencies": [
+        "postgresql",
+        "blob_store"
+      ],
+      "required_test_groups": [
+        "CAP-PROFILE-001",
+        "PHASE-GATE-001"
+      ],
+      "automated_tests": [
+        "CAP-PROFILE-001",
+        "PHASE-GATE-001"
+      ],
+      "manual_tests": [],
+      "evidence_status": "not_run",
+      "acceptance_evidence": [],
+      "reference_priority": "Late/optional parity",
+      "reference_text": "Lightweight notebook usage/query analytics; system health/performance belongs to administrator observability rather than this product feature"
+    },
+    {
+      "id": "restricted_connector_sources",
+      "name": "Restricted connector sources",
+      "classification": "late/optional",
+      "reference_maturity": "documented/optional",
+      "phase": 7,
+      "planning_workstream": "ING-02",
+      "implementation_status": "not_started",
+      "implemented": false,
+      "enabled": false,
+      "feature_flag": "cap.restricted_connector_sources",
+      "dependencies": [
+        "postgresql",
+        "blob_store"
+      ],
+      "required_test_groups": [
+        "CAP-PROFILE-001",
+        "PHASE-GATE-001"
+      ],
+      "automated_tests": [
+        "CAP-PROFILE-001",
+        "PHASE-GATE-001"
+      ],
+      "manual_tests": [],
+      "evidence_status": "not_run",
+      "acceptance_evidence": [],
+      "reference_priority": "Deferred connector hook",
+      "reference_text": "Keep a generic access/restriction hook so an optional connector can enforce upstream access or export rules when needed; no rights-management platform is required"
+    },
+    {
+      "id": "output_language",
+      "name": "Output language",
+      "classification": "stable/core",
+      "reference_maturity": "documented",
+      "phase": 1,
+      "planning_workstream": "UI-01",
+      "implementation_status": "not_started",
+      "implemented": false,
+      "enabled": false,
+      "feature_flag": "cap.output_language",
+      "dependencies": [
+        "postgresql",
+        "blob_store"
+      ],
+      "required_test_groups": [
+        "CAP-PROFILE-001",
+        "PHASE-GATE-001",
+        "PARITY-ACCEPTANCE-001"
+      ],
+      "automated_tests": [
+        "CAP-PROFILE-001",
+        "PHASE-GATE-001",
+        "PARITY-ACCEPTANCE-001"
+      ],
+      "manual_tests": [],
+      "evidence_status": "not_run",
+      "acceptance_evidence": [],
+      "reference_priority": "Core/Early",
+      "reference_text": "User-level default output language with per-artifact overrides where supported"
+    },
+    {
+      "id": "appearance",
+      "name": "Appearance",
+      "classification": "stable/core",
+      "reference_maturity": "documented",
+      "phase": 1,
+      "planning_workstream": "UI-01",
+      "implementation_status": "not_started",
+      "implemented": false,
+      "enabled": false,
+      "feature_flag": "cap.appearance",
+      "dependencies": [
+        "postgresql",
+        "blob_store"
+      ],
+      "required_test_groups": [
+        "CAP-PROFILE-001",
+        "PHASE-GATE-001",
+        "PARITY-ACCEPTANCE-001"
+      ],
+      "automated_tests": [
+        "CAP-PROFILE-001",
+        "PHASE-GATE-001",
+        "PARITY-ACCEPTANCE-001"
+      ],
+      "manual_tests": [],
+      "evidence_status": "not_run",
+      "acceptance_evidence": [],
+      "reference_priority": "Low-cost UI parity",
+      "reference_text": "Light/dark/system UI preference"
+    },
+    {
+      "id": "responsive_web_access",
+      "name": "Responsive web access",
+      "classification": "stable/core",
+      "reference_maturity": "documented",
+      "phase": 1,
+      "planning_workstream": "UI-01",
+      "implementation_status": "not_started",
+      "implemented": false,
+      "enabled": false,
+      "feature_flag": "cap.responsive_web_access",
+      "dependencies": [
+        "postgresql",
+        "blob_store"
+      ],
+      "required_test_groups": [
+        "CAP-PROFILE-001",
+        "PHASE-GATE-001",
+        "PARITY-ACCEPTANCE-001"
+      ],
+      "automated_tests": [
+        "CAP-PROFILE-001",
+        "PHASE-GATE-001",
+        "PARITY-ACCEPTANCE-001"
+      ],
+      "manual_tests": [
+        "MAN-004",
+        "MAN-005"
+      ],
+      "evidence_status": "not_run",
+      "acceptance_evidence": [],
+      "reference_priority": "Core client architecture",
+      "reference_text": "One responsive asynchronous web application across desktop/tablet/phone browsers. No native mobile client or PWA capability is required."
+    },
+    {
+      "id": "custom_providers",
+      "name": "Custom providers",
+      "classification": "stable/core",
+      "reference_maturity": "documented",
+      "phase": 1,
+      "planning_workstream": "MOD-01",
+      "implementation_status": "not_started",
+      "implemented": false,
+      "enabled": false,
+      "feature_flag": "cap.custom_providers",
+      "dependencies": [
+        "postgresql",
+        "blob_store"
+      ],
+      "required_test_groups": [
+        "CAP-PROFILE-001",
+        "PHASE-GATE-001",
+        "PARITY-ACCEPTANCE-001"
+      ],
+      "automated_tests": [
+        "CAP-PROFILE-001",
+        "PHASE-GATE-001",
+        "PARITY-ACCEPTANCE-001"
+      ],
+      "manual_tests": [],
+      "evidence_status": "not_run",
+      "acceptance_evidence": [],
+      "reference_priority": "Core project requirement",
+      "reference_text": "User/admin configured local or remote models through provider-neutral adapters"
+    },
+    {
+      "id": "source_pdf",
+      "name": "PDF",
+      "classification": "stable/core",
+      "reference_maturity": "documented",
+      "phase": 1,
+      "planning_workstream": "ING-01",
+      "implementation_status": "not_started",
+      "implemented": false,
+      "enabled": false,
+      "feature_flag": "cap.source_pdf",
+      "dependencies": [
+        "parser_registry"
+      ],
+      "required_test_groups": [
+        "CAP-PROFILE-001",
+        "PHASE-GATE-001",
+        "PARITY-ACCEPTANCE-001",
+        "E2E-002"
+      ],
+      "automated_tests": [
+        "CAP-PROFILE-001",
+        "PHASE-GATE-001",
+        "PARITY-ACCEPTANCE-001",
+        "E2E-002"
+      ],
+      "manual_tests": [],
+      "evidence_status": "not_run",
+      "acceptance_evidence": [],
+      "reference_priority": "source family",
+      "reference_text": "PDF"
+    },
+    {
+      "id": "source_plain_text_and_pasted_text",
+      "name": "plain text and pasted text",
+      "classification": "stable/core",
+      "reference_maturity": "documented",
+      "phase": 1,
+      "planning_workstream": "ING-01",
+      "implementation_status": "not_started",
+      "implemented": false,
+      "enabled": false,
+      "feature_flag": "cap.source_plain_text_and_pasted_text",
+      "dependencies": [
+        "parser_registry"
+      ],
+      "required_test_groups": [
+        "CAP-PROFILE-001",
+        "PHASE-GATE-001",
+        "PARITY-ACCEPTANCE-001",
+        "E2E-002"
+      ],
+      "automated_tests": [
+        "CAP-PROFILE-001",
+        "PHASE-GATE-001",
+        "PARITY-ACCEPTANCE-001",
+        "E2E-002"
+      ],
+      "manual_tests": [],
+      "evidence_status": "not_run",
+      "acceptance_evidence": [],
+      "reference_priority": "source family",
+      "reference_text": "plain text and pasted text"
+    },
+    {
+      "id": "source_markdown",
+      "name": "Markdown",
+      "classification": "stable/core",
+      "reference_maturity": "documented",
+      "phase": 2,
+      "planning_workstream": "ING-02",
+      "implementation_status": "not_started",
+      "implemented": false,
+      "enabled": false,
+      "feature_flag": "cap.source_markdown",
+      "dependencies": [
+        "parser_registry"
+      ],
+      "required_test_groups": [
+        "CAP-PROFILE-001",
+        "PHASE-GATE-001",
+        "PARITY-ACCEPTANCE-001",
+        "E2E-002"
+      ],
+      "automated_tests": [
+        "CAP-PROFILE-001",
+        "PHASE-GATE-001",
+        "PARITY-ACCEPTANCE-001",
+        "E2E-002"
+      ],
+      "manual_tests": [],
+      "evidence_status": "not_run",
+      "acceptance_evidence": [],
+      "reference_priority": "source family",
+      "reference_text": "Markdown"
+    },
+    {
+      "id": "source_docx",
+      "name": "DOCX",
+      "classification": "stable/core",
+      "reference_maturity": "documented",
+      "phase": 2,
+      "planning_workstream": "ING-02",
+      "implementation_status": "not_started",
+      "implemented": false,
+      "enabled": false,
+      "feature_flag": "cap.source_docx",
+      "dependencies": [
+        "parser_registry"
+      ],
+      "required_test_groups": [
+        "CAP-PROFILE-001",
+        "PHASE-GATE-001",
+        "PARITY-ACCEPTANCE-001",
+        "E2E-002"
+      ],
+      "automated_tests": [
+        "CAP-PROFILE-001",
+        "PHASE-GATE-001",
+        "PARITY-ACCEPTANCE-001",
+        "E2E-002"
+      ],
+      "manual_tests": [],
+      "evidence_status": "not_run",
+      "acceptance_evidence": [],
+      "reference_priority": "source family",
+      "reference_text": "DOCX"
+    },
+    {
+      "id": "source_pptx",
+      "name": "PPTX",
+      "classification": "stable/core",
+      "reference_maturity": "documented",
+      "phase": 2,
+      "planning_workstream": "ING-02",
+      "implementation_status": "not_started",
+      "implemented": false,
+      "enabled": false,
+      "feature_flag": "cap.source_pptx",
+      "dependencies": [
+        "parser_registry"
+      ],
+      "required_test_groups": [
+        "CAP-PROFILE-001",
+        "PHASE-GATE-001",
+        "PARITY-ACCEPTANCE-001",
+        "E2E-002"
+      ],
+      "automated_tests": [
+        "CAP-PROFILE-001",
+        "PHASE-GATE-001",
+        "PARITY-ACCEPTANCE-001",
+        "E2E-002"
+      ],
+      "manual_tests": [],
+      "evidence_status": "not_run",
+      "acceptance_evidence": [],
+      "reference_priority": "source family",
+      "reference_text": "PPTX"
+    },
+    {
+      "id": "source_csv",
+      "name": "CSV",
+      "classification": "stable/core",
+      "reference_maturity": "documented",
+      "phase": 2,
+      "planning_workstream": "ING-02",
+      "implementation_status": "not_started",
+      "implemented": false,
+      "enabled": false,
+      "feature_flag": "cap.source_csv",
+      "dependencies": [
+        "parser_registry"
+      ],
+      "required_test_groups": [
+        "CAP-PROFILE-001",
+        "PHASE-GATE-001",
+        "PARITY-ACCEPTANCE-001",
+        "E2E-002"
+      ],
+      "automated_tests": [
+        "CAP-PROFILE-001",
+        "PHASE-GATE-001",
+        "PARITY-ACCEPTANCE-001",
+        "E2E-002"
+      ],
+      "manual_tests": [],
+      "evidence_status": "not_run",
+      "acceptance_evidence": [],
+      "reference_priority": "source family",
+      "reference_text": "CSV"
+    },
+    {
+      "id": "source_spreadsheet_files_formats",
+      "name": "spreadsheet files/formats",
+      "classification": "stable/core",
+      "reference_maturity": "documented",
+      "phase": 2,
+      "planning_workstream": "ING-02",
+      "implementation_status": "not_started",
+      "implemented": false,
+      "enabled": false,
+      "feature_flag": "cap.source_spreadsheet_files_formats",
+      "dependencies": [
+        "parser_registry"
+      ],
+      "required_test_groups": [
+        "CAP-PROFILE-001",
+        "PHASE-GATE-001",
+        "PARITY-ACCEPTANCE-001",
+        "E2E-002"
+      ],
+      "automated_tests": [
+        "CAP-PROFILE-001",
+        "PHASE-GATE-001",
+        "PARITY-ACCEPTANCE-001",
+        "E2E-002"
+      ],
+      "manual_tests": [],
+      "evidence_status": "not_run",
+      "acceptance_evidence": [],
+      "reference_priority": "source family",
+      "reference_text": "spreadsheet files/formats"
+    },
+    {
+      "id": "source_images",
+      "name": "images",
+      "classification": "stable/core",
+      "reference_maturity": "documented",
+      "phase": 2,
+      "planning_workstream": "ING-02",
+      "implementation_status": "not_started",
+      "implemented": false,
+      "enabled": false,
+      "feature_flag": "cap.source_images",
+      "dependencies": [
+        "parser_registry"
+      ],
+      "required_test_groups": [
+        "CAP-PROFILE-001",
+        "PHASE-GATE-001",
+        "PARITY-ACCEPTANCE-001",
+        "E2E-002"
+      ],
+      "automated_tests": [
+        "CAP-PROFILE-001",
+        "PHASE-GATE-001",
+        "PARITY-ACCEPTANCE-001",
+        "E2E-002"
+      ],
+      "manual_tests": [],
+      "evidence_status": "not_run",
+      "acceptance_evidence": [],
+      "reference_priority": "source family",
+      "reference_text": "images"
+    },
+    {
+      "id": "source_audio",
+      "name": "audio",
+      "classification": "stable/core",
+      "reference_maturity": "documented",
+      "phase": 2,
+      "planning_workstream": "ING-02",
+      "implementation_status": "not_started",
+      "implemented": false,
+      "enabled": false,
+      "feature_flag": "cap.source_audio",
+      "dependencies": [
+        "parser_registry"
+      ],
+      "required_test_groups": [
+        "CAP-PROFILE-001",
+        "PHASE-GATE-001",
+        "PARITY-ACCEPTANCE-001",
+        "E2E-002"
+      ],
+      "automated_tests": [
+        "CAP-PROFILE-001",
+        "PHASE-GATE-001",
+        "PARITY-ACCEPTANCE-001",
+        "E2E-002"
+      ],
+      "manual_tests": [],
+      "evidence_status": "not_run",
+      "acceptance_evidence": [],
+      "reference_priority": "source family",
+      "reference_text": "audio"
+    },
+    {
+      "id": "source_epub_files",
+      "name": "EPUB files",
+      "classification": "stable/core",
+      "reference_maturity": "documented",
+      "phase": 2,
+      "planning_workstream": "ING-02",
+      "implementation_status": "not_started",
+      "implemented": false,
+      "enabled": false,
+      "feature_flag": "cap.source_epub_files",
+      "dependencies": [
+        "parser_registry"
+      ],
+      "required_test_groups": [
+        "CAP-PROFILE-001",
+        "PHASE-GATE-001",
+        "PARITY-ACCEPTANCE-001",
+        "E2E-002"
+      ],
+      "automated_tests": [
+        "CAP-PROFILE-001",
+        "PHASE-GATE-001",
+        "PARITY-ACCEPTANCE-001",
+        "E2E-002"
+      ],
+      "manual_tests": [],
+      "evidence_status": "not_run",
+      "acceptance_evidence": [],
+      "reference_priority": "source family",
+      "reference_text": "EPUB files"
+    },
+    {
+      "id": "source_optional_authenticated_restricted_repositories_through_generic_connectors",
+      "name": "optional authenticated/restricted repositories through generic connectors",
+      "classification": "late/optional",
+      "reference_maturity": "documented/optional",
+      "phase": 2,
+      "planning_workstream": "ING-02",
+      "implementation_status": "not_started",
+      "implemented": false,
+      "enabled": false,
+      "feature_flag": "cap.source_optional_authenticated_restricted_repositories_through_generic_connectors",
+      "dependencies": [
+        "parser_registry"
+      ],
+      "required_test_groups": [
+        "CAP-PROFILE-001",
+        "PHASE-GATE-001",
+        "E2E-002"
+      ],
+      "automated_tests": [
+        "CAP-PROFILE-001",
+        "PHASE-GATE-001",
+        "E2E-002"
+      ],
+      "manual_tests": [],
+      "evidence_status": "not_run",
+      "acceptance_evidence": [],
+      "reference_priority": "source family",
+      "reference_text": "optional authenticated/restricted repositories through generic connectors"
+    },
+    {
+      "id": "source_web_urls",
+      "name": "web URLs",
+      "classification": "stable/core",
+      "reference_maturity": "documented",
+      "phase": 2,
+      "planning_workstream": "ING-02",
+      "implementation_status": "not_started",
+      "implemented": false,
+      "enabled": false,
+      "feature_flag": "cap.source_web_urls",
+      "dependencies": [
+        "parser_registry"
+      ],
+      "required_test_groups": [
+        "CAP-PROFILE-001",
+        "PHASE-GATE-001",
+        "PARITY-ACCEPTANCE-001",
+        "E2E-002"
+      ],
+      "automated_tests": [
+        "CAP-PROFILE-001",
+        "PHASE-GATE-001",
+        "PARITY-ACCEPTANCE-001",
+        "E2E-002"
+      ],
+      "manual_tests": [],
+      "evidence_status": "not_run",
+      "acceptance_evidence": [],
+      "reference_priority": "source family",
+      "reference_text": "web URLs"
+    },
+    {
+      "id": "source_public_youtube_urls_transcript_backed_video_sources",
+      "name": "public YouTube URLs/transcript-backed video sources",
+      "classification": "stable/core",
+      "reference_maturity": "documented",
+      "phase": 2,
+      "planning_workstream": "ING-02",
+      "implementation_status": "not_started",
+      "implemented": false,
+      "enabled": false,
+      "feature_flag": "cap.source_public_youtube_urls_transcript_backed_video_sources",
+      "dependencies": [
+        "parser_registry"
+      ],
+      "required_test_groups": [
+        "CAP-PROFILE-001",
+        "PHASE-GATE-001",
+        "PARITY-ACCEPTANCE-001",
+        "E2E-002"
+      ],
+      "automated_tests": [
+        "CAP-PROFILE-001",
+        "PHASE-GATE-001",
+        "PARITY-ACCEPTANCE-001",
+        "E2E-002"
+      ],
+      "manual_tests": [],
+      "evidence_status": "not_run",
+      "acceptance_evidence": [],
+      "reference_priority": "source family",
+      "reference_text": "public YouTube URLs/transcript-backed video sources"
+    },
+    {
+      "id": "source_optional_cloud_document_storage_connectors_implemented_through_generic_adapters",
+      "name": "optional cloud document/storage connectors implemented through generic adapters",
+      "classification": "late/optional",
+      "reference_maturity": "documented/optional",
+      "phase": 2,
+      "planning_workstream": "ING-02",
+      "implementation_status": "not_started",
+      "implemented": false,
+      "enabled": false,
+      "feature_flag": "cap.source_optional_cloud_document_storage_connectors_implemented_through_generic_adapters",
+      "dependencies": [
+        "parser_registry"
+      ],
+      "required_test_groups": [
+        "CAP-PROFILE-001",
+        "PHASE-GATE-001",
+        "E2E-002"
+      ],
+      "automated_tests": [
+        "CAP-PROFILE-001",
+        "PHASE-GATE-001",
+        "E2E-002"
+      ],
+      "manual_tests": [],
+      "evidence_status": "not_run",
+      "acceptance_evidence": [],
+      "reference_priority": "source family",
+      "reference_text": "optional cloud document/storage connectors implemented through generic adapters"
+    },
+    {
+      "id": "native_mobile_client",
+      "name": "Native mobile client",
+      "classification": "deliberate-non-target",
+      "reference_maturity": "not-applicable",
+      "phase": null,
+      "planning_workstream": "SCOPE-GUARD",
+      "implementation_status": "not_applicable",
+      "implemented": false,
+      "enabled": false,
+      "feature_flag": null,
+      "dependencies": [],
+      "required_test_groups": [
+        "CAP-PROFILE-001"
+      ],
+      "automated_tests": [
+        "CAP-PROFILE-001"
+      ],
+      "manual_tests": [],
+      "evidence_status": "not_applicable",
+      "acceptance_evidence": [],
+      "reference_priority": "non-target",
+      "reference_text": "Explicitly excluded by architecture"
+    },
+    {
+      "id": "pwa_offline_client",
+      "name": "PWA/offline client",
+      "classification": "deliberate-non-target",
+      "reference_maturity": "not-applicable",
+      "phase": null,
+      "planning_workstream": "SCOPE-GUARD",
+      "implementation_status": "not_applicable",
+      "implemented": false,
+      "enabled": false,
+      "feature_flag": null,
+      "dependencies": [],
+      "required_test_groups": [
+        "CAP-PROFILE-001"
+      ],
+      "automated_tests": [
+        "CAP-PROFILE-001"
+      ],
+      "manual_tests": [],
+      "evidence_status": "not_applicable",
+      "acceptance_evidence": [],
+      "reference_priority": "non-target",
+      "reference_text": "Explicitly excluded by architecture"
+    },
+    {
+      "id": "google_account_coupling",
+      "name": "Google account/service coupling",
+      "classification": "deliberate-non-target",
+      "reference_maturity": "not-applicable",
+      "phase": null,
+      "planning_workstream": "SCOPE-GUARD",
+      "implementation_status": "not_applicable",
+      "implemented": false,
+      "enabled": false,
+      "feature_flag": null,
+      "dependencies": [],
+      "required_test_groups": [
+        "CAP-PROFILE-001"
+      ],
+      "automated_tests": [
+        "CAP-PROFILE-001"
+      ],
+      "manual_tests": [],
+      "evidence_status": "not_applicable",
+      "acceptance_evidence": [],
+      "reference_priority": "non-target",
+      "reference_text": "Explicitly excluded by architecture"
+    },
+    {
+      "id": "third_party_plugin_marketplace",
+      "name": "Third-party plugin marketplace",
+      "classification": "deliberate-non-target",
+      "reference_maturity": "not-applicable",
+      "phase": null,
+      "planning_workstream": "SCOPE-GUARD",
+      "implementation_status": "not_applicable",
+      "implemented": false,
+      "enabled": false,
+      "feature_flag": null,
+      "dependencies": [],
+      "required_test_groups": [
+        "CAP-PROFILE-001"
+      ],
+      "automated_tests": [
+        "CAP-PROFILE-001"
+      ],
+      "manual_tests": [],
+      "evidence_status": "not_applicable",
+      "acceptance_evidence": [],
+      "reference_priority": "non-target",
+      "reference_text": "Explicitly excluded by architecture"
+    }
+  ]
+}

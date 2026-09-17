@@ -1,0 +1,184 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://milpbookml.invalid/schemas/requirements-ledger.schema.json",
+  "title": "milpbookML occurrence-level requirements ledger",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "schema_version",
+    "architecture",
+    "technical_guide",
+    "generator_contract",
+    "requirements"
+  ],
+  "properties": {
+    "schema_version": {
+      "const": 2
+    },
+    "architecture": {
+      "type": "string"
+    },
+    "technical_guide": {
+      "type": "string"
+    },
+    "generator_contract": {
+      "type": "string"
+    },
+    "requirements": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": [
+          "id",
+          "source",
+          "line",
+          "occurrence_on_line",
+          "term",
+          "classification",
+          "specification_status",
+          "statement",
+          "fingerprint_sha256",
+          "owner",
+          "implementation_component",
+          "capability",
+          "implementation_status",
+          "verification_type",
+          "verification_ids",
+          "test_path",
+          "test_level",
+          "fixture",
+          "oracle",
+          "execution_tier",
+          "evidence_path",
+          "result",
+          "deviation"
+        ],
+        "properties": {
+          "id": {
+            "type": "string",
+            "pattern": "^(ARCH|TECH)-[0-2][0-9]-[0-9]{3}$"
+          },
+          "source": {
+            "type": "string",
+            "pattern": "^(architecture-baseline/)?[0-2][0-9]-.*\\.md$"
+          },
+          "line": {
+            "type": "integer",
+            "minimum": 1
+          },
+          "occurrence_on_line": {
+            "type": "integer",
+            "minimum": 1
+          },
+          "term": {
+            "enum": [
+              "MUST",
+              "MUST NOT",
+              "SHOULD",
+              "SHOULD NOT"
+            ]
+          },
+          "classification": {
+            "enum": [
+              "must",
+              "must_not",
+              "should",
+              "should_not",
+              "narrative"
+            ]
+          },
+          "specification_status": {
+            "enum": [
+              "specified",
+              "classified"
+            ]
+          },
+          "statement": {
+            "type": "string",
+            "minLength": 1
+          },
+          "fingerprint_sha256": {
+            "type": "string",
+            "pattern": "^[0-9a-f]{64}$"
+          },
+          "owner": {
+            "type": "string",
+            "minLength": 1
+          },
+          "implementation_component": {
+            "type": "string",
+            "minLength": 1
+          },
+          "capability": {
+            "type": "string",
+            "minLength": 1
+          },
+          "implementation_status": {
+            "enum": [
+              "not_started",
+              "in_progress",
+              "implemented",
+              "not_applicable"
+            ]
+          },
+          "verification_type": {
+            "type": "string"
+          },
+          "verification_ids": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            },
+            "uniqueItems": true
+          },
+          "test_path": {
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "test_level": {
+            "type": "string"
+          },
+          "fixture": {
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "oracle": {
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "execution_tier": {
+            "type": "string"
+          },
+          "evidence_path": {
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "result": {
+            "enum": [
+              "not_run",
+              "passed",
+              "failed",
+              "blocked",
+              "not_applicable"
+            ]
+          },
+          "deviation": {
+            "type": [
+              "object",
+              "null"
+            ]
+          }
+        }
+      }
+    }
+  }
+}

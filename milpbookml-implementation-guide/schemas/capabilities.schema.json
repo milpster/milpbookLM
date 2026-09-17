@@ -1,0 +1,162 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://milpbookml.invalid/schemas/capabilities.schema.json",
+  "title": "milpbookML capability registry seed",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "schema_version",
+    "architecture",
+    "capabilities"
+  ],
+  "properties": {
+    "schema_version": {
+      "const": 1
+    },
+    "architecture": {
+      "type": "string"
+    },
+    "capabilities": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": [
+          "id",
+          "name",
+          "classification",
+          "reference_maturity",
+          "phase",
+          "planning_workstream",
+          "implementation_status",
+          "implemented",
+          "enabled",
+          "feature_flag",
+          "dependencies",
+          "required_test_groups",
+          "automated_tests",
+          "manual_tests",
+          "evidence_status",
+          "acceptance_evidence",
+          "reference_priority",
+          "reference_text"
+        ],
+        "properties": {
+          "id": {
+            "type": "string",
+            "pattern": "^[a-z][a-z0-9_]*$"
+          },
+          "name": {
+            "type": "string",
+            "minLength": 1
+          },
+          "classification": {
+            "enum": [
+              "stable/core",
+              "advanced/provider-dependent",
+              "late/optional",
+              "provisional/announced",
+              "deliberate-non-target"
+            ]
+          },
+          "reference_maturity": {
+            "enum": [
+              "documented",
+              "experimental/documented",
+              "announcement/rollout",
+              "documented/optional",
+              "documented/provider-limited",
+              "not-applicable"
+            ]
+          },
+          "phase": {
+            "type": [
+              "integer",
+              "null"
+            ],
+            "minimum": 0,
+            "maximum": 7
+          },
+          "planning_workstream": {
+            "type": "string",
+            "pattern": "^[A-Z]+-[A-Z0-9]+$"
+          },
+          "implementation_status": {
+            "enum": [
+              "not_started",
+              "in_progress",
+              "implemented",
+              "not_applicable"
+            ]
+          },
+          "implemented": {
+            "type": "boolean"
+          },
+          "enabled": {
+            "type": "boolean"
+          },
+          "feature_flag": {
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "dependencies": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            },
+            "uniqueItems": true
+          },
+          "required_test_groups": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            },
+            "minItems": 1,
+            "uniqueItems": true
+          },
+          "automated_tests": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            },
+            "minItems": 1,
+            "uniqueItems": true
+          },
+          "manual_tests": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            },
+            "uniqueItems": true
+          },
+          "evidence_status": {
+            "enum": [
+              "not_run",
+              "passed",
+              "failed",
+              "blocked",
+              "not_applicable"
+            ]
+          },
+          "acceptance_evidence": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            }
+          },
+          "reference_priority": {
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "reference_text": {
+            "type": "string"
+          }
+        }
+      }
+    }
+  }
+}
