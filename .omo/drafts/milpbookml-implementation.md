@@ -143,8 +143,8 @@ ROUND rr-milpbooklm-20260917-04 RESULTS (recorded 2026-09-17):
   "completion_cas": ["status=in_flight", "workspace_root", "runtime_home", "target", "launch_id", "round_id", "plan_sha256", "session", "receipt_identity=session", "live_plan_sha256=plan_sha256", "echoed_binding", "terminal_transition=in_flight->approved|changes_requested|inconclusive"],
   "pending-action": "review .omo/plans/milpbookml-implementation.md",
   "review": {
-    "momus": { "status": "launching", "workspace_root": "/home/srcds/dev/milpbookLM", "runtime_home": null, "target": ".omo/plans/milpbookml-implementation.md", "round_id": "rr-milpbooklm-20260917-05", "plan_sha256": "5ba76bc0d8ed656ad0fcb15afba45429a874c714e6e9dcabaafeb0e8340612e5", "launch_id": "launch-momus-rr05-20260917T2350Z", "session": null, "result": null },
-    "independent": { "status": "launching", "workspace_root": "/home/srcds/dev/milpbookLM", "runtime_home": null, "target": ".omo/plans/milpbookml-implementation.md", "round_id": "rr-milpbooklm-20260917-05", "plan_sha256": "5ba76bc0d8ed656ad0fcb15afba45429a874c714e6e9dcabaafeb0e8340612e5", "launch_id": "launch-oracle-rr05-20260917T2350Z", "session": null, "result": null }
+    "momus": { "status": "in_flight", "workspace_root": "/home/srcds/dev/milpbookLM", "runtime_home": null, "target": ".omo/plans/milpbookml-implementation.md", "round_id": "rr-milpbooklm-20260917-05", "plan_sha256": "5ba76bc0d8ed656ad0fcb15afba45429a874c714e6e9dcabaafeb0e8340612e5", "launch_id": "launch-momus-rr05-20260917T2350Z", "session": "ses_f4e380101ffeylGvwWTx6nQAmm", "result": null },
+    "independent": { "status": "in_flight", "workspace_root": "/home/srcds/dev/milpbookLM", "runtime_home": null, "target": ".omo/plans/milpbookml-implementation.md", "round_id": "rr-milpbooklm-20260917-05", "plan_sha256": "5ba76bc0d8ed656ad0fcb15afba45429a874c714e6e9dcabaafeb0e8340612e5", "launch_id": "launch-oracle-rr05-20260917T2350Z", "session": "ses_f4e3800fbffeRV7UHPDbT9kEAo", "result": null }
   }
 }
 ```
