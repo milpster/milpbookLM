@@ -91,14 +91,14 @@ Session: 2026-09-17, Prometheus (ulw-plan), intent=CLEAR (user asked to be inter
 - [x] ALL 29 findings folded: already-satisfied ones verified (per-phase gates, UI-01/MOD-01 placement, conformance emitter, cinematic obligations, host probes); deltas applied (Scope OUT explicit cap list incl. interactive-audio declaration + cinematic full-obligations + privacy-class guardrails; E2E/MAN maps; NFR 16GiB cgroup pinning + D1 correction; BM25 gate 15.7; orchestrator ADR 10.6 w/ ch15-only preemption; Caddy cert pinned 8.2.1; task-19 live probes + Big Pickle lapse rule + full PH:91 ADR fields; task-42.0 prereq benchmark + provider-port registration; whisper device benchmark 23.3.0; restic target 50.1.0; D6 rephrased scripted-multi-account+one-operator-drill; Node pins in 1.1.2; master-index orphan-component + ARCH-19 51-record coverage; draft hygiene: D4 dedup, D2 embedding/reranker+lapse+fields, D6/D7/D8/D9 Q-numbers recited, D1 meets-or-exceeds).
 - [x] Committed: c4bd749.
 
-## RESUME POINT (after compaction)
+## Process log (cont. 3 — post-compaction resume)
 
-NEXT ACTIONS in order:
-1. Metis round 2: CONTINUE session ses_f4fe78083ffeA88KmsDKssbRGy (task_id continuation; run_in_background=true, then WAIT via background_output) — prompt: verify each of your 29 findings against UPDATED /home/srcds/dev/milpbookLM/.omo/plans/milpbookml-implementation.md (640 lines) + updated draft; report remaining-unaddressed + new findings; iterate until Metis satisfied (user mandate: "iterate with metis until satisfied").
-2. After Metis clean: structural self-check of plan (column-zero - [ ] N. / F<n>. grammar, headers order, HR6 TL;DR-first).
-3. Dual high-accuracy review (review_required=true): initialize review-round state in draft (plan_sha256 = sha256 of plan file), dispatch momus + independent oracle TOGETHER with the ulw-plan intake contract (literals, not references); both must approve; fix + resubmit until both OK; then final live sha256 validation.
-4. Handoff per full-workflow Phase 4 (CLEAR + review_required): present plan summary + review result, execution via $start-work milpbookml-implementation (--worktree/--make-pr/--ship options).
-STANDING RULES for all dispatches: fetch-policy clause (focused human researcher, robots ignored, hard barriers stop), max 2 concurrent, WAIT for completion (no premature cancel), MCP-before-bash (bash DENIED to planner; serena_execute_shell_command is the shell route; git via serena shell with -c user identity).
+- [x] Metis round 2 (fresh session ses_f4fb2150affeqtztlT4548JZEZ after stale-id fallback): 29/29 ADDRESSED, 3 new LOW findings (N1 numbering-scheme wording, N2 "2 advanced enabled" overclaim, N3 stale D3 + stale gate sentence in draft). VERDICT: SATISFIED. Full output: tool_0b0679995001yV6lRw7a48xnXm (442 lines).
+- [x] Structural self-check fixes pre-Metis-return: dedupe F1-F4 stub rows, micro-index typos 31.2.1/32.3.1/43.2.1, success-criterion-3 wording (commit c68c783).
+- [x] User: "fix also the optional things from metis" -> N1/N2/N3 ALL applied (plan + draft) + gate section replaced by review-round state (commit 3019b15).
+- [x] Review round rr-milpbooklm-20260917-01 initialized: plan sha256 ee96d26daf5e48dc7ed0a47c3093b796b0f80e5432b570c7eafa032510756a1f.
+- [x] Dual review DISPATCHED TOGETHER, both in_flight: momus ses_f4f8f33b4ffe2IKh2y6O62U7iG (bg_ec4fd699, launch-momus-rr01-20260917T1735Z); oracle ses_f4f8f32ffffeTy04R0LRgRWXVJ (bg_6916f5d6, launch-oracle-rr01-20260917T1735Z). Intake contracts carried literals; drift=>INCONCLUSIVE; forbidden fallbacks search/memory/summaries/alternate-files.
+- NEXT on both completions: record results per lane (complete CAS: echoed_binding + live sha256 match); if CHANGES_REQUESTED -> fix every cited issue, fresh round BOTH lanes; if both APPROVED -> final live sha256 validation == approved digest -> Phase-4 handoff (CLEAR+review_required: summary w/ counted rows 55 impl + 4 F, verification, execution options $start-work [--worktree|--make-pr|--ship]); STOP - never execute.
 
 Batch 1 (foggiest: deployment reality, Phase-1-blocking providers, Phase-0-blocking proxy): Q1 hardware/host, Q2 model providers, Q3 reverse proxy. Batch 2: Q4 backup, Q5 OCR/STT+language, Q7 users. Batch 3: Q6 TTS/image/video, Q11 SearXNG, Q12 OIDC. Batch 4: Q8 scope, Q9 tests, Q10 UUID, Q13 provisional, Q14 NFR seed.
 

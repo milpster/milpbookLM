@@ -128,8 +128,8 @@ default-confirmed items (accepted at approval): full Phase 0-7 scope in ONE plan
   "completion_cas": ["status=in_flight", "workspace_root", "runtime_home", "target", "launch_id", "round_id", "plan_sha256", "session", "receipt_identity=session", "live_plan_sha256=plan_sha256", "echoed_binding", "terminal_transition=in_flight->approved|changes_requested|inconclusive"],
   "pending-action": "review .omo/plans/milpbookml-implementation.md",
   "review": {
-    "momus": { "status": "launching", "workspace_root": "/home/srcds/dev/milpbookLM", "runtime_home": null, "target": ".omo/plans/milpbookml-implementation.md", "round_id": "rr-milpbookml-20260917-01", "plan_sha256": "ee96d26daf5e48dc7ed0a47c3093b796b0f80e5432b570c7eafa032510756a1f", "launch_id": "launch-momus-rr01-20260917T1735Z", "session": null, "result": null },
-    "independent": { "status": "launching", "workspace_root": "/home/srcds/dev/milpbookLM", "runtime_home": null, "target": ".omo/plans/milpbookml-implementation.md", "round_id": "rr-milpbooklm-20260917-01", "plan_sha256": "ee96d26daf5e48dc7ed0a47c3093b796b0f80e5432b570c7eafa032510756a1f", "launch_id": "launch-oracle-rr01-20260917T1735Z", "session": null, "result": null }
+    "momus": { "status": "in_flight", "workspace_root": "/home/srcds/dev/milpbookLM", "runtime_home": null, "target": ".omo/plans/milpbookml-implementation.md", "round_id": "rr-milpbookml-20260917-01", "plan_sha256": "ee96d26daf5e48dc7ed0a47c3093b796b0f80e5432b570c7eafa032510756a1f", "launch_id": "launch-momus-rr01-20260917T1735Z", "session": "ses_f4f8f33b4ffe2IKh2y6O62U7iG", "result": null },
+    "independent": { "status": "in_flight", "workspace_root": "/home/srcds/dev/milpbookLM", "runtime_home": null, "target": ".omo/plans/milpbookml-implementation.md", "round_id": "rr-milpbookml-20260917-01", "plan_sha256": "ee96d26daf5e48dc7ed0a47c3093b796b0f80e5432b570c7eafa032510756a1f", "launch_id": "launch-oracle-rr01-20260917T1735Z", "session": "ses_f4f8f32ffffeTy04R0LRgRWXVJ", "result": null }
   }
 }
 ```
