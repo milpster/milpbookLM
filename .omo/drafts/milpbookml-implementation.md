@@ -124,6 +124,11 @@ ROUND rr-milpbooklm-20260917-03 RESULTS (recorded 2026-09-17; USER HALT: "stop b
 
 ROUND rr-milpbooklm-20260917-03: CLOSED → both lanes changes_requested (defect lists + union fix list recorded above). ALL rr-03 defects fixed (union list applied in full: TECH-01 phantom IDs remapped to ARCH-03/TECH-00/ARCH-09+ch01-obligation notes; ALL Blocks fields mechanically regenerated from the Depends column — 48 task rows + 27 matrix cells, gates annotated, verified spot-checks; L57 first clause aligned to task-8 owner; success criterion 3 downgrade-aware; wave-8 label corrected; both "29/39" refs cleaned; Caddy v2 major pinned). Plan sha256 moved 484036d5→3615e1cd. Both lanes resubmitted FRESH per the dual-review contract.
 
+ROUND rr-milpbooklm-20260917-04 RESULTS (recorded 2026-09-17):
+- momus (ses_f4e881bfcffep5FVdQfCETB09Z, bg_16165530): result = **approved** — VERDICT-APPROVED, ZERO defects ("no missing obligations, no ambiguous ownership, no unverifiable acceptance criteria, no contradictions"); two explicitly non-blocking traceability nits (task-3 ARCH-05-001 row-level reference; capability_registry 12-partial/12-rest descriptive split — F1 script is the declared resolver). Transcript: tool-output/tool_0b1c098bd001IK8rOK3sQgkEhz (verdict L601).
+- independent oracle (ses_f4e881af2ffe0XtiMKcba0ntKF, bg_0008ffbe): result = changes_requested — ONE minor citation defect: plan L335 (task 24 References) pointed AD-015/016 at "baseline README" (grep count 0 there); definitions live in architecture-baseline/00-status-decisions.md (~L76/80). META-REQ-001 verified LEGITIMATE (ch25 test-group id, meta completeness oracle — not a phantom). All ~30 requirement ranges spot-checked: no phantoms. Blocks/DAG/counts/E2E/MAN/canonical labels/risk fences all verified sound. Transcript: tool-output/tool_0b1c098c6001QNDNgbntEq5fqH (verdict L914).
+- Fix applied: L335 repointed to architecture-baseline/00-status-decisions.md AD-015/016. Plan sha256 moved 3615e1cd→5ba76bc0. Both lanes resubmitted FRESH (rr-05) per the dual-review contract (both must approve).
+
 ```json
 {
   "transition": "replace",
@@ -132,14 +137,14 @@ ROUND rr-milpbooklm-20260917-03: CLOSED → both lanes changes_requested (defect
   "atomic": true,
   "review_required": true,
   "plan_path": ".omo/plans/milpbookml-implementation.md",
-  "plan_sha256": "3615e1cd716dc62251f7821fc649d600883d152ef7858238bfad2538d3a9c7cd",
-  "review_round_id": "rr-milpbooklm-20260917-04",
+  "plan_sha256": "5ba76bc0d8ed656ad0fcb15afba45429a874c714e6e9dcabaafeb0e8340612e5",
+  "review_round_id": "rr-milpbooklm-20260917-05",
   "round_status": "active",
   "completion_cas": ["status=in_flight", "workspace_root", "runtime_home", "target", "launch_id", "round_id", "plan_sha256", "session", "receipt_identity=session", "live_plan_sha256=plan_sha256", "echoed_binding", "terminal_transition=in_flight->approved|changes_requested|inconclusive"],
   "pending-action": "review .omo/plans/milpbookml-implementation.md",
   "review": {
-    "momus": { "status": "in_flight", "workspace_root": "/home/srcds/dev/milpbookLM", "runtime_home": null, "target": ".omo/plans/milpbookml-implementation.md", "round_id": "rr-milpbooklm-20260917-04", "plan_sha256": "3615e1cd716dc62251f7821fc649d600883d152ef7858238bfad2538d3a9c7cd", "launch_id": "launch-momus-rr04-20260917T2222Z", "session": "ses_f4e881bfcffep5FVdQfCETB09Z", "result": null },
-    "independent": { "status": "in_flight", "workspace_root": "/home/srcds/dev/milpbookLM", "runtime_home": null, "target": ".omo/plans/milpbookml-implementation.md", "round_id": "rr-milpbooklm-20260917-04", "plan_sha256": "3615e1cd716dc62251f7821fc649d600883d152ef7858238bfad2538d3a9c7cd", "launch_id": "launch-oracle-rr04-20260917T2222Z", "session": "ses_f4e881af2ffe0XtiMKcba0ntKF", "result": null }
+    "momus": { "status": "launching", "workspace_root": "/home/srcds/dev/milpbookLM", "runtime_home": null, "target": ".omo/plans/milpbookml-implementation.md", "round_id": "rr-milpbooklm-20260917-05", "plan_sha256": "5ba76bc0d8ed656ad0fcb15afba45429a874c714e6e9dcabaafeb0e8340612e5", "launch_id": "launch-momus-rr05-20260917T2350Z", "session": null, "result": null },
+    "independent": { "status": "launching", "workspace_root": "/home/srcds/dev/milpbookLM", "runtime_home": null, "target": ".omo/plans/milpbookml-implementation.md", "round_id": "rr-milpbooklm-20260917-05", "plan_sha256": "5ba76bc0d8ed656ad0fcb15afba45429a874c714e6e9dcabaafeb0e8340612e5", "launch_id": "launch-oracle-rr05-20260917T2350Z", "session": null, "result": null }
   }
 }
 ```
