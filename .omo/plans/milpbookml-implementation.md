@@ -391,7 +391,7 @@ Cross-cutting (assigned to their primary owning task, verified at F1): evaluatio
 
 - [ ] 31. STD-01 — Artifact framework: recipes, lifecycle, manifests, renditions, study state
   What to do / Must NOT do: ArtifactRecipe contract (validate request → freeze inputs → plan → generate structured content → validate → render optional renditions → publish immutable version); status machine draft→generating→validating→ready|failed|cancelled, prior ready versions retained; artifact_versions record recipe/version, manifest, provider calls, provenance edges, safety status, effective restrictions; canonical payload = versioned JSON + separately referenced renditions; user_artifact_state + study_session_snapshots separate from artifact (collab doesn't overwrite progress); edits = new version w/ optimistic concurrency; regeneration pins base version+inputs; export = renderer concern revalidating authz/restrictions at request AND download; internal typed recipe registry at startup (no runtime loading); schema evolution = migration/upcaster + golden compatibility tests. MUST NOT: overwrite published versions; let study state mutate artifact versions.
-  Micro-index: 31.1 recipe engine (31.1.1 contract; 31.1.2 state machine CAS; 31.1.3 registry) · 31.2 storage (32.2 versions/renditions/manifests; 31.2.2 per-user state) · 31.3 editing/regeneration · 31.4 export revalidation · 31.5 schema evolution goldens.
+  Micro-index: 31.1 recipe engine (31.1.1 contract; 31.1.2 state machine CAS; 31.1.3 registry) · 31.2 storage (31.2.1 versions/renditions/manifests; 31.2.2 per-user state) · 31.3 editing/regeneration · 31.4 export revalidation · 31.5 schema evolution goldens.
   Parallelization: Wave 4 | Blocked by: 5,6,16 | Blocks: 32,33,34,35
   References: guide/13-studio-artifacts.md (common lifecycle/storage/editing/extension); requirements TECH-13-001, ARCH-13-001..014 + ARCH-14-001 (studio_artifacts); digest Table A row studio_artifacts; capability artifact_lifecycle (E2E-003).
   Acceptance criteria (agent-executable): ARTIFACT-E2E-001 core: lifecycle transitions, immutable prior versions, manifest pinning, export recheck both stages — green; optimistic-conflict test; upcaster golden test.
@@ -400,7 +400,7 @@ Cross-cutting (assigned to their primary owning task, verified at F1): evaluatio
 
 - [ ] 32. STD-02a — Notes: revisions, transforms, promotion, note-to-source
   What to do / Must NOT do: notes/note_revisions immutable revisions; transforms (saved-response → note, note transforms); promotion to source via ingestion; explicit selection of notes as version-pinned prompt context (chats); editability rules + collaboration-safe semantics; note-to-source conversion with provenance edges. MUST NOT: implicitly share private notes; auto-index notes into retrieval (only explicit selection).
-  Micro-index: 32.1 revisions (32.1.1 immutable edits; 32.1.2 transforms) · 32.2 promotion + provenance · 32.3 chat-context pinning (33.3 explicit-only) · 32.4 UI flows.
+  Micro-index: 32.1 revisions (32.1.1 immutable edits; 32.1.2 transforms) · 32.2 promotion + provenance · 32.3 chat-context pinning (32.3.1 explicit-only selection) · 32.4 UI flows.
   Parallelization: Wave 4 | Blocked by: 18,31 | Blocks: 35
   References: guide/13 + guide/16 (notes routes); PARITY-SCOPE-AUDIT (notes parity incl. "notes must be specifically selected" FAQ behavior); requirements studio notes subset; capability notes (E2E-004).
   Acceptance criteria (agent-executable): E2E-004 (notes journey: create/transform/promote/cite) green; explicit-selection-only retrieval test (unselected note not retrieved as evidence); revision immutability test.
@@ -499,7 +499,7 @@ Cross-cutting (assigned to their primary owning task, verified at F1): evaluatio
 
 - [ ] 43. MED-01d — Realtime/interactive-audio posture: ephemeral scaffolding + disabled states
   What to do / Must NOT do: interactive_audio_overview (advanced/provider-dependent) + realtime_notebook_voice_chat + recorded_audio_capture (provisional): capability-gated WebSocket session scaffolding, consent/disclosure persistence BEFORE connection, content-free connection/audit metadata, ephemerality rules (mic audio/transcripts/turns never appended to history; session state expires; explicit save → ordinary authorized versioned artifact), conditional tests recorded N/A while disabled (legal per ch25 only because registry classifies them advanced/provisional + disabled). MUST NOT: enable without a passing local realtime-duplex provider ADR; retain ephemeral content by default.
-  Micro-index: 43.1 scaffolding (43.1.1 session contract; 43.1.2 consent/disclosure records) · 43.2 ephemerality tests (42.2.1 nothing persisted; 43.2.2 explicit-save path) · 43.3 disabled-state conformance + N/A records.
+  Micro-index: 43.1 scaffolding (43.1.1 session contract; 43.1.2 consent/disclosure records) · 43.2 ephemerality tests (43.2.1 nothing persisted; 43.2.2 explicit-save path) · 43.3 disabled-state conformance + N/A records.
   Parallelization: Wave 6 | Blocked by: 9,10 | Blocks: 44
   References: guide/14 (realtime/recorded sections); PARITY-SCOPE-AUDIT factual caveats (ephemeral default, Interactive-vs-realtime distinction); capabilities digest (advanced/provisional rows, MAN-009).
   Acceptance criteria (agent-executable): ephemerality tests green at scaffold level (fake duplex); conformance lists all three as disabled-with-reason; conditional N/A test records reference the registry classifications.
@@ -616,10 +616,6 @@ Cross-cutting (assigned to their primary owning task, verified at F1): evaluatio
 
 ## Final verification wave
 > Runs in parallel after ALL todos. ALL must APPROVE. Surface results and wait for the user's explicit okay before declaring complete.
-- [ ] F1. Plan compliance audit
-- [ ] F2. Code quality review
-- [ ] F3. Real manual QA
-- [ ] F4. Scope fidelity
 
 - [ ] F1. Plan compliance audit — every requirement assigned: script cross-checks requirements.generated.json (507 ids) against task coverage map (this plan's References fields + digest Table A runs) proving zero orphan requirements and zero double-assignments outside shared cross-cutting records; verify each phase-gate report exists (phase-0..7) + release audit; verify conformance.json final matches deployed capability set incl. cinematic envelope.
 - [ ] F2. Code quality review — import-linter/TS-refs clean; Ruff/mypy/Biome strict clean; 250-LOC-module ceiling exceptions listed; mutation evidence present for policy/state/provenance/purge code; qlty check --all + lsp_diagnostics zero errors on changed surface.
@@ -634,7 +630,7 @@ One commit per task with the Commit line specified on each todo (conventional ty
 
 1. All 55 implementation todos checked with evidence files present and their Commit lines in git history.
 2. All 8 phase-gate reports + release audit + NFR report + restore/upgrade drill reports exist under artifacts/verification/ and pass.
-3. conformance.json (final) honest: 44 stable/core + cinematic_video + interactive_audio disabled-with-reason... precisely: every implemented capability advertised with envelope honesty; every disabled optional/provisional visible as disabled; zero not_applicable stable/core.
+3. conformance.json (final) honest: 44 stable/core capabilities + cinematic_video ENABLED with envelope honesty; interactive_audio_overview + all optional/provisional entries visible as disabled-with-reason; zero not_applicable stable/core.
 4. Requirement census: 507 records — 495 normative each mapped to ≥1 passing VER record (or N/A-legal per registry classification), 12 narrative classified; extractor check green.
 5. E2E-001..013 all green; MAN-001..010 records complete (N/A only with registry-legal references).
 6. F1–F4 all APPROVE.
