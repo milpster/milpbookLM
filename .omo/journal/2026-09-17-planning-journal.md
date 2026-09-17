@@ -74,7 +74,17 @@ Session: 2026-09-17, Prometheus (ulw-plan), intent=CLEAR (user asked to be inter
 - [x] Draft: components C1-C6, findings, 14 open questions, approach (incl. 1.1.1.1 micro-index requirement).
 - [ ] Interview batches -> decisions -> approval gate.
 
-## Interview plan
+## Local media research verdict (2026-09-17, librarian ses_f50562816ffen17oSnTsUthwNG + planner's own search)
+
+- Wan 2.2 = Apache-2.0, THE local video engine: 5B TI2V GGUF fits 8GB (Q4_K_M 3.43GB / Q8_0 5.4GB), 720p, T2V+I2V; 14B MoE GGUF Q3/Q4+RAM-offload = 480p tier. Official <9min/5s@720p on 4090.
+- HunyuanVideo 1.5: Tencent community license (100M MAU) = restricted-but-OK-private. LTX-2.3: community license, $10M revenue threshold + competing-product clause #20 -> excluded by default (we build a notebook/artifact product, not an Lightricks competitor, but 22B > 8GB anyway). CogVideoX: registration+1M-visits cap -> excluded. Mochi 1 Apache-2.0. "Wan 2.7" open weights DO NOT EXIST (SEO fabrications).
+- gfx906: librarian said ROCm-deprecated; USER CORRECTED - latest ROCm supports gfx906 (operator runs it today). Plan: empirical on-host prerequisite+benchmark task settles gfx906 diffusion usability; mixed-vendor unified pool stays impractical (no cross-vendor collectives). VIIs = llama.cpp ROCm serving (+ image diffusion if benchmark passes).
+- USER LICENSE FRAMING (2026-09-17): territorial exclusions (EU/UK/etc.) are NOT a decision factor for this deployment.
+- Cinematic verdict: ENABLED locally, marginal-but-real envelope (5B 720p + 14B 480p + storyboard composition + RIFE + Real-ESRGAN), honest conformance descriptor records envelope.
+
+## Interview plan (updated)
+
+Batch 1 DONE (Q1 hardware, Q2 models, Q3 Caddy). Batch 2 DONE (Q4 pgBackRest+restic, Q5 Tesseract+whisper.cpp + multilingual DE/EN mandatory, Q6 team-from-day-one). Batch 3 DONE (Q7 local media incl. Cinematic enabled, Q8 SearXNG minimal, Q9 OIDC deferred). Remaining: default-confirmations folded into approval brief (scope 0-7, test regime, TAD-011 UUID, provisional caps disabled, NFR seed scale) -> awaiting-approval.
 
 Batch 1 (foggiest: deployment reality, Phase-1-blocking providers, Phase-0-blocking proxy): Q1 hardware/host, Q2 model providers, Q3 reverse proxy. Batch 2: Q4 backup, Q5 OCR/STT+language, Q7 users. Batch 3: Q6 TTS/image/video, Q11 SearXNG, Q12 OIDC. Batch 4: Q8 scope, Q9 tests, Q10 UUID, Q13 provisional, Q14 NFR seed.
 
