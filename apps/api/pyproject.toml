@@ -8,6 +8,13 @@ dependencies = [
     "milpbooklm-application",
     "milpbooklm-adapters",
     "milpbooklm-contracts",
+    # REFERENCE-DEPENDENCIES.md "API" row: FastAPI, Pydantic v2, Uvicorn.
+    # Pydantic v2 is the typed configuration loader (ch04: typed config at startup).
+    "pydantic>=2.10,<3",
+    # Capability registry (packages/contracts/capabilities.yaml) is YAML data;
+    # tools/spec parse it and validate both registries against JSON Schemas.
+    "PyYAML>=6.0.2,<7",
+    "jsonschema>=4.23,<5",
 ]
 
 [tool.uv.sources]

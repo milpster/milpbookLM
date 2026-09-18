@@ -1,0 +1,22 @@
+{
+  "verification_id": "VER-TECH-02-001",
+  "requirement_id": "TECH-02-001",
+  "task": "FND-02",
+  "test_path": "tests/meta/capabilities/ver-tech-02-001.py",
+  "result": "passed",
+  "timestamp": "2026-09-18T10:15:39.070341+00:00",
+  "checks": {
+    "source_families": 14,
+    "connector_families_optional": [
+      "source_optional_authenticated_restricted_repositories_through_generic_connectors",
+      "source_optional_cloud_document_storage_connectors_implemented_through_generic_adapters"
+    ],
+    "registry_gate_findings": 0,
+    "parity_matrix": "frozen ch02 table reparsed, 43 rows + 14 families matched"
+  },
+  "environment": {
+    "python": "3.13.3",
+    "platform": "Linux-7.2.6-x64v3-xanmod1-x86_64-with-glibc2.41",
+    "host": "GUAM"
+  }
+}

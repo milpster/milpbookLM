@@ -1,0 +1,24 @@
+{
+  "verification_id": "VER-TECH-02-002",
+  "requirement_id": "TECH-02-002",
+  "task": "FND-02",
+  "test_path": "tests/meta/capabilities/ver-tech-02-002.py",
+  "result": "passed",
+  "timestamp": "2026-09-18T10:15:39.185070+00:00",
+  "checks": {
+    "inference_attempts": 61,
+    "inference_attempts_denied": 61,
+    "gates": [
+      "compiled support",
+      "administrator policy",
+      "configured providers",
+      "dependency health"
+    ],
+    "advertised": []
+  },
+  "environment": {
+    "python": "3.13.3",
+    "platform": "Linux-7.2.6-x64v3-xanmod1-x86_64-with-glibc2.41",
+    "host": "GUAM"
+  }
+}

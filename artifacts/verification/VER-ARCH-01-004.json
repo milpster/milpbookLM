@@ -1,0 +1,26 @@
+{
+  "verification_id": "VER-ARCH-01-004",
+  "requirement_id": "ARCH-01-004",
+  "task": "FND-02",
+  "test_path": "tests/architecture/dependencies/ver-arch-01-004.py",
+  "result": "passed",
+  "timestamp": "2026-09-18T10:15:39.908896+00:00",
+  "checks": {
+    "scanned_layers": [
+      "application",
+      "contracts",
+      "domain"
+    ],
+    "forbidden_hits": {
+      "domain": {},
+      "application": {},
+      "contracts": {}
+    },
+    "disclosure_boundary": "provider adapter layer (apps/api + adapters) is the only external-call path"
+  },
+  "environment": {
+    "python": "3.13.3",
+    "platform": "Linux-7.2.6-x64v3-xanmod1-x86_64-with-glibc2.41",
+    "host": "GUAM"
+  }
+}

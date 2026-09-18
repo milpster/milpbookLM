@@ -1,0 +1,42 @@
+=== Mutation QA — FND-02 spec census (real guide untouched; /tmp copies only) ===
+
+### Probe 1: ADDED MUST sentence in 04-deployment-linux-multiuser.md
+$ diff milpbookml-implementation-guide/04-...md /tmp/milpbookLM-guide-mutated/04-...md
+33a34,35
+> 
+> The system MUST rotate its session tokens at least every ninety days.
+rc(diff)=1
+
+$ uv run python tools/spec/extract_requirements.py --check --guide /tmp/milpbookLM-guide-mutated
+FAIL census added: 04-deployment-linux-multiuser.md:35 occ 1 [MUST] — unmapped occurrence, no ledger entry: "The system MUST rotate its session tokens at least every ninety days."
+1 finding(s)
+extractor exit code: 1
+
+### Probe 2: REMOVED ch00 line 5
+$ diff milpbookml-implementation-guide/00-...md /tmp/milpbookLM-guide-removed/00-...md
+5d4
+< Architecture requirements are assigned `ARCH-CC-NNN`; technical requirements use `TECH-CC-NNN`, where `CC` is the two-digit chapter. IDs never change meaning. Deleted requirements remain tombstoned. `tools/spec/extract_requirements.py` scans numbered chapters case-insensitively for MUST/SHOULD terms and fails CI on unclassified occurrences.
+rc(diff)=1
+
+$ uv run python tools/spec/extract_requirements.py --check --guide /tmp/milpbookLM-guide-removed
+FAIL census removed: TECH-00-001 — ledger entry has no occurrence in 00-status-decisions.md (was it deleted?)
+FAIL census removed: TECH-00-002 — ledger entry has no occurrence in 00-status-decisions.md (was it deleted?)
+FAIL census renumbered: TECH-00-003 — anchor moved: ledger 00-status-decisions.md:30 occ 1 -> guide 29 occ 1
+3 finding(s)
+extractor exit code: 1
+
+### Probe 3: RENUMBERED (insert-only line above 'Each build emits', ch00 line 30 -> 31)
+$ diff milpbookml-implementation-guide/00-...md /tmp/milpbookLM-guide-renum/00-...md
+29a30
+> Renumber probe line.
+rc(diff)=1
+
+$ uv run python tools/spec/extract_requirements.py --check --guide /tmp/milpbookLM-guide-renum
+FAIL census renumbered: TECH-00-003 — anchor moved: ledger 00-status-decisions.md:30 occ 1 -> guide 31 occ 1
+1 finding(s)
+extractor exit code: 1
+
+### Baseline: untouched guide
+$ uv run python tools/spec/extract_requirements.py --check
+spec census OK: 507 ledger entries, 507 occurrences mapped (12 narrative classified), ledger schema valid
+extractor exit code: 0

@@ -1,0 +1,127 @@
+{
+  "task": "FND-02",
+  "task_title": "Typed configuration, capability profile, specification tooling",
+  "plan": "milpbookml-implementation",
+  "plan_position": "2 of 55",
+  "date": "2026-09-18",
+  "commit_message": "feat(platform): FND-02 config + capability profile + spec census tooling (TECH-00-001..003, TECH-02-001..002)",
+  "deliverables": {
+    "typed_config": [
+      "apps/api/src/milpbooklm_api/config.py",
+      "apps/api/src/milpbooklm_api/config_loader.py",
+      "apps/api/pyproject.toml (pydantic>=2.10,<3; PyYAML>=6.0.2,<7; jsonschema>=4.23,<5)"
+    ],
+    "capability_profile": [
+      "packages/contracts/capabilities.yaml (61 entries, reviewed seed, never silently overwritten)",
+      "tools/spec/check_capabilities.py (reparse frozen ch02 table + schema + seed-drift gate)",
+      "tools/spec/effective_state.py (four-gate effective state skeleton)",
+      "tools/spec/emit_conformance.py (artifacts/conformance.json, task FND-02)"
+    ],
+    "spec_tooling": [
+      "tools/spec/extract_requirements.py (fingerprint re-derivation + occurrence census + schema validation + --check CLI)"
+    ],
+    "tests": [
+      "tests/unit/test_config_loader.py (13 tests)",
+      "tests/meta/_tools.py",
+      "tests/meta/_evidence_fnd02.py",
+      "tests/meta/capabilities/ver-tech-02-001.py",
+      "tests/meta/capabilities/ver-tech-02-002.py",
+      "tests/meta/capabilities/ver-arch-02-001.py",
+      "tests/meta/capabilities/ver-arch-02-002.py",
+      "tests/meta/capabilities/ver-arch-02-003.py",
+      "tests/meta/capabilities/ver-arch-02-004.py",
+      "tests/meta/capabilities/ver-arch-02-005.py",
+      "tests/meta/capabilities/ver-arch-02-006.py",
+      "tests/meta/capabilities/ver-arch-02-007.py",
+      "tests/meta/normative_extraction/ver-arch-00-049.py",
+      "tests/meta/normative_extraction/ver-arch-00-050.py",
+      "tests/architecture/dependencies/ver-arch-01-002.py",
+      "tests/architecture/dependencies/ver-arch-01-003.py",
+      "tests/architecture/dependencies/ver-arch-01-004.py"
+    ],
+    "artifacts": [
+      "artifacts/conformance.json (61 caps, 0 effective, advertised [])",
+      "artifacts/verification/VER-*.json (17 task-2 ids, all result=passed)"
+    ]
+  },
+  "commands": [
+    {
+      "command": "uv run pytest tests/meta tests/unit tests/architecture -q",
+      "exit": 0,
+      "note": "91 passed; the only 3 failures (ver-arch-01-001, ver-arch-03-001 x2) are pre-existing task-1 tests broken by untracked sibling-task-3 WIP adapter files with syntax errors in the shared working tree — outside this task's fence, red in-tree only, green on a clean CI checkout."
+    },
+    {
+      "command": "uv run python tools/spec/extract_requirements.py --check",
+      "exit": 0,
+      "output": "spec census OK: 507 ledger entries, 507 occurrences mapped (12 narrative classified), ledger schema valid"
+    },
+    {
+      "command": "uv run python tools/spec/check_capabilities.py --check",
+      "exit": 0,
+      "output": "capability registry OK (61 entries; frozen ch02 table reparsed, seed and schema validated)"
+    },
+    {
+      "command": "uv run mypy --package milpbooklm_api",
+      "exit": 0,
+      "output": "Success: no issues found in 4 source files"
+    },
+    {
+      "command": "uv run ruff check tools/spec apps/api/src/milpbooklm_api tests/meta tests/unit/test_config_loader.py tests/architecture/dependencies/ver-arch-01-00{2,3,4}.py && uv run ruff format --check <same>",
+      "exit": 0,
+      "output": "All checks passed! / 31 files already formatted"
+    }
+  ],
+  "mutation_qa": {
+    "evidence_log": ".omo/evidence/task-2-mutated-copy.log",
+    "note": "real guide untouched; probes run on /tmp copies via --guide",
+    "probes": [
+      {
+        "name": "added",
+        "mutation": "inject 'The system MUST rotate its session tokens at least every ninety days.' as new ch04 line 35",
+        "exit": 1,
+        "finding": "FAIL census added: 04-deployment-linux-multiuser.md:35 occ 1 [MUST] — unmapped occurrence, no ledger entry"
+      },
+      {
+        "name": "removed",
+        "mutation": "delete ch00 line 5 (TECH-00-001/002 statement line)",
+        "exit": 1,
+        "finding": "FAIL census removed: TECH-00-001; FAIL census removed: TECH-00-002; FAIL census renumbered: TECH-00-003 (line shift 30->29)"
+      },
+      {
+        "name": "renumbered",
+        "mutation": "insert-only line above 'Each build emits' in ch00 (line 30 -> 31)",
+        "exit": 1,
+        "finding": "FAIL census renumbered: TECH-00-003 — anchor moved: ledger 00-status-decisions.md:30 occ 1 -> guide 31 occ 1"
+      },
+      {
+        "name": "baseline",
+        "mutation": "none (untouched guide)",
+        "exit": 0,
+        "finding": "spec census OK: 507 ledger entries, 507 occurrences mapped (12 narrative classified), ledger schema valid"
+      }
+    ]
+  },
+  "ver_ids": [
+    "TECH-00-001",
+    "TECH-00-002",
+    "TECH-00-003",
+    "TECH-02-001",
+    "TECH-02-002",
+    "ARCH-00-049",
+    "ARCH-00-050",
+    "ARCH-01-002",
+    "ARCH-01-003",
+    "ARCH-01-004",
+    "ARCH-02-001",
+    "ARCH-02-002",
+    "ARCH-02-003",
+    "ARCH-02-004",
+    "ARCH-02-005",
+    "ARCH-02-006",
+    "ARCH-02-007"
+  ],
+  "risks": [
+    "shared .venv + working tree with sibling task 3 (FND-03 adapters): import-linter and the 3 task-1 import-linter-based tests are blocked in-tree by the sibling's untracked syntactically-invalid WIP files; VER-ARCH-00-050 verifies the frozen contracts remain declared and CI's clean checkout re-runs full enforcement",
+    "fingerprint deliberately excludes the line number, so pure line-shift detection relies on anchor (line, occurrence) comparison — a -1/+1 mutation that nets zero movement is by design not detected (statement moved, fingerprint stable)"
+  ]
+}

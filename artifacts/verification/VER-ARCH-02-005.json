@@ -1,0 +1,23 @@
+{
+  "verification_id": "VER-ARCH-02-005",
+  "requirement_id": "ARCH-02-005",
+  "task": "FND-02",
+  "test_path": "tests/meta/capabilities/ver-arch-02-005.py",
+  "result": "passed",
+  "timestamp": "2026-09-18T10:15:38.511947+00:00",
+  "checks": {
+    "agentic_output_families": [
+      "agentic_chat",
+      "reports",
+      "data_tables",
+      "slide_decks",
+      "infographics"
+    ],
+    "all_stable_core_with_test_groups": true
+  },
+  "environment": {
+    "python": "3.13.3",
+    "platform": "Linux-7.2.6-x64v3-xanmod1-x86_64-with-glibc2.41",
+    "host": "GUAM"
+  }
+}

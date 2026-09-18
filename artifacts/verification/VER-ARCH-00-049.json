@@ -1,0 +1,30 @@
+{
+  "verification_id": "VER-ARCH-00-049",
+  "requirement_id": "ARCH-00-049",
+  "task": "FND-02",
+  "test_path": "tests/meta/normative_extraction/ver-arch-00-049.py",
+  "result": "passed",
+  "timestamp": "2026-09-18T10:15:39.187783+00:00",
+  "checks": {
+    "capabilities": 61,
+    "by_classification": {
+      "stable/core": 44,
+      "provisional/announced": 4,
+      "advanced/provider-dependent": 2,
+      "late/optional": 7,
+      "deliberate-non-target": 4
+    },
+    "advertised": [],
+    "invariants": [
+      "five behavior classes identified",
+      "stable/core never not_applicable",
+      "effective implies implemented+enabled (tests active)",
+      "provisional/non-target/optional never advertised"
+    ]
+  },
+  "environment": {
+    "python": "3.13.3",
+    "platform": "Linux-7.2.6-x64v3-xanmod1-x86_64-with-glibc2.41",
+    "host": "GUAM"
+  }
+}

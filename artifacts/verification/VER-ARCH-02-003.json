@@ -1,0 +1,17 @@
+{
+  "verification_id": "VER-ARCH-02-003",
+  "requirement_id": "ARCH-02-003",
+  "task": "FND-02",
+  "test_path": "tests/meta/capabilities/ver-arch-02-003.py",
+  "result": "passed",
+  "timestamp": "2026-09-18T10:15:38.280481+00:00",
+  "checks": {
+    "google_account_coupling": "deliberate-non-target, inert, unadvertised",
+    "export_contract": "detached snapshots; no ACL propagation claim"
+  },
+  "environment": {
+    "python": "3.13.3",
+    "platform": "Linux-7.2.6-x64v3-xanmod1-x86_64-with-glibc2.41",
+    "host": "GUAM"
+  }
+}

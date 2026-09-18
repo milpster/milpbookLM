@@ -4,7 +4,7 @@
   "task": "FND-01",
   "test_path": "tests/meta/normative_extraction/ver-tech-00-001.py",
   "result": "passed",
-  "timestamp": "2026-09-18T04:47:12.427193+00:00",
+  "timestamp": "2026-09-18T10:15:39.506687+00:00",
   "checks": {
     "ledger_requirements": 507,
     "violations": 0,

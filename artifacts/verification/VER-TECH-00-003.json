@@ -4,7 +4,7 @@
   "task": "FND-01",
   "test_path": "tests/meta/normative_extraction/ver-tech-00-003.py",
   "result": "passed",
-  "timestamp": "2026-09-18T04:47:12.442590+00:00",
+  "timestamp": "2026-09-18T10:15:39.523417+00:00",
   "checks": {
     "conformance_path": "artifacts/conformance.json",
     "capabilities": 61,

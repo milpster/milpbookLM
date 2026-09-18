@@ -1,0 +1,20 @@
+{
+  "verification_id": "VER-ARCH-02-006",
+  "requirement_id": "ARCH-02-006",
+  "task": "FND-02",
+  "test_path": "tests/meta/capabilities/ver-arch-02-006.py",
+  "result": "passed",
+  "timestamp": "2026-09-18T10:15:38.629604+00:00",
+  "checks": {
+    "renderer_gated_families": [
+      "slide_decks",
+      "infographics"
+    ],
+    "renderer_unhealthy": "capability disabled with dependency reason"
+  },
+  "environment": {
+    "python": "3.13.3",
+    "platform": "Linux-7.2.6-x64v3-xanmod1-x86_64-with-glibc2.41",
+    "host": "GUAM"
+  }
+}

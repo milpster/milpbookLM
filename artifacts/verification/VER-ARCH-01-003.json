@@ -1,0 +1,21 @@
+{
+  "verification_id": "VER-ARCH-01-003",
+  "requirement_id": "ARCH-01-003",
+  "task": "FND-02",
+  "test_path": "tests/architecture/dependencies/ver-arch-01-003.py",
+  "result": "passed",
+  "timestamp": "2026-09-18T10:15:39.901796+00:00",
+  "checks": {
+    "default_policy_allows_external": true,
+    "denial_attempt": {
+      "enabled": false,
+      "reason": "external providers disabled by policy (chat_provider)"
+    },
+    "scope": "notebook policy (allow_external_providers)"
+  },
+  "environment": {
+    "python": "3.13.3",
+    "platform": "Linux-7.2.6-x64v3-xanmod1-x86_64-with-glibc2.41",
+    "host": "GUAM"
+  }
+}

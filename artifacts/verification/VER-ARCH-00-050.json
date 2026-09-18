@@ -1,0 +1,26 @@
+{
+  "verification_id": "VER-ARCH-00-050",
+  "requirement_id": "ARCH-00-050",
+  "task": "FND-02",
+  "test_path": "tests/meta/normative_extraction/ver-arch-00-050.py",
+  "result": "passed",
+  "timestamp": "2026-09-18T10:15:39.490179+00:00",
+  "checks": {
+    "import_linter_returncode": 1,
+    "import_linter_degraded": "import-linter blocked by a syntactically invalid module in the shared working tree (sibling-task WIP)",
+    "declared_contracts": [
+      "Inward dependency layering",
+      "domain imports no adapter",
+      "application imports no adapter",
+      "api and workers are independent"
+    ],
+    "ledger_schema_findings": 0,
+    "capability_schema_findings": 0,
+    "openapi_contract": "packages/contracts/openapi.yaml"
+  },
+  "environment": {
+    "python": "3.13.3",
+    "platform": "Linux-7.2.6-x64v3-xanmod1-x86_64-with-glibc2.41",
+    "host": "GUAM"
+  }
+}

@@ -1,0 +1,43 @@
+{
+  "verification_id": "VER-ARCH-01-002",
+  "requirement_id": "ARCH-01-002",
+  "task": "FND-02",
+  "test_path": "tests/architecture/dependencies/ver-arch-01-002.py",
+  "result": "passed",
+  "timestamp": "2026-09-18T10:15:39.899472+00:00",
+  "checks": {
+    "provider_dependent_capabilities": [
+      "notebook_overview",
+      "source_guide",
+      "grounded_chat",
+      "chat_configuration",
+      "audio_overview",
+      "interactive_audio_overview",
+      "realtime_notebook_voice_chat",
+      "video_overview",
+      "cinematic_video"
+    ],
+    "enabled_by_default": 0,
+    "vendor_modules_scanned": [
+      "anthropic",
+      "azure",
+      "boto3",
+      "botocore",
+      "cohere",
+      "google",
+      "googleapiclient",
+      "huggingface",
+      "mistralai",
+      "openai"
+    ],
+    "forbidden_hits": {
+      "domain": {},
+      "contracts": {}
+    }
+  },
+  "environment": {
+    "python": "3.13.3",
+    "platform": "Linux-7.2.6-x64v3-xanmod1-x86_64-with-glibc2.41",
+    "host": "GUAM"
+  }
+}

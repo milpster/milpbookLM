@@ -1,0 +1,20 @@
+{
+  "verification_id": "VER-ARCH-02-007",
+  "requirement_id": "ARCH-02-007",
+  "task": "FND-02",
+  "test_path": "tests/meta/capabilities/ver-arch-02-007.py",
+  "result": "passed",
+  "timestamp": "2026-09-18T10:15:38.817067+00:00",
+  "checks": {
+    "matrix_rows": 43,
+    "source_families": 14,
+    "deliberate_non_targets": 4,
+    "registry_entries": 61,
+    "gate_findings": 0
+  },
+  "environment": {
+    "python": "3.13.3",
+    "platform": "Linux-7.2.6-x64v3-xanmod1-x86_64-with-glibc2.41",
+    "host": "GUAM"
+  }
+}
