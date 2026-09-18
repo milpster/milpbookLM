@@ -129,11 +129,16 @@ ROUND rr-milpbooklm-20260917-04 RESULTS (recorded 2026-09-17):
 - independent oracle (ses_f4e881af2ffe0XtiMKcba0ntKF, bg_0008ffbe): result = changes_requested — ONE minor citation defect: plan L335 (task 24 References) pointed AD-015/016 at "baseline README" (grep count 0 there); definitions live in architecture-baseline/00-status-decisions.md (~L76/80). META-REQ-001 verified LEGITIMATE (ch25 test-group id, meta completeness oracle — not a phantom). All ~30 requirement ranges spot-checked: no phantoms. Blocks/DAG/counts/E2E/MAN/canonical labels/risk fences all verified sound. Transcript: tool-output/tool_0b1c098c6001QNDNgbntEq5fqH (verdict L914).
 - Fix applied: L335 repointed to architecture-baseline/00-status-decisions.md AD-015/016. Plan sha256 moved 3615e1cd→5ba76bc0. Both lanes resubmitted FRESH (rr-05) per the dual-review contract (both must approve).
 
+ROUND rr-milpbooklm-20260917-05 RESULTS (recorded 2026-09-18):
+- momus (ses_f4e380101ffeylGvwWTx6nQAmm, bg_1c901adb): result = **approved** — VERDICT-APPROVED, ZERO defects. Full 638-line read; digest verified; rr-04→rr-05 sole delta (L335 AD-015/016 repoint) verified on disk (00-status-decisions.md L76/L80 exact). Clarity/verifiability/completeness all PASS.
+- independent oracle (ses_f4e3800fbffeRV7UHPDbT9kEAo, bg_0028fb22): result = changes_requested — ONE defect cited, BUT byte-verification shows it is a FALSE POSITIVE (misquote): the defect claims plan L34 reads `E2E-006→24/4` and demands `E2E-006→24/14`; the artifact ACTUALLY reads `E2E-006→14/24 (refresh/version race)` (grep-verified, only occurrence; the only `24/4` on L34 belongs to the adjacent, correct `E2E-010→24/4`; L336 task-24 acceptance "w/ task 14" consistent; map ascending-order convention 5/18, 10/19, 13/20, 50/51 confirms 14/24 is the correct form). The oracle transposed the adjacent E2E-010 entry mid-analysis. Artifact ALREADY satisfies the recommendation's task set {14,24}. Everything else in the oracle's review verified clean: 55/55 matrix rows, DAG acyclic, JSON counts (507/495/12, 61 caps = 44+2+4+7+4, platform_core 61 canonical), tiers 155/166/170/4, E2E sweep 12/13 + MAN 10/10, PLANNING-HANDOFF:91 8-field record covered by six-field grouping ("defensible; I won't flag it"), AD-015/016 fix confirmed, L57 shared-set tail complete. Full transcript: tool-output/tool_0b1ef4167001EW0xbLjFWPnA75 (verdict L556, byte-exact, no trailing newline).
+- Disposition: NO plan edit (applying a cosmetic reorder to satisfy a misquote would be dishonest and would invalidate momus's valid approval of this digest). Oracle lane CONTINUED IN-SESSION (same round rr-05, same launch-oracle-rr05-20260917T2350Z, artifact frozen at 5ba76bc0 — re-verified unchanged before dispatch) with a byte-level challenge: re-read L34, retract or sustain the defect with exact byte citations, restate final verdict. Momus approval remains valid (artifact unchanged).
+
 ```json
 {
-  "transition": "replace",
-  "phase": "review_round_initialized",
-  "applies_when": ["retry_after_plan_change"],
+  "transition": "keep",
+  "phase": "review_round_verdict_challenge",
+  "applies_when": ["defect_citation_mismatch"],
   "atomic": true,
   "review_required": true,
   "plan_path": ".omo/plans/milpbookml-implementation.md",
@@ -141,10 +146,10 @@ ROUND rr-milpbooklm-20260917-04 RESULTS (recorded 2026-09-17):
   "review_round_id": "rr-milpbooklm-20260917-05",
   "round_status": "active",
   "completion_cas": ["status=in_flight", "workspace_root", "runtime_home", "target", "launch_id", "round_id", "plan_sha256", "session", "receipt_identity=session", "live_plan_sha256=plan_sha256", "echoed_binding", "terminal_transition=in_flight->approved|changes_requested|inconclusive"],
-  "pending-action": "review .omo/plans/milpbookml-implementation.md",
+  "pending-action": "oracle in-session re-verification of defect citation vs artifact bytes (same session ses_f4e3800fbffeRV7UHPDbT9kEAo, same launch identity, unchanged digest)",
   "review": {
-    "momus": { "status": "in_flight", "workspace_root": "/home/srcds/dev/milpbookLM", "runtime_home": null, "target": ".omo/plans/milpbookml-implementation.md", "round_id": "rr-milpbooklm-20260917-05", "plan_sha256": "5ba76bc0d8ed656ad0fcb15afba45429a874c714e6e9dcabaafeb0e8340612e5", "launch_id": "launch-momus-rr05-20260917T2350Z", "session": "ses_f4e380101ffeylGvwWTx6nQAmm", "result": null },
-    "independent": { "status": "in_flight", "workspace_root": "/home/srcds/dev/milpbookLM", "runtime_home": null, "target": ".omo/plans/milpbookml-implementation.md", "round_id": "rr-milpbooklm-20260917-05", "plan_sha256": "5ba76bc0d8ed656ad0fcb15afba45429a874c714e6e9dcabaafeb0e8340612e5", "launch_id": "launch-oracle-rr05-20260917T2350Z", "session": "ses_f4e3800fbffeRV7UHPDbT9kEAo", "result": null }
+    "momus": { "status": "approved", "workspace_root": "/home/srcds/dev/milpbookLM", "runtime_home": null, "target": ".omo/plans/milpbookml-implementation.md", "round_id": "rr-milpbooklm-20260917-05", "plan_sha256": "5ba76bc0d8ed656ad0fcb15afba45429a874c714e6e9dcabaafeb0e8340612e5", "launch_id": "launch-momus-rr05-20260917T2350Z", "session": "ses_f4e380101ffeylGvwWTx6nQAmm", "result": "VERDICT-APPROVED" },
+    "independent": { "status": "in_flight_challenge", "workspace_root": "/home/srcds/dev/milpbookLM", "runtime_home": null, "target": ".omo/plans/milpbookml-implementation.md", "round_id": "rr-milpbooklm-20260917-05", "plan_sha256": "5ba76bc0d8ed656ad0fcb15afba45429a874c714e6e9dcabaafeb0e8340612e5", "launch_id": "launch-oracle-rr05-20260917T2350Z", "session": "ses_f4e3800fbffeRV7UHPDbT9kEAo", "result": "VERDICT-CHANGES-REQUESTED (1 defect — byte-verified FALSE-POSITIVE misquote; under challenge in-session)" }
   }
 }
 ```
