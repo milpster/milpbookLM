@@ -9,6 +9,33 @@
 set -euo pipefail
 cd "$(dirname "$0")/.."
 
+# --- pinned toolchain, self-contained (no ambient-PATH assumptions) ---------
+# Fresh shells put other toolchains first on PATH (pi-node v22 under
+# ~/.local/share/pi-node, /usr/bin/node v20) and often lack uv entirely.
+# ci/run.sh owns its toolchain: it pins this node install, prepends it,
+# self-heals it from the official tarball if missing, and resolves uv from
+# the local install when the ambient PATH has no uv.
+NODE_HOME="$HOME/.local/node/node-v24.21.0-linux-x64"
+if [ ! -x "$NODE_HOME/bin/node" ]; then
+  mkdir -p "$NODE_HOME"
+  curl -fsSL "https://nodejs.org/dist/v24.21.0/node-v24.21.0-linux-x64.tar.xz" \
+    | tar -xJ --strip-components=1 -C "$NODE_HOME"
+fi
+export PATH="$NODE_HOME/bin:$PATH"
+export COREPACK_ENABLE_DOWNLOAD_PROMPT=0
+if [ ! -e "$NODE_HOME/bin/pnpm" ]; then
+  "$NODE_HOME/bin/corepack" enable --install-directory "$NODE_HOME/bin"
+fi
+if ! command -v uv >/dev/null 2>&1; then
+  for candidate in "$HOME"/.pyenv/versions/*/bin/uv "$HOME"/.local/bin/uv; do
+    if [ -x "$candidate" ]; then
+      export PATH="$(dirname "$candidate"):$PATH"
+      break
+    fi
+  done
+fi
+command -v uv >/dev/null 2>&1 || { echo "uv not found (tried PATH, pyenv, ~/.local/bin)"; exit 1; }
+
 # --- pinned toolchain -------------------------------------------------------
 NODE_REQUIRED="v24.21.0"
 PNPM_REQUIRED="12.4.2"

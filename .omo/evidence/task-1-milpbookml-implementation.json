@@ -9,7 +9,14 @@
     "local_driver": "ci/run.sh",
     "remote_workflow": ".github/workflows/ci.yml",
     "happy_path_log": ".omo/evidence/task-1-ci-happy.log",
-    "happy_path_exit": 0
+    "happy_path_exit": 0,
+    "toolchain_resolution": "ci/run.sh owns its toolchain and makes no ambient-PATH assumptions: it pins NODE_HOME=$HOME/.local/node/node-v24.21.0-linux-x64 (self-healing: downloads the official linux-x64 tarball to that exact path if missing), prepends $NODE_HOME/bin to PATH, sets COREPACK_ENABLE_DOWNLOAD_PROMPT=0, ensures the corepack pnpm shim exists in $NODE_HOME/bin, and resolves uv from ~/.pyenv/versions/*/bin/uv (or ~/.local/bin/uv) when the ambient PATH has no uv. This is required because fresh shells shadow the pinned toolchain: the orchestrator shell has pi-node v22.23.1 first on PATH (~/.local/share/pi-node/...), a login shell falls back to /usr/bin/node v20.18.1, and uv is a pyenv shim absent from non-interactive PATHs.",
+    "clean_shell_log": ".omo/evidence/task-1-ci-clean-shell.log",
+    "clean_shell_exit": 0,
+    "clean_shell_commands": [
+      "env -i HOME=$HOME USER=$USER TERM=$TERM bash -lc 'cd /home/srcds/dev/milpbookLM && bash ci/run.sh'",
+      "env PATH=$HOME/.local/share/pi-node/node-v22.23.1-linux-x64/bin:/usr/local/bin:/usr/bin:/bin HOME=$HOME USER=$USER bash -c 'cd /home/srcds/dev/milpbookLM && bash ci/run.sh'"
+    ]
   },
   "toolchain": {
     "node": "v24.21.0",
@@ -42,7 +49,13 @@
     { "name": "python unit", "command": "uv run pytest tests/unit -v", "exit": 0, "result": "9 passed" },
     { "name": "vitest", "command": "pnpm exec vitest run", "exit": 0, "result": "1 file, 3 tests passed" },
     { "name": "openapi placeholder gate", "command": "bash ci/check-openapi.sh", "exit": 0, "result": "openapi.yaml: valid OpenAPI 3.1 stub" },
-    { "name": "full local pipeline", "command": "bash ci/run.sh", "exit": 0, "result": "ALL CHECKS PASSED" }
+    { "name": "full local pipeline", "command": "bash ci/run.sh", "exit": 0, "result": "ALL CHECKS PASSED" },
+    {
+      "name": "clean-shell reproducibility (no inherited PATH; login shell)",
+      "command": "env -i HOME=$HOME USER=$USER TERM=$TERM bash -lc 'cd /home/srcds/dev/milpbookLM && bash ci/run.sh'",
+      "exit": 0,
+      "result": "ALL CHECKS PASSED; transcript .omo/evidence/task-1-ci-clean-shell.log (second section of the same log reproduces the orchestrator's failure mode with pi-node v22.23.1 first in PATH: also ALL CHECKS PASSED, exit 0)"
+    }
   ],
   "verification_evidence": [
     "artifacts/verification/VER-ARCH-01-001.json",
@@ -145,6 +158,7 @@
     ".omo/evidence/task-1-ci-happy.log",
     ".omo/evidence/task-1-ci-failure-injected.log",
     ".omo/evidence/task-1-ci-revert-green.log",
+    ".omo/evidence/task-1-ci-clean-shell.log",
     ".omo/evidence/task-1-milpbookml-implementation.json",
     ".omo/notepads/milpbookml-implementation/learnings.md"
   ],

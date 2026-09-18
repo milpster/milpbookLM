@@ -1,0 +1,244 @@
+
+=== 0. toolchain (pinned versions)
+v24.21.0
+12.4.2
+uv 0.9.26
+Python 3.13.3
+
+=== 1. frozen installs
+Audited 24 packages in 0.20ms
+Scope: all 4 workspace projects
+✓ Lockfile passes supply-chain policies (verified 53m ago)
+Lockfile is up to date, resolution step is skipped
+Done in 11ms using pnpm v12.4.2
+
+=== 2. lint
+All checks passed!
+108 files already formatted
+Checked 18 files in 3ms. No fixes applied.
+
+=== 3. type
+Success: no issues found in 12 source files
+
+=== 4. import-graph (layering, forbidden imports, cycles)
+
+╔══╗─────────▶╔╗ ╔╗      ╔╗◀───┐
+╚╣╠╝◀─────┐  ╔╝╚╗║║────▶╔╝╚╗   │
+ ║║   ╔══╦══╦╩╗╔╝║║  ╔╦═╩╗╔╝╔═╦══╗
+ ║║╔══╣╔╗║╔╗║╔╣║ ║║ ╔╬╣╔╗║║ ║│║╔═╝
+╔╣╠╣║║║╚╝║╚╝║║║╚╗║╚═╝║║║║║╚╗║═╣║
+╚══╩╩╩╣╔═╩══╩╝╚═╝╚═══╩╩╝╚╩═╩╩═╩╝
+  └──▶║║                    ▲ 
+      ╚╝────────────────────┘
+
+
+---------
+Contracts
+---------
+
+Analyzed 17 files, 26 dependencies.
+-----------------------------------
+
+Inward dependency layering (domain innermost) KEPT
+domain imports no adapter, application, framework KEPT
+application imports no adapter KEPT
+api and workers are independent KEPT
+
+Contracts: 4 kept, 0 broken.
+
+=== 5. conformance + architecture + meta (VER-mapped)
+wrote /home/srcds/dev/milpbookLM/artifacts/conformance.json
+============================= test session starts ==============================
+platform linux -- Python 3.13.3, pytest-9.1.1, pluggy-1.6.0 -- /home/srcds/dev/milpbookLM/.venv/bin/python3
+cachedir: .pytest_cache
+rootdir: /home/srcds/dev/milpbookLM
+configfile: pyproject.toml
+collecting ... collected 25 items
+
+tests/architecture/composition/ver-arch-03-001.py::test_composition_wires_use_case_to_adapter PASSED [  4%]
+tests/architecture/composition/ver-arch-03-001.py::test_adapter_dependency_direction_inward_only PASSED [  8%]
+tests/architecture/composition/ver-arch-03-001.py::test_evidence_record_written PASSED [ 12%]
+tests/architecture/composition/ver-arch-03-002.py::test_prohibited_import_attempted_and_absent PASSED [ 16%]
+tests/architecture/composition/ver-arch-03-002.py::test_domain_depends_on_stdlib_only PASSED [ 20%]
+tests/architecture/composition/ver-arch-03-002.py::test_evidence_record_written PASSED [ 24%]
+tests/architecture/composition/ver-arch-03-003.py::test_application_does_not_depend_on_upper_levels PASSED [ 28%]
+tests/architecture/composition/ver-arch-03-003.py::test_domain_does_not_depend_on_upper_levels PASSED [ 32%]
+tests/architecture/composition/ver-arch-03-003.py::test_evidence_record_written PASSED [ 36%]
+tests/architecture/composition/ver-arch-03-004.py::test_job_is_a_durable_queued_unit PASSED [ 40%]
+tests/architecture/composition/ver-arch-03-004.py::test_job_state_machine_transitions_forward PASSED [ 44%]
+tests/architecture/composition/ver-arch-03-004.py::test_evidence_record_written PASSED [ 48%]
+tests/architecture/dependencies/ver-arch-01-001.py::test_import_linter_contracts_green PASSED [ 52%]
+tests/architecture/dependencies/ver-arch-01-001.py::test_domain_forbidden_import_paths_absent PASSED [ 56%]
+tests/architecture/dependencies/ver-arch-01-001.py::test_evidence_record_written PASSED [ 60%]
+tests/meta/normative_extraction/ver-tech-00-001.py::test_ledger_fingerprints_and_classifications_re_derive PASSED [ 64%]
+tests/meta/normative_extraction/ver-tech-00-001.py::test_decision_registry_present PASSED [ 68%]
+tests/meta/normative_extraction/ver-tech-00-001.py::test_evidence_record_written PASSED [ 72%]
+tests/meta/normative_extraction/ver-tech-00-002.py::test_no_unclassified_requirement PASSED [ 76%]
+tests/meta/normative_extraction/ver-tech-00-002.py::test_every_deviation_is_fully_justified PASSED [ 80%]
+tests/meta/normative_extraction/ver-tech-00-002.py::test_evidence_record_written PASSED [ 84%]
+tests/meta/normative_extraction/ver-tech-00-003.py::test_conformance_shape_complete PASSED [ 88%]
+tests/meta/normative_extraction/ver-tech-00-003.py::test_stable_core_never_not_applicable PASSED [ 92%]
+tests/meta/normative_extraction/ver-tech-00-003.py::test_disabled_optionals_not_advertised PASSED [ 96%]
+tests/meta/normative_extraction/ver-tech-00-003.py::test_evidence_record_written PASSED [100%]
+
+============================== 25 passed in 0.24s ==============================
+
+=== 6. unit
+============================= test session starts ==============================
+platform linux -- Python 3.13.3, pytest-9.1.1, pluggy-1.6.0 -- /home/srcds/dev/milpbookLM/.venv/bin/python3
+cachedir: .pytest_cache
+rootdir: /home/srcds/dev/milpbookLM
+configfile: pyproject.toml
+collecting ... collected 9 items
+
+tests/unit/test_api_composition.py::test_composition_round_trip PASSED   [ 11%]
+tests/unit/test_api_composition.py::test_composition_unknown_lookup_returns_none PASSED [ 22%]
+tests/unit/test_application_create_notebook.py::test_create_returns_active_notebook_with_trimmed_title PASSED [ 33%]
+tests/unit/test_application_create_notebook.py::test_create_rejects_empty_title PASSED [ 44%]
+tests/unit/test_domain_notebook.py::test_archive_active_returns_new_archived_notebook PASSED [ 55%]
+tests/unit/test_domain_notebook.py::test_archive_is_idempotent PASSED    [ 66%]
+tests/unit/test_domain_notebook.py::test_notebook_is_immutable PASSED    [ 77%]
+tests/unit/test_worker_job.py::test_job_starts_queued_in_its_queue PASSED [ 88%]
+tests/unit/test_worker_job.py::test_job_runs_forward_preserving_identity PASSED [100%]
+
+============================== 9 passed in 0.01s ===============================
+(!) Your Vite config uses features that are unsupported by `configLoader: 'native'`, which is planned to become the default in a future major version of Vite:
+  - ESM syntax in a file loaded as CommonJS (vitest.config.ts:1:1). Use a `.mjs` extension or set `"type": "module"` in the closest package.json
+Set `VITE_CONFIG_NATIVE_IGNORE_WARNING=true` to suppress this warning.
+
+[1m[30m[46m RUN [49m[39m[22m [36mv4.1.11 [39m[90m/home/srcds/dev/milpbookLM[39m
+
+ [32m✓[39m packages/web/domain/src/notebook.test.ts [2m([22m[2m3 tests[22m[2m)[22m[32m 3[2mms[22m[39m
+
+[2m Test Files [22m [1m[32m1 passed[39m[22m[90m (1)[39m
+[2m      Tests [22m [1m[32m3 passed[39m[22m[90m (3)[39m
+[2m   Start at [22m 06:46:38
+[2m   Duration [22m 114ms[2m (transform 15ms, setup 0ms, import 25ms, tests 3ms, environment 0ms)[22m
+
+
+=== 7. openapi placeholder (structural gate; generation lands with API tasks)
+openapi.yaml: valid OpenAPI 3.1 stub
+
+=== ALL CHECKS PASSED
+v22.23.1
+
+=== 0. toolchain (pinned versions)
+v24.21.0
+12.4.2
+uv 0.9.26
+Python 3.13.3
+
+=== 1. frozen installs
+Audited 24 packages in 0.20ms
+Scope: all 4 workspace projects
+✓ Lockfile passes supply-chain policies (verified 53m ago)
+Lockfile is up to date, resolution step is skipped
+Done in 9ms using pnpm v12.4.2
+
+=== 2. lint
+All checks passed!
+108 files already formatted
+Checked 18 files in 3ms. No fixes applied.
+
+=== 3. type
+Success: no issues found in 12 source files
+
+=== 4. import-graph (layering, forbidden imports, cycles)
+
+╔══╗─────────▶╔╗ ╔╗      ╔╗◀───┐
+╚╣╠╝◀─────┐  ╔╝╚╗║║────▶╔╝╚╗   │
+ ║║   ╔══╦══╦╩╗╔╝║║  ╔╦═╩╗╔╝╔═╦══╗
+ ║║╔══╣╔╗║╔╗║╔╣║ ║║ ╔╬╣╔╗║║ ║│║╔═╝
+╔╣╠╣║║║╚╝║╚╝║║║╚╗║╚═╝║║║║║╚╗║═╣║
+╚══╩╩╩╣╔═╩══╩╝╚═╝╚═══╩╩╝╚╩═╩╩═╩╝
+  └──▶║║                    ▲ 
+      ╚╝────────────────────┘
+
+
+---------
+Contracts
+---------
+
+Analyzed 17 files, 26 dependencies.
+-----------------------------------
+
+Inward dependency layering (domain innermost) KEPT
+domain imports no adapter, application, framework KEPT
+application imports no adapter KEPT
+api and workers are independent KEPT
+
+Contracts: 4 kept, 0 broken.
+
+=== 5. conformance + architecture + meta (VER-mapped)
+wrote /home/srcds/dev/milpbookLM/artifacts/conformance.json
+============================= test session starts ==============================
+platform linux -- Python 3.13.3, pytest-9.1.1, pluggy-1.6.0 -- /home/srcds/dev/milpbookLM/.venv/bin/python3
+cachedir: .pytest_cache
+rootdir: /home/srcds/dev/milpbookLM
+configfile: pyproject.toml
+collecting ... collected 25 items
+
+tests/architecture/composition/ver-arch-03-001.py::test_composition_wires_use_case_to_adapter PASSED [  4%]
+tests/architecture/composition/ver-arch-03-001.py::test_adapter_dependency_direction_inward_only PASSED [  8%]
+tests/architecture/composition/ver-arch-03-001.py::test_evidence_record_written PASSED [ 12%]
+tests/architecture/composition/ver-arch-03-002.py::test_prohibited_import_attempted_and_absent PASSED [ 16%]
+tests/architecture/composition/ver-arch-03-002.py::test_domain_depends_on_stdlib_only PASSED [ 20%]
+tests/architecture/composition/ver-arch-03-002.py::test_evidence_record_written PASSED [ 24%]
+tests/architecture/composition/ver-arch-03-003.py::test_application_does_not_depend_on_upper_levels PASSED [ 28%]
+tests/architecture/composition/ver-arch-03-003.py::test_domain_does_not_depend_on_upper_levels PASSED [ 32%]
+tests/architecture/composition/ver-arch-03-003.py::test_evidence_record_written PASSED [ 36%]
+tests/architecture/composition/ver-arch-03-004.py::test_job_is_a_durable_queued_unit PASSED [ 40%]
+tests/architecture/composition/ver-arch-03-004.py::test_job_state_machine_transitions_forward PASSED [ 44%]
+tests/architecture/composition/ver-arch-03-004.py::test_evidence_record_written PASSED [ 48%]
+tests/architecture/dependencies/ver-arch-01-001.py::test_import_linter_contracts_green PASSED [ 52%]
+tests/architecture/dependencies/ver-arch-01-001.py::test_domain_forbidden_import_paths_absent PASSED [ 56%]
+tests/architecture/dependencies/ver-arch-01-001.py::test_evidence_record_written PASSED [ 60%]
+tests/meta/normative_extraction/ver-tech-00-001.py::test_ledger_fingerprints_and_classifications_re_derive PASSED [ 64%]
+tests/meta/normative_extraction/ver-tech-00-001.py::test_decision_registry_present PASSED [ 68%]
+tests/meta/normative_extraction/ver-tech-00-001.py::test_evidence_record_written PASSED [ 72%]
+tests/meta/normative_extraction/ver-tech-00-002.py::test_no_unclassified_requirement PASSED [ 76%]
+tests/meta/normative_extraction/ver-tech-00-002.py::test_every_deviation_is_fully_justified PASSED [ 80%]
+tests/meta/normative_extraction/ver-tech-00-002.py::test_evidence_record_written PASSED [ 84%]
+tests/meta/normative_extraction/ver-tech-00-003.py::test_conformance_shape_complete PASSED [ 88%]
+tests/meta/normative_extraction/ver-tech-00-003.py::test_stable_core_never_not_applicable PASSED [ 92%]
+tests/meta/normative_extraction/ver-tech-00-003.py::test_disabled_optionals_not_advertised PASSED [ 96%]
+tests/meta/normative_extraction/ver-tech-00-003.py::test_evidence_record_written PASSED [100%]
+
+============================== 25 passed in 0.25s ==============================
+
+=== 6. unit
+============================= test session starts ==============================
+platform linux -- Python 3.13.3, pytest-9.1.1, pluggy-1.6.0 -- /home/srcds/dev/milpbookLM/.venv/bin/python3
+cachedir: .pytest_cache
+rootdir: /home/srcds/dev/milpbookLM
+configfile: pyproject.toml
+collecting ... collected 9 items
+
+tests/unit/test_api_composition.py::test_composition_round_trip PASSED   [ 11%]
+tests/unit/test_api_composition.py::test_composition_unknown_lookup_returns_none PASSED [ 22%]
+tests/unit/test_application_create_notebook.py::test_create_returns_active_notebook_with_trimmed_title PASSED [ 33%]
+tests/unit/test_application_create_notebook.py::test_create_rejects_empty_title PASSED [ 44%]
+tests/unit/test_domain_notebook.py::test_archive_active_returns_new_archived_notebook PASSED [ 55%]
+tests/unit/test_domain_notebook.py::test_archive_is_idempotent PASSED    [ 66%]
+tests/unit/test_domain_notebook.py::test_notebook_is_immutable PASSED    [ 77%]
+tests/unit/test_worker_job.py::test_job_starts_queued_in_its_queue PASSED [ 88%]
+tests/unit/test_worker_job.py::test_job_runs_forward_preserving_identity PASSED [100%]
+
+============================== 9 passed in 0.01s ===============================
+(!) Your Vite config uses features that are unsupported by `configLoader: 'native'`, which is planned to become the default in a future major version of Vite:
+  - ESM syntax in a file loaded as CommonJS (vitest.config.ts:1:1). Use a `.mjs` extension or set `"type": "module"` in the closest package.json
+Set `VITE_CONFIG_NATIVE_IGNORE_WARNING=true` to suppress this warning.
+
+ RUN  v4.1.11 /home/srcds/dev/milpbookLM
+
+
+ Test Files  1 passed (1)
+      Tests  3 passed (3)
+   Start at  06:47:12
+   Duration  112ms (transform 15ms, setup 0ms, import 23ms, tests 3ms, environment 0ms)
+
+
+=== 7. openapi placeholder (structural gate; generation lands with API tasks)
+openapi.yaml: valid OpenAPI 3.1 stub
+
+=== ALL CHECKS PASSED
