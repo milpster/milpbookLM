@@ -1,0 +1,63 @@
+{
+  "schema_version": 2,
+  "active_work_id": "milpbookml-implementation-a6e9978e",
+  "works": {
+    "milpbookml-implementation-a6e9978e": {
+      "work_id": "milpbookml-implementation-a6e9978e",
+      "active_plan": "/home/srcds/dev/milpbookLM/.omo/plans/milpbookml-implementation.md",
+      "plan_name": "milpbookml-implementation",
+      "status": "active",
+      "started_at": "2026-09-18T00:53:49.594Z",
+      "updated_at": "2026-09-18T04:54:31.742Z",
+      "session_ids": [
+        "opencode:ses_f5354471dffeX50hNrrmpSPzuK"
+      ],
+      "session_origins": {
+        "opencode:ses_f5354471dffeX50hNrrmpSPzuK": "direct"
+      },
+      "agent": "atlas",
+      "task_sessions": {
+        "todo:1": {
+          "task_key": "todo:1",
+          "task_label": "1",
+          "task_title": "FND-01 — Repository skeleton, frozen locks, module boundaries, CI pipeline",
+          "session_id": "opencode:ses_f4dfab755ffe0dOuTZcXax7iS1",
+          "agent": "Sisyphus-Junior",
+          "category": "deep",
+          "started_at": "2026-09-18T04:24:00.418Z",
+          "status": "completed",
+          "updated_at": "2026-09-18T04:54:31.742Z",
+          "ended_at": "2026-09-18T04:54:31.742Z",
+          "elapsed_ms": 1831324
+        }
+      }
+    }
+  },
+  "active_plan": "/home/srcds/dev/milpbookLM/.omo/plans/milpbookml-implementation.md",
+  "started_at": "2026-09-18T00:53:49.594Z",
+  "status": "active",
+  "updated_at": "2026-09-18T04:54:31.742Z",
+  "session_ids": [
+    "opencode:ses_f5354471dffeX50hNrrmpSPzuK"
+  ],
+  "session_origins": {
+    "opencode:ses_f5354471dffeX50hNrrmpSPzuK": "direct"
+  },
+  "plan_name": "milpbookml-implementation",
+  "task_sessions": {
+    "todo:1": {
+      "task_key": "todo:1",
+      "task_label": "1",
+      "task_title": "FND-01 — Repository skeleton, frozen locks, module boundaries, CI pipeline",
+      "session_id": "opencode:ses_f4dfab755ffe0dOuTZcXax7iS1",
+      "agent": "Sisyphus-Junior",
+      "category": "deep",
+      "started_at": "2026-09-18T04:24:00.418Z",
+      "status": "completed",
+      "updated_at": "2026-09-18T04:54:31.742Z",
+      "ended_at": "2026-09-18T04:54:31.742Z",
+      "elapsed_ms": 1831324
+    }
+  },
+  "agent": "atlas"
+}
