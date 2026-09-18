@@ -6,8 +6,8 @@
       "work_id": "milpbookml-implementation-a6e9978e",
       "active_plan": "/home/srcds/dev/milpbookLM/.omo/plans/milpbookml-implementation.md",
       "plan_name": "milpbookml-implementation",
-      "status": "paused",
-      "pause_reason": "user-ordered maintenance downtime 2026-09-18; halt until user says go on",
+      "status": "active",
+      "pause_reason": null,
       "started_at": "2026-09-18T00:53:49.594Z",
       "updated_at": "2026-09-18T10:49:33.607Z",
       "session_ids": [
@@ -47,7 +47,7 @@
   },
   "active_plan": "/home/srcds/dev/milpbookLM/.omo/plans/milpbookml-implementation.md",
   "started_at": "2026-09-18T00:53:49.594Z",
-  "status": "paused",
+  "status": "active",
   "updated_at": "2026-09-18T10:49:33.607Z",
   "session_ids": [
     "opencode:ses_f5354471dffeX50hNrrmpSPzuK"
