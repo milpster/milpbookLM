@@ -8,7 +8,7 @@
       "plan_name": "milpbookml-implementation",
       "status": "active",
       "started_at": "2026-09-18T00:53:49.594Z",
-      "updated_at": "2026-09-18T04:54:31.742Z",
+      "updated_at": "2026-09-18T10:49:33.607Z",
       "session_ids": [
         "opencode:ses_f5354471dffeX50hNrrmpSPzuK"
       ],
@@ -29,6 +29,17 @@
           "updated_at": "2026-09-18T04:54:31.742Z",
           "ended_at": "2026-09-18T04:54:31.742Z",
           "elapsed_ms": 1831324
+        },
+        "todo:2": {
+          "task_key": "todo:2",
+          "task_label": "2",
+          "task_title": "FND-02 — Typed configuration, capability profile, specification tooling",
+          "session_id": "opencode:ses_f4d208455ffeUfqyx717whA0Wx",
+          "agent": "Sisyphus-Junior",
+          "category": "deep",
+          "updated_at": "2026-09-18T10:49:33.607Z",
+          "started_at": "2026-09-18T10:49:33.607Z",
+          "status": "running"
         }
       }
     }
@@ -36,7 +47,7 @@
   "active_plan": "/home/srcds/dev/milpbookLM/.omo/plans/milpbookml-implementation.md",
   "started_at": "2026-09-18T00:53:49.594Z",
   "status": "active",
-  "updated_at": "2026-09-18T04:54:31.742Z",
+  "updated_at": "2026-09-18T10:49:33.607Z",
   "session_ids": [
     "opencode:ses_f5354471dffeX50hNrrmpSPzuK"
   ],
@@ -57,6 +68,17 @@
       "updated_at": "2026-09-18T04:54:31.742Z",
       "ended_at": "2026-09-18T04:54:31.742Z",
       "elapsed_ms": 1831324
+    },
+    "todo:2": {
+      "task_key": "todo:2",
+      "task_label": "2",
+      "task_title": "FND-02 — Typed configuration, capability profile, specification tooling",
+      "session_id": "opencode:ses_f4d208455ffeUfqyx717whA0Wx",
+      "agent": "Sisyphus-Junior",
+      "category": "deep",
+      "updated_at": "2026-09-18T10:49:33.607Z",
+      "started_at": "2026-09-18T10:49:33.607Z",
+      "status": "running"
     }
   },
   "agent": "atlas"
