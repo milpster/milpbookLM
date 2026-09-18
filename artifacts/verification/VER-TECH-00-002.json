@@ -1,0 +1,19 @@
+{
+  "verification_id": "VER-TECH-00-002",
+  "requirement_id": "TECH-00-002",
+  "task": "FND-01",
+  "test_path": "tests/meta/normative_extraction/ver-tech-00-002.py",
+  "result": "passed",
+  "timestamp": "2026-09-18T04:03:43.056818+00:00",
+  "checks": {
+    "total_requirements": 507,
+    "unclassified": 0,
+    "deviations": 0,
+    "deviation_policy": "every deviation must carry risk, compensation, reconsideration_point"
+  },
+  "environment": {
+    "python": "3.13.3",
+    "platform": "Linux-7.2.6-x64v3-xanmod1-x86_64-with-glibc2.41",
+    "host": "GUAM"
+  }
+}

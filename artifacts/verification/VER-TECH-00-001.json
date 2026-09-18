@@ -1,0 +1,19 @@
+{
+  "verification_id": "VER-TECH-00-001",
+  "requirement_id": "TECH-00-001",
+  "task": "FND-01",
+  "test_path": "tests/meta/normative_extraction/ver-tech-00-001.py",
+  "result": "passed",
+  "timestamp": "2026-09-18T04:03:43.043494+00:00",
+  "checks": {
+    "ledger_requirements": 507,
+    "violations": 0,
+    "fingerprint_formula": "SHA-256(source + LF + term + LF + occurrence_on_line + LF + normalized statement)",
+    "tad_registry": "TAD-001..TAD-012 present in 00-status-decisions.md"
+  },
+  "environment": {
+    "python": "3.13.3",
+    "platform": "Linux-7.2.6-x64v3-xanmod1-x86_64-with-glibc2.41",
+    "host": "GUAM"
+  }
+}

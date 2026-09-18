@@ -1,0 +1,33 @@
+{
+  "verification_id": "VER-ARCH-01-001",
+  "requirement_id": "ARCH-01-001",
+  "task": "FND-01",
+  "test_path": "tests/architecture/dependencies/ver-arch-01-001.py",
+  "result": "passed",
+  "timestamp": "2026-09-18T04:07:54.323231+00:00",
+  "checks": {
+    "import_linter": {
+      "returncode": 0,
+      "contracts": [
+        "Contracts: 4 kept, 0 broken."
+      ]
+    },
+    "forbidden_imports_in_domain": [
+      "fastapi",
+      "httpx",
+      "milpbooklm_adapters",
+      "milpbooklm_api",
+      "milpbooklm_application",
+      "milpbooklm_workers",
+      "pydantic",
+      "sqlalchemy",
+      "uvicorn"
+    ],
+    "forbidden_hits": {}
+  },
+  "environment": {
+    "python": "3.13.3",
+    "platform": "Linux-7.2.6-x64v3-xanmod1-x86_64-with-glibc2.41",
+    "host": "GUAM"
+  }
+}

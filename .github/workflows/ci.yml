@@ -1,0 +1,106 @@
+name: ci
+
+# FND-01 PR pipeline. Mirrored 1:1 by ci/run.sh (local execution,
+# orchestrator-approved: no remote/runner exists yet for this repository).
+on:
+  pull_request:
+  push:
+    branches: [main]
+
+concurrency:
+  group: ci-${{ github.ref }}
+  cancel-in-progress: true
+
+env:
+  NODE_VERSION: "24.21.0"
+  PNPM_VERSION: "12.4.2"
+  # Exact digest of the linux/amd64 node:24.21.0 image
+  # (docker buildx imagetools inspect, recorded 2026-09-18; TAD-012).
+  NODE_IMAGE: node:24.21.0@sha256:b977d0f785d96029d8d4c0790b6bf1c2a4c72e0f26319808e7ba2e9d966a1ac3
+
+jobs:
+  python:
+    name: python (lint + type + import-graph + unit + architecture)
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Record toolchain versions
+        run: |
+          uv --version
+          uv python install 3.13
+          uv run python --version
+
+      - name: Setup uv (frozen install)
+        uses: astral-sh/setup-uv@v7
+        with:
+          enable-cache: true
+
+      - name: Frozen install (uv sync --frozen --all-packages)
+        run: uv sync --frozen --all-packages
+
+      - name: Lint (ruff)
+        run: |
+          uv run ruff check .
+          uv run ruff format --check .
+
+      - name: Type (mypy strict)
+        run: uv run mypy
+
+      - name: Import-graph (import-linter: layering, forbidden, cycles)
+        run: uv run import-linter lint
+
+      - name: Conformance + architecture + meta (VER-mapped)
+        run: |
+          uv run python tools/spec/emit_conformance.py
+          uv run pytest tests/architecture tests/meta -v
+
+      - name: Unit
+        run: uv run pytest tests/unit -v
+
+      - name: OpenAPI placeholder gate
+        run: bash ci/check-openapi.sh
+
+      - name: Upload verification evidence
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: verification-evidence
+          path: |
+            artifacts/verification/
+            artifacts/conformance.json
+
+  frontend:
+    name: frontend (digest-pinned node:24.21.0 + frozen pnpm)
+    runs-on: ubuntu-latest
+    container: ${{ env.NODE_IMAGE }}
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Record toolchain versions
+        run: |
+          node --version
+          corepack enable
+          pnpm --version
+
+      - name: Cache pnpm store
+        uses: actions/cache@v4
+        with:
+          path: /root/.local/share/pnpm/store
+          key: pnpm-${{ runner.os }}-${{ hashFiles('pnpm-lock.yaml') }}
+          restore-keys: pnpm-${{ runner.os }}-
+
+      - name: Frozen install (pnpm install --frozen-lockfile)
+        run: pnpm install --frozen-lockfile
+
+      - name: Type (tsc --build, project references mirror import rules)
+        run: pnpm exec tsc --build --force
+
+      - name: Lint (biome)
+        run: pnpm exec biome check .
+
+      - name: Unit (vitest)
+        run: pnpm exec vitest run
+
+      - name: OpenAPI placeholder gate
+        run: bash ci/check-openapi.sh

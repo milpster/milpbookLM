@@ -1,0 +1,22 @@
+{
+  "verification_id": "VER-ARCH-03-004",
+  "requirement_id": "ARCH-03-004",
+  "task": "FND-01",
+  "test_path": "tests/architecture/composition/ver-arch-03-004.py",
+  "result": "passed",
+  "timestamp": "2026-09-18T04:07:54.102571+00:00",
+  "checks": {
+    "job_states": [
+      "queued",
+      "running",
+      "succeeded",
+      "failed"
+    ],
+    "transition": "QUEUED -> RUNNING via Job.run()"
+  },
+  "environment": {
+    "python": "3.13.3",
+    "platform": "Linux-7.2.6-x64v3-xanmod1-x86_64-with-glibc2.41",
+    "host": "GUAM"
+  }
+}

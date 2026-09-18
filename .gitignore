@@ -1,0 +1,26 @@
+# Python
+__pycache__/
+*.py[cod]
+*.egg-info/
+.mypy_cache/
+.ruff_cache/
+.pytest_cache/
+.venv/
+.coverage
+
+# Node / frontend build artifacts
+node_modules/
+dist/
+*.tsbuildinfo
+
+# Tool / agent state — never commit
+.omem/
+.serena/
+compaction-handoff/
+.codegraph
+
+# OS
+.DS_Store
+
+# NOTE: .omo/ (plan state + evidence) and uv.lock / pnpm-lock.yaml are
+# intentionally NOT ignored — they are committed state (FND-01).

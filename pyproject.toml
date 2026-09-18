@@ -1,0 +1,166 @@
+[project]
+name = "milpbooklm"
+version = "0.1.0"
+description = "milpbookML - self-hosted, source-grounded research notebook (monorepo root)"
+requires-python = ">=3.13,<3.14"
+dependencies = []
+
+[dependency-groups]
+dev = [
+    "import-linter>=2.14",
+    "mypy>=1.19",
+    "pytest>=8.4",
+    "ruff>=0.14",
+]
+
+[tool.uv]
+# The root is a virtual umbrella (uv workspace) project: nothing to ship.
+package = false
+
+[tool.uv.workspace]
+members = [
+    "apps/api",
+    "workers",
+    "packages/domain",
+    "packages/application",
+    "packages/adapters",
+    "packages/contracts",
+]
+
+[tool.uv.sources]
+milpbooklm-api = { workspace = true }
+milpbooklm-domain = { workspace = true }
+milpbooklm-application = { workspace = true }
+milpbooklm-adapters = { workspace = true }
+milpbooklm-contracts = { workspace = true }
+milpbooklm-workers = { workspace = true }
+
+[tool.ruff]
+line-length = 100
+target-version = "py313"
+src = ["packages", "apps", "workers", "tools", "tests"]
+
+[tool.ruff.lint]
+# Curated strict set (correctness + quality). Deliberately NOT "ALL": that
+# enables opinionated rules (copyright headers, forced type-checking-import
+# moves) that add noise without catching defects.
+select = [
+    "E", "W", "F",       # pycodestyle, pyflakes
+    "I",                 # isort
+    "N",                 # pep8-naming
+    "UP",                # pyupgrade
+    "B",                 # flake8-bugbear
+    "C4",                # comprehensions
+    "SIM",               # simplify
+    "C90",               # mccabe complexity
+    "RET",               # return
+    "PT",                # pytest style
+    "PTH",               # use pathlib
+    "PL",                # pylint
+    "RUF",               # ruff-specific
+    "D",                 # pydocstyle (public API docstrings)
+    "ANN",               # annotations
+    "S",                 # bandit (security)
+    "TID",               # tidy imports
+    "PERF",              # performance
+    "INP",               # implicit namespace packages
+    "LOG",               # logging
+]
+ignore = [
+    "ANN401",   # dynamically-typed (Any) expressions are acceptable at boundaries
+    "PLR0913",  # a few constructors legitimately take several args
+    "D203",     # incompatible with D211 (Ruff resolves; made explicit)
+    "D212",     # incompatible with D213 (Ruff resolves; made explicit)
+]
+
+[tool.ruff.lint.per-file-ignores]
+# Test module names are MANDATED by requirements.generated.json test_path
+# (ver-arch-01-001.py etc.), so N999 must not fire there. Tests run subprocess
+# (import-linter) and use local imports by design.
+"tests/**/*.py" = ["N999", "S", "D", "PLC0415"]
+# tools/spec are standalone CLI scripts: print is the point, no package needed.
+"tools/**/*.py" = ["T201", "INP001", "S"]
+
+[tool.mypy]
+python_version = "3.13"
+strict = true
+mypy_path = "packages/domain/src:packages/application/src:packages/adapters/src:packages/contracts/src:apps/api/src:workers/src"
+packages = ["milpbooklm_domain", "milpbooklm_application", "milpbooklm_adapters", "milpbooklm_contracts", "milpbooklm_api", "milpbooklm_workers"]
+warn_unreachable = true
+disallow_any_unimported = false
+show_error_codes = true
+
+[tool.pytest.ini_options]
+testpaths = ["tests"]
+addopts = "-ra"
+# The spec (requirements.generated.json test_path) mandates VER module names
+# such as ver-arch-01-001.py, which the default "test_*.py" pattern misses.
+python_files = ["test_*.py", "ver-*.py"]
+
+[tool.importlinter]
+# The forbidden contracts name external framework modules (fastapi, sqlalchemy,
+# ...), so import-linter must scan beyond the root packages.
+include_external_packages = true
+root_packages = [
+    "milpbooklm_api",
+    "milpbooklm_workers",
+    "milpbooklm_adapters",
+    "milpbooklm_application",
+    "milpbooklm_domain",
+    "milpbooklm_contracts",
+]
+
+# ARCH-01-001 / ARCH-03-001..003: dependencies point inward (domain innermost);
+# the layers contract also fails on circular dependencies between layers.
+[[tool.importlinter.contracts]]
+name = "Inward dependency layering (domain innermost)"
+type = "layers"
+layers = [
+    "milpbooklm_api",
+    "milpbooklm_workers",
+    "milpbooklm_adapters",
+    "milpbooklm_application",
+    "milpbooklm_domain",
+]
+
+# ARCH-03-002: domain is authoritative and pure - no framework/adapter leakage.
+[[tool.importlinter.contracts]]
+name = "domain imports no adapter, application, framework"
+type = "forbidden"
+source_modules = [
+    "milpbooklm_domain",
+]
+forbidden_modules = [
+    "milpbooklm_adapters",
+    "milpbooklm_application",
+    "milpbooklm_api",
+    "milpbooklm_workers",
+    "fastapi",
+    "sqlalchemy",
+    "pydantic",
+    "uvicorn",
+    "httpx",
+]
+
+# ARCH-03-003: lower levels must not depend on upper levels.
+[[tool.importlinter.contracts]]
+name = "application imports no adapter"
+type = "forbidden"
+source_modules = [
+    "milpbooklm_application",
+]
+forbidden_modules = [
+    "milpbooklm_adapters",
+    "milpbooklm_api",
+    "milpbooklm_workers",
+]
+
+# 1.2.3: the two outermost runtime components are independent of each other
+# (api does not import workers and vice versa).
+[[tool.importlinter.contracts]]
+name = "api and workers are independent"
+type = "independence"
+modules = [
+    "milpbooklm_api",
+    "milpbooklm_workers",
+]

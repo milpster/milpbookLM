@@ -1,0 +1,44 @@
+=== FAILURE-MODE QA: injection reverted; re-running guards (expect all green) ===
+
+--- import-linter lint ---
+
+╔══╗─────────▶╔╗ ╔╗      ╔╗◀───┐
+╚╣╠╝◀─────┐  ╔╝╚╗║║────▶╔╝╚╗   │
+ ║║   ╔══╦══╦╩╗╔╝║║  ╔╦═╩╗╔╝╔═╦══╗
+ ║║╔══╣╔╗║╔╗║╔╣║ ║║ ╔╬╣╔╗║║ ║│║╔═╝
+╔╣╠╣║║║╚╝║╚╝║║║╚╗║╚═╝║║║║║╚╗║═╣║
+╚══╩╩╩╣╔═╩══╩╝╚═╝╚═══╩╩╝╚╩═╩╩═╩╝
+  └──▶║║                    ▲ 
+      ╚╝────────────────────┘
+
+
+---------
+Contracts
+---------
+
+Analyzed 17 files, 26 dependencies.
+-----------------------------------
+
+Inward dependency layering (domain innermost) KEPT
+domain imports no adapter, application, framework KEPT
+application imports no adapter KEPT
+api and workers are independent KEPT
+
+Contracts: 4 kept, 0 broken.
+import-linter exit=0
+
+--- pytest tests/architecture ---
+============================= test session starts ==============================
+platform linux -- Python 3.13.3, pytest-9.1.1, pluggy-1.6.0
+rootdir: /home/srcds/dev/milpbookLM
+configfile: pyproject.toml
+collected 15 items
+
+tests/architecture/composition/ver-arch-03-001.py ...                    [ 20%]
+tests/architecture/composition/ver-arch-03-002.py ...                    [ 40%]
+tests/architecture/composition/ver-arch-03-003.py ...                    [ 60%]
+tests/architecture/composition/ver-arch-03-004.py ...                    [ 80%]
+tests/architecture/dependencies/ver-arch-01-001.py ...                   [100%]
+
+============================== 15 passed in 0.24s ==============================
+pytest exit=0

@@ -1,0 +1,14 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://milpbooklm.local/schemas/notebook.schema.json",
+  "title": "Notebook",
+  "description": "Versioned JSON Schema mirror of the domain Notebook entity (TAD-009).",
+  "type": "object",
+  "required": ["id", "title", "status"],
+  "properties": {
+    "id": { "type": "string", "format": "uuid" },
+    "title": { "type": "string", "minLength": 1 },
+    "status": { "type": "string", "enum": ["active", "archived"] }
+  },
+  "additionalProperties": false
+}

@@ -1,0 +1,19 @@
+{
+  "name": "@milpbooklm/web",
+  "version": "0.1.0",
+  "private": true,
+  "type": "module",
+  "description": "React application composition root (skeleton; React 19 lands with the web capability tasks).",
+  "main": "./dist/index.js",
+  "types": "./dist/index.d.ts",
+  "exports": {
+    ".": {
+      "types": "./dist/index.d.ts",
+      "import": "./dist/index.js"
+    }
+  },
+  "dependencies": {
+    "@milpbooklm/web-application": "workspace:*",
+    "@milpbooklm/web-domain": "workspace:*"
+  }
+}

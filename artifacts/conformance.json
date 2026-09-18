@@ -1,0 +1,1018 @@
+{
+  "schema_version": 1,
+  "generated_by": "tools/spec/emit_conformance.py",
+  "task": "FND-01",
+  "build": "95bd037cc4440c73f4a0d959f1c46f0d3611b46e",
+  "timestamp": "2026-09-18T04:03:42.672687+00:00",
+  "requirements_total": 507,
+  "capabilities": [
+    {
+      "id": "notebook_management",
+      "classification": "stable/core",
+      "implementation_status": "not_started",
+      "enabled": false,
+      "dependencies": [
+        "postgresql",
+        "blob_store"
+      ],
+      "automated_tests": [
+        "CAP-PROFILE-001",
+        "PHASE-GATE-001",
+        "PARITY-ACCEPTANCE-001"
+      ],
+      "manual_tests": []
+    },
+    {
+      "id": "notebook_instructions",
+      "classification": "stable/core",
+      "implementation_status": "not_started",
+      "enabled": false,
+      "dependencies": [
+        "postgresql",
+        "blob_store"
+      ],
+      "automated_tests": [
+        "CAP-PROFILE-001",
+        "PHASE-GATE-001",
+        "PARITY-ACCEPTANCE-001"
+      ],
+      "manual_tests": []
+    },
+    {
+      "id": "notebook_overview",
+      "classification": "stable/core",
+      "implementation_status": "not_started",
+      "enabled": false,
+      "dependencies": [
+        "postgresql",
+        "blob_store",
+        "chat_provider",
+        "embedding_provider"
+      ],
+      "automated_tests": [
+        "CAP-PROFILE-001",
+        "PHASE-GATE-001",
+        "PARITY-ACCEPTANCE-001"
+      ],
+      "manual_tests": []
+    },
+    {
+      "id": "sources",
+      "classification": "stable/core",
+      "implementation_status": "not_started",
+      "enabled": false,
+      "dependencies": [
+        "postgresql",
+        "blob_store"
+      ],
+      "automated_tests": [
+        "CAP-PROFILE-001",
+        "PHASE-GATE-001",
+        "PARITY-ACCEPTANCE-001",
+        "E2E-002"
+      ],
+      "manual_tests": []
+    },
+    {
+      "id": "source_guide",
+      "classification": "stable/core",
+      "implementation_status": "not_started",
+      "enabled": false,
+      "dependencies": [
+        "postgresql",
+        "blob_store",
+        "chat_provider",
+        "embedding_provider"
+      ],
+      "automated_tests": [
+        "CAP-PROFILE-001",
+        "PHASE-GATE-001",
+        "PARITY-ACCEPTANCE-001"
+      ],
+      "manual_tests": []
+    },
+    {
+      "id": "source_organization",
+      "classification": "stable/core",
+      "implementation_status": "not_started",
+      "enabled": false,
+      "dependencies": [
+        "postgresql",
+        "blob_store"
+      ],
+      "automated_tests": [
+        "CAP-PROFILE-001",
+        "PHASE-GATE-001",
+        "PARITY-ACCEPTANCE-001"
+      ],
+      "manual_tests": []
+    },
+    {
+      "id": "grounded_chat",
+      "classification": "stable/core",
+      "implementation_status": "not_started",
+      "enabled": false,
+      "dependencies": [
+        "postgresql",
+        "blob_store",
+        "chat_provider",
+        "embedding_provider"
+      ],
+      "automated_tests": [
+        "CAP-PROFILE-001",
+        "PHASE-GATE-001",
+        "PARITY-ACCEPTANCE-001",
+        "E2E-001"
+      ],
+      "manual_tests": []
+    },
+    {
+      "id": "chat_configuration",
+      "classification": "stable/core",
+      "implementation_status": "not_started",
+      "enabled": false,
+      "dependencies": [
+        "postgresql",
+        "blob_store",
+        "chat_provider",
+        "embedding_provider"
+      ],
+      "automated_tests": [
+        "CAP-PROFILE-001",
+        "PHASE-GATE-001",
+        "PARITY-ACCEPTANCE-001"
+      ],
+      "manual_tests": []
+    },
+    {
+      "id": "agentic_chat",
+      "classification": "stable/core",
+      "implementation_status": "not_started",
+      "enabled": false,
+      "dependencies": [
+        "postgresql",
+        "blob_store",
+        "searxng",
+        "playwright"
+      ],
+      "automated_tests": [
+        "CAP-PROFILE-001",
+        "PHASE-GATE-001",
+        "PARITY-ACCEPTANCE-001",
+        "E2E-008"
+      ],
+      "manual_tests": []
+    },
+    {
+      "id": "chat_lifecycle",
+      "classification": "stable/core",
+      "implementation_status": "not_started",
+      "enabled": false,
+      "dependencies": [
+        "postgresql",
+        "blob_store"
+      ],
+      "automated_tests": [
+        "CAP-PROFILE-001",
+        "PHASE-GATE-001",
+        "PARITY-ACCEPTANCE-001"
+      ],
+      "manual_tests": []
+    },
+    {
+      "id": "citations",
+      "classification": "stable/core",
+      "implementation_status": "not_started",
+      "enabled": false,
+      "dependencies": [
+        "postgresql",
+        "blob_store"
+      ],
+      "automated_tests": [
+        "CAP-PROFILE-001",
+        "PHASE-GATE-001",
+        "PARITY-ACCEPTANCE-001",
+        "E2E-001"
+      ],
+      "manual_tests": []
+    },
+    {
+      "id": "notes",
+      "classification": "stable/core",
+      "implementation_status": "not_started",
+      "enabled": false,
+      "dependencies": [
+        "postgresql",
+        "blob_store"
+      ],
+      "automated_tests": [
+        "CAP-PROFILE-001",
+        "PHASE-GATE-001",
+        "PARITY-ACCEPTANCE-001",
+        "E2E-004"
+      ],
+      "manual_tests": []
+    },
+    {
+      "id": "evolving_note_integration",
+      "classification": "provisional/announced",
+      "implementation_status": "not_started",
+      "enabled": false,
+      "dependencies": [
+        "postgresql",
+        "blob_store"
+      ],
+      "automated_tests": [
+        "CAP-PROFILE-001",
+        "PHASE-GATE-001"
+      ],
+      "manual_tests": []
+    },
+    {
+      "id": "reports",
+      "classification": "stable/core",
+      "implementation_status": "not_started",
+      "enabled": false,
+      "dependencies": [
+        "postgresql",
+        "blob_store"
+      ],
+      "automated_tests": [
+        "CAP-PROFILE-001",
+        "PHASE-GATE-001",
+        "PARITY-ACCEPTANCE-001"
+      ],
+      "manual_tests": [
+        "MAN-003"
+      ]
+    },
+    {
+      "id": "interactive_learning_overview",
+      "classification": "stable/core",
+      "implementation_status": "not_started",
+      "enabled": false,
+      "dependencies": [
+        "postgresql",
+        "blob_store"
+      ],
+      "automated_tests": [
+        "CAP-PROFILE-001",
+        "PHASE-GATE-001",
+        "PARITY-ACCEPTANCE-001"
+      ],
+      "manual_tests": []
+    },
+    {
+      "id": "data_tables",
+      "classification": "stable/core",
+      "implementation_status": "not_started",
+      "enabled": false,
+      "dependencies": [
+        "postgresql",
+        "blob_store"
+      ],
+      "automated_tests": [
+        "CAP-PROFILE-001",
+        "PHASE-GATE-001",
+        "PARITY-ACCEPTANCE-001"
+      ],
+      "manual_tests": []
+    },
+    {
+      "id": "mind_maps",
+      "classification": "stable/core",
+      "implementation_status": "not_started",
+      "enabled": false,
+      "dependencies": [
+        "postgresql",
+        "blob_store"
+      ],
+      "automated_tests": [
+        "CAP-PROFILE-001",
+        "PHASE-GATE-001",
+        "PARITY-ACCEPTANCE-001"
+      ],
+      "manual_tests": []
+    },
+    {
+      "id": "flashcards",
+      "classification": "stable/core",
+      "implementation_status": "not_started",
+      "enabled": false,
+      "dependencies": [
+        "postgresql",
+        "blob_store"
+      ],
+      "automated_tests": [
+        "CAP-PROFILE-001",
+        "PHASE-GATE-001",
+        "PARITY-ACCEPTANCE-001"
+      ],
+      "manual_tests": []
+    },
+    {
+      "id": "quizzes",
+      "classification": "stable/core",
+      "implementation_status": "not_started",
+      "enabled": false,
+      "dependencies": [
+        "postgresql",
+        "blob_store"
+      ],
+      "automated_tests": [
+        "CAP-PROFILE-001",
+        "PHASE-GATE-001",
+        "PARITY-ACCEPTANCE-001"
+      ],
+      "manual_tests": []
+    },
+    {
+      "id": "editable_study_aids_and_performance_follow_up",
+      "classification": "provisional/announced",
+      "implementation_status": "not_started",
+      "enabled": false,
+      "dependencies": [
+        "postgresql",
+        "blob_store"
+      ],
+      "automated_tests": [
+        "CAP-PROFILE-001",
+        "PHASE-GATE-001"
+      ],
+      "manual_tests": []
+    },
+    {
+      "id": "audio_overview",
+      "classification": "stable/core",
+      "implementation_status": "not_started",
+      "enabled": false,
+      "dependencies": [
+        "postgresql",
+        "blob_store",
+        "tts_provider",
+        "stt_provider"
+      ],
+      "automated_tests": [
+        "CAP-PROFILE-001",
+        "PHASE-GATE-001",
+        "PARITY-ACCEPTANCE-001",
+        "E2E-013"
+      ],
+      "manual_tests": [
+        "MAN-002"
+      ]
+    },
+    {
+      "id": "interactive_audio_overview",
+      "classification": "advanced/provider-dependent",
+      "implementation_status": "not_started",
+      "enabled": false,
+      "dependencies": [
+        "postgresql",
+        "blob_store",
+        "tts_provider",
+        "stt_provider"
+      ],
+      "automated_tests": [
+        "CAP-PROFILE-001",
+        "PHASE-GATE-001"
+      ],
+      "manual_tests": [
+        "MAN-002"
+      ]
+    },
+    {
+      "id": "realtime_notebook_voice_chat",
+      "classification": "provisional/announced",
+      "implementation_status": "not_started",
+      "enabled": false,
+      "dependencies": [
+        "postgresql",
+        "blob_store",
+        "tts_provider",
+        "stt_provider"
+      ],
+      "automated_tests": [
+        "CAP-PROFILE-001",
+        "PHASE-GATE-001"
+      ],
+      "manual_tests": [
+        "MAN-009"
+      ]
+    },
+    {
+      "id": "recorded_audio_capture",
+      "classification": "provisional/announced",
+      "implementation_status": "not_started",
+      "enabled": false,
+      "dependencies": [
+        "postgresql",
+        "blob_store"
+      ],
+      "automated_tests": [
+        "CAP-PROFILE-001",
+        "PHASE-GATE-001"
+      ],
+      "manual_tests": [
+        "MAN-009"
+      ]
+    },
+    {
+      "id": "video_overview",
+      "classification": "stable/core",
+      "implementation_status": "not_started",
+      "enabled": false,
+      "dependencies": [
+        "postgresql",
+        "blob_store",
+        "media_provider",
+        "ffmpeg"
+      ],
+      "automated_tests": [
+        "CAP-PROFILE-001",
+        "PHASE-GATE-001",
+        "PARITY-ACCEPTANCE-001",
+        "E2E-013"
+      ],
+      "manual_tests": [
+        "MAN-003",
+        "MAN-010"
+      ]
+    },
+    {
+      "id": "cinematic_video",
+      "classification": "advanced/provider-dependent",
+      "implementation_status": "not_started",
+      "enabled": false,
+      "dependencies": [
+        "postgresql",
+        "blob_store",
+        "media_provider",
+        "ffmpeg"
+      ],
+      "automated_tests": [
+        "CAP-PROFILE-001",
+        "PHASE-GATE-001",
+        "E2E-013"
+      ],
+      "manual_tests": [
+        "MAN-003",
+        "MAN-010"
+      ]
+    },
+    {
+      "id": "slide_decks",
+      "classification": "stable/core",
+      "implementation_status": "not_started",
+      "enabled": false,
+      "dependencies": [
+        "postgresql",
+        "blob_store",
+        "renderer"
+      ],
+      "automated_tests": [
+        "CAP-PROFILE-001",
+        "PHASE-GATE-001",
+        "PARITY-ACCEPTANCE-001"
+      ],
+      "manual_tests": [
+        "MAN-003"
+      ]
+    },
+    {
+      "id": "infographics",
+      "classification": "stable/core",
+      "implementation_status": "not_started",
+      "enabled": false,
+      "dependencies": [
+        "postgresql",
+        "blob_store",
+        "renderer"
+      ],
+      "automated_tests": [
+        "CAP-PROFILE-001",
+        "PHASE-GATE-001",
+        "PARITY-ACCEPTANCE-001"
+      ],
+      "manual_tests": [
+        "MAN-003"
+      ]
+    },
+    {
+      "id": "artifact_lifecycle",
+      "classification": "stable/core",
+      "implementation_status": "not_started",
+      "enabled": false,
+      "dependencies": [
+        "postgresql",
+        "blob_store"
+      ],
+      "automated_tests": [
+        "CAP-PROFILE-001",
+        "PHASE-GATE-001",
+        "PARITY-ACCEPTANCE-001",
+        "E2E-003"
+      ],
+      "manual_tests": []
+    },
+    {
+      "id": "starter_artifacts",
+      "classification": "late/optional",
+      "implementation_status": "not_started",
+      "enabled": false,
+      "dependencies": [
+        "postgresql",
+        "blob_store"
+      ],
+      "automated_tests": [
+        "CAP-PROFILE-001",
+        "PHASE-GATE-001"
+      ],
+      "manual_tests": []
+    },
+    {
+      "id": "source_discovery",
+      "classification": "stable/core",
+      "implementation_status": "not_started",
+      "enabled": false,
+      "dependencies": [
+        "postgresql",
+        "blob_store",
+        "searxng",
+        "playwright"
+      ],
+      "automated_tests": [
+        "CAP-PROFILE-001",
+        "PHASE-GATE-001",
+        "PARITY-ACCEPTANCE-001",
+        "E2E-008"
+      ],
+      "manual_tests": []
+    },
+    {
+      "id": "deep_research",
+      "classification": "stable/core",
+      "implementation_status": "not_started",
+      "enabled": false,
+      "dependencies": [
+        "postgresql",
+        "blob_store",
+        "searxng",
+        "playwright"
+      ],
+      "automated_tests": [
+        "CAP-PROFILE-001",
+        "PHASE-GATE-001",
+        "PARITY-ACCEPTANCE-001",
+        "E2E-008"
+      ],
+      "manual_tests": []
+    },
+    {
+      "id": "code_data_analysis",
+      "classification": "stable/core",
+      "implementation_status": "not_started",
+      "enabled": false,
+      "dependencies": [
+        "postgresql",
+        "blob_store",
+        "bubblewrap"
+      ],
+      "automated_tests": [
+        "CAP-PROFILE-001",
+        "PHASE-GATE-001",
+        "PARITY-ACCEPTANCE-001",
+        "E2E-008"
+      ],
+      "manual_tests": []
+    },
+    {
+      "id": "private_sharing",
+      "classification": "stable/core",
+      "implementation_status": "not_started",
+      "enabled": false,
+      "dependencies": [
+        "postgresql",
+        "blob_store"
+      ],
+      "automated_tests": [
+        "CAP-PROFILE-001",
+        "PHASE-GATE-001",
+        "PARITY-ACCEPTANCE-001",
+        "E2E-005"
+      ],
+      "manual_tests": []
+    },
+    {
+      "id": "public_notebooks",
+      "classification": "late/optional",
+      "implementation_status": "not_started",
+      "enabled": false,
+      "dependencies": [
+        "postgresql",
+        "blob_store"
+      ],
+      "automated_tests": [
+        "CAP-PROFILE-001",
+        "PHASE-GATE-001"
+      ],
+      "manual_tests": []
+    },
+    {
+      "id": "notebook_copying",
+      "classification": "stable/core",
+      "implementation_status": "not_started",
+      "enabled": false,
+      "dependencies": [
+        "postgresql",
+        "blob_store"
+      ],
+      "automated_tests": [
+        "CAP-PROFILE-001",
+        "PHASE-GATE-001",
+        "PARITY-ACCEPTANCE-001",
+        "E2E-005"
+      ],
+      "manual_tests": []
+    },
+    {
+      "id": "featured_published_notebooks",
+      "classification": "late/optional",
+      "implementation_status": "not_started",
+      "enabled": false,
+      "dependencies": [
+        "postgresql",
+        "blob_store"
+      ],
+      "automated_tests": [
+        "CAP-PROFILE-001",
+        "PHASE-GATE-001"
+      ],
+      "manual_tests": []
+    },
+    {
+      "id": "usage_analytics",
+      "classification": "late/optional",
+      "implementation_status": "not_started",
+      "enabled": false,
+      "dependencies": [
+        "postgresql",
+        "blob_store"
+      ],
+      "automated_tests": [
+        "CAP-PROFILE-001",
+        "PHASE-GATE-001"
+      ],
+      "manual_tests": []
+    },
+    {
+      "id": "restricted_connector_sources",
+      "classification": "late/optional",
+      "implementation_status": "not_started",
+      "enabled": false,
+      "dependencies": [
+        "postgresql",
+        "blob_store"
+      ],
+      "automated_tests": [
+        "CAP-PROFILE-001",
+        "PHASE-GATE-001"
+      ],
+      "manual_tests": []
+    },
+    {
+      "id": "output_language",
+      "classification": "stable/core",
+      "implementation_status": "not_started",
+      "enabled": false,
+      "dependencies": [
+        "postgresql",
+        "blob_store"
+      ],
+      "automated_tests": [
+        "CAP-PROFILE-001",
+        "PHASE-GATE-001",
+        "PARITY-ACCEPTANCE-001"
+      ],
+      "manual_tests": []
+    },
+    {
+      "id": "appearance",
+      "classification": "stable/core",
+      "implementation_status": "not_started",
+      "enabled": false,
+      "dependencies": [
+        "postgresql",
+        "blob_store"
+      ],
+      "automated_tests": [
+        "CAP-PROFILE-001",
+        "PHASE-GATE-001",
+        "PARITY-ACCEPTANCE-001"
+      ],
+      "manual_tests": []
+    },
+    {
+      "id": "responsive_web_access",
+      "classification": "stable/core",
+      "implementation_status": "not_started",
+      "enabled": false,
+      "dependencies": [
+        "postgresql",
+        "blob_store"
+      ],
+      "automated_tests": [
+        "CAP-PROFILE-001",
+        "PHASE-GATE-001",
+        "PARITY-ACCEPTANCE-001"
+      ],
+      "manual_tests": [
+        "MAN-004",
+        "MAN-005"
+      ]
+    },
+    {
+      "id": "custom_providers",
+      "classification": "stable/core",
+      "implementation_status": "not_started",
+      "enabled": false,
+      "dependencies": [
+        "postgresql",
+        "blob_store"
+      ],
+      "automated_tests": [
+        "CAP-PROFILE-001",
+        "PHASE-GATE-001",
+        "PARITY-ACCEPTANCE-001"
+      ],
+      "manual_tests": []
+    },
+    {
+      "id": "source_pdf",
+      "classification": "stable/core",
+      "implementation_status": "not_started",
+      "enabled": false,
+      "dependencies": [
+        "parser_registry"
+      ],
+      "automated_tests": [
+        "CAP-PROFILE-001",
+        "PHASE-GATE-001",
+        "PARITY-ACCEPTANCE-001",
+        "E2E-002"
+      ],
+      "manual_tests": []
+    },
+    {
+      "id": "source_plain_text_and_pasted_text",
+      "classification": "stable/core",
+      "implementation_status": "not_started",
+      "enabled": false,
+      "dependencies": [
+        "parser_registry"
+      ],
+      "automated_tests": [
+        "CAP-PROFILE-001",
+        "PHASE-GATE-001",
+        "PARITY-ACCEPTANCE-001",
+        "E2E-002"
+      ],
+      "manual_tests": []
+    },
+    {
+      "id": "source_markdown",
+      "classification": "stable/core",
+      "implementation_status": "not_started",
+      "enabled": false,
+      "dependencies": [
+        "parser_registry"
+      ],
+      "automated_tests": [
+        "CAP-PROFILE-001",
+        "PHASE-GATE-001",
+        "PARITY-ACCEPTANCE-001",
+        "E2E-002"
+      ],
+      "manual_tests": []
+    },
+    {
+      "id": "source_docx",
+      "classification": "stable/core",
+      "implementation_status": "not_started",
+      "enabled": false,
+      "dependencies": [
+        "parser_registry"
+      ],
+      "automated_tests": [
+        "CAP-PROFILE-001",
+        "PHASE-GATE-001",
+        "PARITY-ACCEPTANCE-001",
+        "E2E-002"
+      ],
+      "manual_tests": []
+    },
+    {
+      "id": "source_pptx",
+      "classification": "stable/core",
+      "implementation_status": "not_started",
+      "enabled": false,
+      "dependencies": [
+        "parser_registry"
+      ],
+      "automated_tests": [
+        "CAP-PROFILE-001",
+        "PHASE-GATE-001",
+        "PARITY-ACCEPTANCE-001",
+        "E2E-002"
+      ],
+      "manual_tests": []
+    },
+    {
+      "id": "source_csv",
+      "classification": "stable/core",
+      "implementation_status": "not_started",
+      "enabled": false,
+      "dependencies": [
+        "parser_registry"
+      ],
+      "automated_tests": [
+        "CAP-PROFILE-001",
+        "PHASE-GATE-001",
+        "PARITY-ACCEPTANCE-001",
+        "E2E-002"
+      ],
+      "manual_tests": []
+    },
+    {
+      "id": "source_spreadsheet_files_formats",
+      "classification": "stable/core",
+      "implementation_status": "not_started",
+      "enabled": false,
+      "dependencies": [
+        "parser_registry"
+      ],
+      "automated_tests": [
+        "CAP-PROFILE-001",
+        "PHASE-GATE-001",
+        "PARITY-ACCEPTANCE-001",
+        "E2E-002"
+      ],
+      "manual_tests": []
+    },
+    {
+      "id": "source_images",
+      "classification": "stable/core",
+      "implementation_status": "not_started",
+      "enabled": false,
+      "dependencies": [
+        "parser_registry"
+      ],
+      "automated_tests": [
+        "CAP-PROFILE-001",
+        "PHASE-GATE-001",
+        "PARITY-ACCEPTANCE-001",
+        "E2E-002"
+      ],
+      "manual_tests": []
+    },
+    {
+      "id": "source_audio",
+      "classification": "stable/core",
+      "implementation_status": "not_started",
+      "enabled": false,
+      "dependencies": [
+        "parser_registry"
+      ],
+      "automated_tests": [
+        "CAP-PROFILE-001",
+        "PHASE-GATE-001",
+        "PARITY-ACCEPTANCE-001",
+        "E2E-002"
+      ],
+      "manual_tests": []
+    },
+    {
+      "id": "source_epub_files",
+      "classification": "stable/core",
+      "implementation_status": "not_started",
+      "enabled": false,
+      "dependencies": [
+        "parser_registry"
+      ],
+      "automated_tests": [
+        "CAP-PROFILE-001",
+        "PHASE-GATE-001",
+        "PARITY-ACCEPTANCE-001",
+        "E2E-002"
+      ],
+      "manual_tests": []
+    },
+    {
+      "id": "source_optional_authenticated_restricted_repositories_through_generic_connectors",
+      "classification": "late/optional",
+      "implementation_status": "not_started",
+      "enabled": false,
+      "dependencies": [
+        "parser_registry"
+      ],
+      "automated_tests": [
+        "CAP-PROFILE-001",
+        "PHASE-GATE-001",
+        "E2E-002"
+      ],
+      "manual_tests": []
+    },
+    {
+      "id": "source_web_urls",
+      "classification": "stable/core",
+      "implementation_status": "not_started",
+      "enabled": false,
+      "dependencies": [
+        "parser_registry"
+      ],
+      "automated_tests": [
+        "CAP-PROFILE-001",
+        "PHASE-GATE-001",
+        "PARITY-ACCEPTANCE-001",
+        "E2E-002"
+      ],
+      "manual_tests": []
+    },
+    {
+      "id": "source_public_youtube_urls_transcript_backed_video_sources",
+      "classification": "stable/core",
+      "implementation_status": "not_started",
+      "enabled": false,
+      "dependencies": [
+        "parser_registry"
+      ],
+      "automated_tests": [
+        "CAP-PROFILE-001",
+        "PHASE-GATE-001",
+        "PARITY-ACCEPTANCE-001",
+        "E2E-002"
+      ],
+      "manual_tests": []
+    },
+    {
+      "id": "source_optional_cloud_document_storage_connectors_implemented_through_generic_adapters",
+      "classification": "late/optional",
+      "implementation_status": "not_started",
+      "enabled": false,
+      "dependencies": [
+        "parser_registry"
+      ],
+      "automated_tests": [
+        "CAP-PROFILE-001",
+        "PHASE-GATE-001",
+        "E2E-002"
+      ],
+      "manual_tests": []
+    },
+    {
+      "id": "native_mobile_client",
+      "classification": "deliberate-non-target",
+      "implementation_status": "not_applicable",
+      "enabled": false,
+      "dependencies": [],
+      "automated_tests": [
+        "CAP-PROFILE-001"
+      ],
+      "manual_tests": []
+    },
+    {
+      "id": "pwa_offline_client",
+      "classification": "deliberate-non-target",
+      "implementation_status": "not_applicable",
+      "enabled": false,
+      "dependencies": [],
+      "automated_tests": [
+        "CAP-PROFILE-001"
+      ],
+      "manual_tests": []
+    },
+    {
+      "id": "google_account_coupling",
+      "classification": "deliberate-non-target",
+      "implementation_status": "not_applicable",
+      "enabled": false,
+      "dependencies": [],
+      "automated_tests": [
+        "CAP-PROFILE-001"
+      ],
+      "manual_tests": []
+    },
+    {
+      "id": "third_party_plugin_marketplace",
+      "classification": "deliberate-non-target",
+      "implementation_status": "not_applicable",
+      "enabled": false,
+      "dependencies": [],
+      "automated_tests": [
+        "CAP-PROFILE-001"
+      ],
+      "manual_tests": []
+    }
+  ],
+  "advertised": []
+}

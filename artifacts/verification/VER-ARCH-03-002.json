@@ -1,0 +1,28 @@
+{
+  "verification_id": "VER-ARCH-03-002",
+  "requirement_id": "ARCH-03-002",
+  "task": "FND-01",
+  "test_path": "tests/architecture/composition/ver-arch-03-002.py",
+  "result": "passed",
+  "timestamp": "2026-09-18T04:07:54.099380+00:00",
+  "checks": {
+    "attempted_prohibited_imports": [
+      "fastapi",
+      "httpx",
+      "milpbooklm_adapters",
+      "milpbooklm_api",
+      "milpbooklm_application",
+      "milpbooklm_workers",
+      "pydantic",
+      "sqlalchemy",
+      "uvicorn"
+    ],
+    "hits": {},
+    "domain_is_pure": true
+  },
+  "environment": {
+    "python": "3.13.3",
+    "platform": "Linux-7.2.6-x64v3-xanmod1-x86_64-with-glibc2.41",
+    "host": "GUAM"
+  }
+}

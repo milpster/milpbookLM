@@ -1,0 +1,242 @@
+=== FAILURE-MODE QA: injected 'import milpbooklm_adapters' into packages/domain/src/milpbooklm_domain/notebook.py ===
+
+--- import-linter lint (expect non-zero exit) ---
+
+╔══╗─────────▶╔╗ ╔╗      ╔╗◀───┐
+╚╣╠╝◀─────┐  ╔╝╚╗║║────▶╔╝╚╗   │
+ ║║   ╔══╦══╦╩╗╔╝║║  ╔╦═╩╗╔╝╔═╦══╗
+ ║║╔══╣╔╗║╔╗║╔╣║ ║║ ╔╬╣╔╗║║ ║│║╔═╝
+╔╣╠╣║║║╚╝║╚╝║║║╚╗║╚═╝║║║║║╚╗║═╣║
+╚══╩╩╩╣╔═╩══╩╝╚═╝╚═══╩╩╝╚╩═╩╩═╩╝
+  └──▶║║                    ▲ 
+      ╚╝────────────────────┘
+
+
+---------
+Contracts
+---------
+
+Analyzed 17 files, 27 dependencies.
+-----------------------------------
+
+Inward dependency layering (domain innermost) BROKEN
+domain imports no adapter, application, framework BROKEN
+application imports no adapter BROKEN
+api and workers are independent KEPT
+
+Contracts: 1 kept, 3 broken.
+
+
+----------------
+Broken contracts
+----------------
+
+Inward dependency layering (domain innermost)
+---------------------------------------------
+
+milpbooklm_domain is not allowed to import milpbooklm_adapters:
+
+- milpbooklm_domain.notebook -> milpbooklm_adapters (l.10)
+
+
+domain imports no adapter, application, framework
+-------------------------------------------------
+
+milpbooklm_domain is not allowed to import milpbooklm_adapters:
+
+-   milpbooklm_domain.notebook -> milpbooklm_adapters (l.10)
+
+
+application imports no adapter
+------------------------------
+
+milpbooklm_application is not allowed to import milpbooklm_adapters:
+
+-   milpbooklm_application.create_notebook -> milpbooklm_domain.notebook (l.8)
+    milpbooklm_domain.notebook -> milpbooklm_adapters (l.10)
+
+
+import-linter exit=1
+
+--- pytest tests/architecture (expect failures) ---
+============================= test session starts ==============================
+platform linux -- Python 3.13.3, pytest-9.1.1, pluggy-1.6.0 -- /home/srcds/dev/milpbookLM/.venv/bin/python3
+cachedir: .pytest_cache
+rootdir: /home/srcds/dev/milpbookLM
+configfile: pyproject.toml
+collecting ... collected 15 items
+
+tests/architecture/composition/ver-arch-03-001.py::test_composition_wires_use_case_to_adapter PASSED [  6%]
+tests/architecture/composition/ver-arch-03-001.py::test_adapter_dependency_direction_inward_only PASSED [ 13%]
+tests/architecture/composition/ver-arch-03-001.py::test_evidence_record_written PASSED [ 20%]
+tests/architecture/composition/ver-arch-03-002.py::test_prohibited_import_attempted_and_absent FAILED [ 26%]
+tests/architecture/composition/ver-arch-03-002.py::test_domain_depends_on_stdlib_only FAILED [ 33%]
+tests/architecture/composition/ver-arch-03-002.py::test_evidence_record_written PASSED [ 40%]
+tests/architecture/composition/ver-arch-03-003.py::test_application_does_not_depend_on_upper_levels PASSED [ 46%]
+tests/architecture/composition/ver-arch-03-003.py::test_domain_does_not_depend_on_upper_levels FAILED [ 53%]
+tests/architecture/composition/ver-arch-03-003.py::test_evidence_record_written PASSED [ 60%]
+tests/architecture/composition/ver-arch-03-004.py::test_job_is_a_durable_queued_unit PASSED [ 66%]
+tests/architecture/composition/ver-arch-03-004.py::test_job_state_machine_transitions_forward PASSED [ 73%]
+tests/architecture/composition/ver-arch-03-004.py::test_evidence_record_written PASSED [ 80%]
+tests/architecture/dependencies/ver-arch-01-001.py::test_import_linter_contracts_green FAILED [ 86%]
+tests/architecture/dependencies/ver-arch-01-001.py::test_domain_forbidden_import_paths_absent FAILED [ 93%]
+tests/architecture/dependencies/ver-arch-01-001.py::test_evidence_record_written PASSED [100%]
+
+=================================== FAILURES ===================================
+_________________ test_prohibited_import_attempted_and_absent __________________
+
+    def test_prohibited_import_attempted_and_absent() -> None:
+        hits = find_forbidden(DOMAIN_SRC, PROHIBITED)
+>       assert hits == {}, f"prohibited import path attempted into the domain boundary: {hits}"
+E       AssertionError: prohibited import path attempted into the domain boundary: {'milpbooklm_adapters': ['notebook.py']}
+E       assert {'milpbooklm_...notebook.py']} == {}
+E         
+E         Left contains 1 more item:
+E         {'milpbooklm_adapters': ['notebook.py']}
+E         
+E         Full diff:
+E         - {}
+E         + {...
+E         
+E         ...Full output truncated (4 lines hidden), use '-vv' to show
+
+tests/architecture/composition/ver-arch-03-002.py:34: AssertionError
+______________________ test_domain_depends_on_stdlib_only ______________________
+
+    def test_domain_depends_on_stdlib_only() -> None:
+        import sys
+    
+        from tests._imports import imported_top_level_modules
+    
+        stdlib = set(sys.stdlib_module_names)
+        imports = imported_top_level_modules(DOMAIN_SRC)
+        # The package's own name appears via __init__.py absolute self-imports
+        # (re-exports); that is the package's identity, not a dependency.
+        non_stdlib = (imports - stdlib) - {"milpbooklm_domain"}
+>       assert non_stdlib == set(), f"domain imports non-stdlib modules: {sorted(non_stdlib)}"
+E       AssertionError: domain imports non-stdlib modules: ['milpbooklm_adapters']
+E       assert {'milpbooklm_adapters'} == set()
+E         
+E         Extra items in the left set:
+E         'milpbooklm_adapters'
+E         
+E         Full diff:
+E         - set()
+E         + {
+E         +     'milpbooklm_adapters',
+E         + }
+
+tests/architecture/composition/ver-arch-03-002.py:47: AssertionError
+_________________ test_domain_does_not_depend_on_upper_levels __________________
+
+    def test_domain_does_not_depend_on_upper_levels() -> None:
+        hits = find_forbidden(DOMAIN_SRC, UPPER_LEVEL_FOR_DOMAIN)
+>       assert hits == {}, f"domain depends on upper-level features: {hits}"
+E       AssertionError: domain depends on upper-level features: {'milpbooklm_adapters': ['notebook.py']}
+E       assert {'milpbooklm_...notebook.py']} == {}
+E         
+E         Left contains 1 more item:
+E         {'milpbooklm_adapters': ['notebook.py']}
+E         
+E         Full diff:
+E         - {}
+E         + {...
+E         
+E         ...Full output truncated (4 lines hidden), use '-vv' to show
+
+tests/architecture/composition/ver-arch-03-003.py:33: AssertionError
+______________________ test_import_linter_contracts_green ______________________
+
+    def test_import_linter_contracts_green() -> None:
+        proc = _run_import_linter()
+>       assert proc.returncode == 0, (
+            f"import-linter failed (rc={proc.returncode}):\n{proc.stdout}\n{proc.stderr}"
+        )
+E       AssertionError: import-linter failed (rc=1):
+E         
+E         ╔══╗─────────▶╔╗ ╔╗      ╔╗◀───┐
+E         ╚╣╠╝◀─────┐  ╔╝╚╗║║────▶╔╝╚╗   │
+E          ║║   ╔══╦══╦╩╗╔╝║║  ╔╦═╩╗╔╝╔═╦══╗
+E          ║║╔══╣╔╗║╔╗║╔╣║ ║║ ╔╬╣╔╗║║ ║│║╔═╝
+E         ╔╣╠╣║║║╚╝║╚╝║║║╚╗║╚═╝║║║║║╚╗║═╣║
+E         ╚══╩╩╩╣╔═╩══╩╝╚═╝╚═══╩╩╝╚╩═╩╩═╩╝
+E           └──▶║║                    ▲ 
+E               ╚╝────────────────────┘
+E         
+E         
+E         ---------
+E         Contracts
+E         ---------
+E         
+E         Analyzed 17 files, 27 dependencies.
+E         -----------------------------------
+E         
+E         Inward dependency layering (domain innermost) BROKEN
+E         domain imports no adapter, application, framework BROKEN
+E         application imports no adapter BROKEN
+E         api and workers are independent KEPT
+E         
+E         Contracts: 1 kept, 3 broken.
+E         
+E         
+E         ----------------
+E         Broken contracts
+E         ----------------
+E         
+E         Inward dependency layering (domain innermost)
+E         ---------------------------------------------
+E         
+E         milpbooklm_domain is not allowed to import milpbooklm_adapters:
+E         
+E         - milpbooklm_domain.notebook -> milpbooklm_adapters (l.10)
+E         
+E         
+E         domain imports no adapter, application, framework
+E         -------------------------------------------------
+E         
+E         milpbooklm_domain is not allowed to import milpbooklm_adapters:
+E         
+E         -   milpbooklm_domain.notebook -> milpbooklm_adapters (l.10)
+E         
+E         
+E         application imports no adapter
+E         ------------------------------
+E         
+E         milpbooklm_application is not allowed to import milpbooklm_adapters:
+E         
+E         -   milpbooklm_application.create_notebook -> milpbooklm_domain.notebook (l.8)
+E             milpbooklm_domain.notebook -> milpbooklm_adapters (l.10)
+E         
+E         
+E         
+E         
+E       assert 1 == 0
+E        +  where 1 = CompletedProcess(args=['/home/srcds/dev/milpbookLM/.venv/bin/import-linter', 'lint'], returncode=1, stdout='\n╔══╗─────────▶╔╗ ╔╗      ╔╗◀───┐\n╚╣╠╝◀─────┐  ╔╝╚╗║║────▶╔╝╚╗   │\n ║║   ╔══╦══╦╩╗╔╝║║  ╔╦═╩╗╔╝╔═╦══╗\n ║║╔══╣╔╗║╔╗║╔╣║ ║║ ╔╬╣╔╗║║ ║│║╔═╝\n╔╣╠╣║║║╚╝║╚╝║║║╚╗║╚═╝║║║║║╚╗║═╣║\n╚══╩╩╩╣╔═╩══╩╝╚═╝╚═══╩╩╝╚╩═╩╩═╩╝\n  └──▶║║                    ▲ \n      ╚╝────────────────────┘\n\n\n---------\nContracts\n---------\n\nAnalyzed 17 files, 27 dependencies.\n-----------------------------------\n\nInward dependency layering (domain innermost) BROKEN\ndomain imports no adapter, application, framework BROKEN\napplication imports no adapter BROKEN\napi and workers are independent KEPT\n\nContracts: 1 kept, 3 broken.\n\n\n----------------\nBroken contracts\n----------------\n\nInward dependency layering (domain innermost)\n---------------------------------------------\n\nmilpbooklm_domain is not allowed to import milpbooklm_adapters:\n\n- milpbooklm_domain.notebook -> milpbooklm_adapters (l.10)\n\n\ndomain imports no adapter, application, framework\n-------------------------------------------------\n\nmilpbooklm_domain is not allowed to import milpbooklm_adapters:\n\n-   milpbooklm_domain.notebook -> milpbooklm_adapters (l.10)\n\n\napplication imports no adapter\n------------------------------\n\nmilpbooklm_application is not allowed to import milpbooklm_adapters:\n\n-   milpbooklm_application.create_notebook -> milpbooklm_domain.notebook (l.8)\n    milpbooklm_domain.notebook -> milpbooklm_adapters (l.10)\n\n\n', stderr='').returncode
+
+tests/architecture/dependencies/ver-arch-01-001.py:42: AssertionError
+__________________ test_domain_forbidden_import_paths_absent ___________________
+
+    def test_domain_forbidden_import_paths_absent() -> None:
+        hits = find_forbidden(DOMAIN_SRC, FORBIDDEN_IN_DOMAIN)
+>       assert hits == {}, f"forbidden import path(s) present in domain: {hits}"
+E       AssertionError: forbidden import path(s) present in domain: {'milpbooklm_adapters': ['notebook.py']}
+E       assert {'milpbooklm_...notebook.py']} == {}
+E         
+E         Left contains 1 more item:
+E         {'milpbooklm_adapters': ['notebook.py']}
+E         
+E         Full diff:
+E         - {}
+E         + {...
+E         
+E         ...Full output truncated (4 lines hidden), use '-vv' to show
+
+tests/architecture/dependencies/ver-arch-01-001.py:60: AssertionError
+=========================== short test summary info ============================
+FAILED tests/architecture/composition/ver-arch-03-002.py::test_prohibited_import_attempted_and_absent
+FAILED tests/architecture/composition/ver-arch-03-002.py::test_domain_depends_on_stdlib_only
+FAILED tests/architecture/composition/ver-arch-03-003.py::test_domain_does_not_depend_on_upper_levels
+FAILED tests/architecture/dependencies/ver-arch-01-001.py::test_import_linter_contracts_green
+FAILED tests/architecture/dependencies/ver-arch-01-001.py::test_domain_forbidden_import_paths_absent
+========================= 5 failed, 10 passed in 0.24s =========================
+pytest exit=1
