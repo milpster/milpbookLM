@@ -1,0 +1,44 @@
+[PASS] precondition: users count == 0 (pristine database) :: count=0
+[PASS] bootstrap CLI first run exits 0 :: bootstrap complete: installation administrator 'qa-admin@example.com' created (01a0ba15-a3c3-7172-18f4-daffbcd37ef1)
+[PASS] bootstrap CLI second run refused (exit 1) :: bootstrap refused: installation already bootstrapped
+[PASS] admin password stored as argon2id :: $argon2id$v=19$m=65536,t=3,p=4$EXoK96QH8
+[PASS] admin grant audit row present :: grants=1
+[PASS] register qa-owner 201 :: {"user_id":"01a0ba15-a565-7616-ab3d-2db7f28f47e4"}
+[PASS] login owner 200 + csrf body :: {"user_id":"01a0ba15-a565-7616-ab3d-2db7f28f47e4","csrf_token":"dVE9xuLjNstIdREk_e_a515o-H4uHo066jVMVTgCRWc="}
+[PASS] cookie discipline (Secure/HttpOnly/samesite=lax/Path=/) :: mb_session=573ca64c17def46c51244a1713711da4665ac8bc3025f0a5df82abb43e7dcc0b; HttpOnly; Max-Age=1209600; Path=/; SameSite=lax; Secure
+[PASS] login body has csrf_token + user_id
+[PASS] sessions.token_hash is 64-hex and != plaintext token :: stored=f8a647416c4ef79d... token=573ca64c17def46c...
+[PASS] rotate 200 with new csrf :: {"csrf_token":"gACN4CIJarNY6Bk8UYM5MB0GBqZ-n9cIY_dpu_VtveY="}
+[PASS] rotate issued a different token
+[PASS] old token rejected after rotation (401) :: {"detail":"authentication required"}
+[PASS] new token resolves; /me shows non-admin owner :: {"user_id":"01a0ba15-a565-7616-ab3d-2db7f28f47e4","email":"qa-owner@example.com","display_name":"qa-owner","status":"active","installation_admin":false}
+[PASS] unsafe without origin -> 403 origin_rejected :: {"detail":{"reason":"origin_rejected"}}
+[PASS] unsafe with origin, no token -> 403 csrf_rejected :: {"detail":{"reason":"csrf_rejected"}}
+[PASS] logout with csrf -> 204 and session gone
+[PASS] re-login owner 200 :: {"user_id":"01a0ba15-a565-7616-ab3d-2db7f28f47e4","csrf_token":"CybEKTBa-nJaWXAHWmv1RKmJzofGnAHWEhfK53-4ADA="}
+[PASS] owner GET notebook 200 :: {"notebook_id":"b33aab5f-0a90-4db1-8661-ff3f5fdb6277","title":"QA Atlas","custody_state":"none","membership":"owner"}
+[PASS] owner note-draft 200 :: {"ok":true}
+[PASS] register qa-viewer 201 :: {"user_id":"01a0ba15-a614-7284-ba98-9f7ce8a297d9"}
+[PASS] viewer login 200 :: {"user_id":"01a0ba15-a614-7284-ba98-9f7ce8a297d9","csrf_token":"QbhfKKiLf3blvBOtKPLSVQLa_Kke8wd5LKNQ6WnMSb0="}
+[PASS] viewer GET (READ_CONTENT) 200 :: {"notebook_id":"b33aab5f-0a90-4db1-8661-ff3f5fdb6277","title":"QA Atlas","custody_state":"none","membership":"viewer"}
+[PASS] viewer note-draft 403 deny:role :: {"detail":{"reason":"deny:role"}}
+[PASS] admin login 200 :: {"user_id":"01a0ba15-a3c3-7172-18f4-daffbcd37ef1","csrf_token":"xqFRGolx9GXd1qoqQD5J1w_kBqy40yLerNGfjV3sexA="}
+[PASS] /me shows installation_admin true for admin :: {"user_id":"01a0ba15-a3c3-7172-18f4-daffbcd37ef1","email":"qa-admin@example.com","display_name":"QA Admin","status":"active","installation_admin":true}
+[PASS] admin list is empty (no memberships) :: []
+[PASS] admin GET 403 deny:not_member (not 404) :: {"detail":{"reason":"deny:not_member"}}
+[PASS] admin note-draft 403 deny:not_member :: {"detail":{"reason":"deny:not_member"}}
+[PASS] DisableAccount revoked sessions + locked the notebook :: revoked=1 locked=['b33aab5f-0a90-4db1-8661-ff3f5fdb6277']
+[PASS] owner cookie dead after disable (401) :: {"detail":"authentication required"}
+[PASS] notebooks.custody_state == locked_admin_custody :: locked_admin_custody
+[PASS] disabled owner cannot log in (401) :: {"detail":"invalid credentials"}
+[PASS] register qa-newowner 201 :: {"user_id":"01a0ba15-a6f4-7a9d-ea39-6146f0622ed4"}
+[PASS] CustodyTransfer moved ownership :: new_owner=01a0ba15-a6f4-7a9d-ea39-6146f0622ed4 removed=(UUID('01a0ba15-a565-7616-ab3d-2db7f28f47e4'),)
+[PASS] memberships: recipient owner; old owner + admin gone :: {'01a0ba15-a6f4-7a9d-ea39-6146f0622ed4': 'owner', '01a0ba15-a614-7284-ba98-9f7ce8a297d9': 'viewer'}
+[PASS] custody unlocked after transfer :: none
+[PASS] login rate limit: five 401s then 429 too many attempts :: statuses=[401, 401, 401, 401, 401, 429]
+[PASS] unknown vs wrong password: identical uniform 401 :: unknown={'detail': 'invalid credentials'} wrong={'detail': 'invalid credentials'}
+[PASS] append-only audit trail records bootstrap + disable + transfer :: ['account.disabled', 'custody.locked', 'custody.transferred', 'installation.admin_bootstrapped', 'installation_admin.granted']
+[PASS] final state: 5 users, 1 notebook, non-empty immutable audit log :: users=5 sessions=5 notebooks=1 audit=5
+QA RESULT: 0 FAILURES (all checks green)
+/home/srcds/dev/milpbookLM/.venv/lib/python3.13/site-packages/fastapi/testclient.py:1: StarletteDeprecationWarning: Using `httpx` with `starlette.testclient` is deprecated; install `httpx2` instead.
+  from starlette.testclient import TestClient as TestClient  # noqa

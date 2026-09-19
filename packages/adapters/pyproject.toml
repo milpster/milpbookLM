@@ -10,6 +10,9 @@ dependencies = [
     "sqlalchemy>=2.0,<3",
     "alembic>=1.16,<2",
     "psycopg[binary]>=3.2,<4",
+    # REFERENCE-DEPENDENCIES security row: argon2-cffi; Argon2id params calibrated at
+    # install/upgrade and stored with each hash (FND-04).
+    "argon2-cffi>=25.1,<26",
 ]
 
 [dependency-groups]

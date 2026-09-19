@@ -19,6 +19,8 @@ ADAPTERS_SRC = REPO_ROOT / "packages" / "adapters" / "src" / "milpbooklm_adapter
 # self-imports; that is the package's identity, not a dependency.
 # sqlalchemy/alembic/psycopg: the FND-03 persistence line, named verbatim in
 # REFERENCE-DEPENDENCIES.md ("SQLAlchemy 2, Alembic, psycopg 3").
+# argon2: the FND-04 identity line, named verbatim in REFERENCE-DEPENDENCIES.md
+# (Passwords row: "argon2-cffi").
 ALLOWED_ADAPTER_IMPORTS = {
     "milpbooklm_adapters",
     "milpbooklm_domain",
@@ -26,6 +28,7 @@ ALLOWED_ADAPTER_IMPORTS = {
     "sqlalchemy",
     "alembic",
     "psycopg",
+    "argon2",
 } | set(sys.stdlib_module_names)
 
 
@@ -58,7 +61,10 @@ def test_evidence_record_written() -> None:
                 "create/store/fetch exercised"
             ),
             "adapter_imports": sorted(imported_top_level_modules(ADAPTERS_SRC)),
-            "allowed_adapter_imports_policy": "stdlib + milpbooklm_domain + milpbooklm_application",
+            "allowed_adapter_imports_policy": (
+                "stdlib + internal packages + REFERENCE-DEPENDENCIES.md third parties "
+                "(sqlalchemy, alembic, psycopg, argon2)"
+            ),
         },
     )
     evidence = REPO_ROOT / "artifacts" / "verification" / "VER-ARCH-03-001.json"

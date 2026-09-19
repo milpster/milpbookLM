@@ -11,6 +11,11 @@ dependencies = [
     # REFERENCE-DEPENDENCIES.md "API" row: FastAPI, Pydantic v2, Uvicorn.
     # Pydantic v2 is the typed configuration loader (ch04: typed config at startup).
     "pydantic>=2.10,<3",
+    # FND-04: FastAPI + Uvicorn (same "API" row); the composition root now serves HTTP.
+    "fastapi>=0.116,<1",
+    "uvicorn[standard]>=0.35,<1",
+    # REFERENCE-DEPENDENCIES "HTTP" row (httpx/httpcore); TestClient transport in tests.
+    "httpx>=0.28,<1",
     # Capability registry (packages/contracts/capabilities.yaml) is YAML data;
     # tools/spec parse it and validate both registries against JSON Schemas.
     "PyYAML>=6.0.2,<7",

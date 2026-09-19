@@ -73,6 +73,10 @@ ignore = [
     "D212",     # incompatible with D213 (Ruff resolves; made explicit)
 ]
 
+[tool.ruff.lint.flake8-bugbear]
+# FastAPI dependency injection: Depends(...) in a default is the framework idiom.
+extend-immutable-calls = ["fastapi.Depends"]
+
 [tool.ruff.lint.per-file-ignores]
 # Test module names are MANDATED by requirements.generated.json test_path
 # (ver-arch-01-001.py etc.), so N999 must not fire there. Tests run subprocess

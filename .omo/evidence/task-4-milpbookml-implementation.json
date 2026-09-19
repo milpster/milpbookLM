@@ -1,0 +1,61 @@
+{
+  "task": "FND-04",
+  "title": "Local identity, sessions, authorization matrix, custody",
+  "plan_position": "4/55",
+  "mode": "prototype-first (user directive D12): working authn/authz/custody proven hands-on over live PG + live HTTP; full custody state machine, matrix battery, VER batch and recovery flows deferred to wave 2",
+  "handover_note": "Took over a dead worker's ~90%-complete uncommitted WIP. Read the full WIP first; the 3 QA failures in the inherited .omo/evidence/task-4-manual-qa.log were ALL driver-side defects of the lost driver, NOT code defects - the security logic shipped as-is, untouched (no security weakening).",
+  "defect_root_causes": [
+    "owner GET notebook 200 + owner note-draft 200 (inherited failures a/b): the lost driver re-sent a REVOKED token after the owner re-login (its stale cookie resolved to None -> correct 401 'authentication required'). The rebuilt driver rides the TestClient cookie jar (the same flow the unit tests prove) and both checks now PASS with the code unchanged.",
+    "login rate limit 429 after four 401s (inherited failure c): the lost driver probed the rate limit with an email whose limiter key already held one attempt (the disabled-owner login check ran earlier on the same login:<ip>:<email> key). SlidingWindowLimiter(login_max_attempts=5) allows exactly five attempts in the 15-minute window and returns the uniform 429 on the sixth - the configured behavior. The rebuilt driver probes with a fresh account: statuses=[401,401,401,401,401,429] PASS."
+  ],
+  "gates": [
+    { "name": "mypy strict", "command": "uv run mypy", "exit": 0, "result": "Success: no issues found in 63 source files" },
+    { "name": "ruff check", "command": "uv run ruff check apps/api packages/adapters packages/application packages/domain tools", "exit": 0, "result": "All checks passed!" },
+    { "name": "import-linter", "command": "uv run import-linter lint", "exit": 0, "result": "Contracts: 4 kept, 0 broken (88 files, 306 deps)" },
+    { "name": "pytest meta+architecture", "command": "uv run pytest tests/meta tests/architecture -q", "exit": 0, "result": "72 passed in 2.79s (baseline 72)" },
+    { "name": "unit tests (D12 one-shot sweep, green -> kept)", "command": "uv run pytest tests/unit/test_api_auth.py tests/unit/test_application_authn.py tests/unit/test_domain_identity_policy.py -q", "exit": 0, "result": "33 passed in 0.58s - all three files kept, none deleted" },
+    { "name": "uv lock sync", "command": "uv lock --check", "exit": 0, "result": "Resolved 65 packages in 1ms" }
+  ],
+  "manual_qa": {
+    "driver": "/tmp/opencode/fnd04-scratch/qa_driver.py (rebuilt; the lost driver is unrecoverable)",
+    "log": ".omo/evidence/task-4-manual-qa.log",
+    "result": "QA RESULT: 0 FAILURES (all checks green), driver exit 0",
+    "harness": "live PG (scratch cluster 127.0.0.1:29518, db fnd04_qa, roles per migrations/roles.sql, alembic 0001_baseline) + live HTTP (ASGI TestClient over the real PG adapters, https base URL for Secure cookies)",
+    "demonstrated": [
+      "bootstrap CLI creates the installation admin once (exit 0) and refuses the second run (exit 1); no default password exists (MILPBOOKLM_BOOTSTRAP_PASSWORD required)",
+      "admin password stored as argon2id ($argon2id$v=19$m=65536,t=3,p=4$...); admin grant recorded as an append-only audit row (installation_admin.granted) - the flag is derived from audit truth, no schema column (prototype note)",
+      "register 201; login 200 returns user_id + stateless CSRF token; cookie discipline Secure/HttpOnly/SameSite=lax/Path=/ with 14-day Max-Age",
+      "sessions.token_hash is 64-hex keyed HMAC-SHA256 and != the plaintext token (keyed-hash-only persistence, ch17 sec.7)",
+      "rotation on privilege change issues a new token + new CSRF; the old token is rejected (401) while the new one resolves",
+      "CSRF/origin enforcement: unsafe method without matching Origin -> 403 origin_rejected; with Origin but no token -> 403 csrf_rejected; logout with token -> 204 and the session is gone",
+      "owner GET notebook 200 and owner note-draft 200 (READ_CONTENT/NOTE_MUTATE allowed by the fixture matrix)",
+      "viewer READ_CONTENT 200; viewer NOTE_MUTATE 403 deny:role (stable machine-readable reason)",
+      "installation-admin: /me installation_admin=true; list empty (no memberships); GET 403 deny:not_member (not 404) - administration confers no content access (ARCH-17-002)",
+      "DisableAccount (admin power): all owner sessions revoked immediately, owner cookie dead (401), sole-owned notebook locked (custody_state=locked_admin_custody), disabled owner cannot log in (uniform 401)",
+      "CustodyTransfer (metadata-only): recipient becomes owner, old owner + admin gone from memberships (admin never gains a content membership), custody unlocked",
+      "login rate limit: fresh account, five 401s then 429 too many attempts (statuses=[401,401,401,401,401,429])",
+      "enumeration resistance: unknown email vs wrong password -> identical uniform 401 invalid credentials",
+      "append-only audit trail records bootstrap + disable + lock + transfer (5 distinct actions); final state 5 users / 5 sessions / 1 notebook / 5 audit rows"
+    ]
+  },
+  "config_audit": [
+    "root pyproject.toml +4: [tool.ruff.lint.flake8-bugbear] extend-immutable-calls=[fastapi.Depends] - standard FastAPI DI idiom (B008); fastapi is REFERENCE-DEPENDENCIES 'API' row - KEPT, justified",
+    "apps/api/pyproject.toml +5: fastapi, uvicorn (REFERENCE-DEPENDENCIES 'API' row: FastAPI, Pydantic v2, Uvicorn) + httpx ('HTTP' row: httpx/httpcore) - KEPT, matrix-listed",
+    "packages/adapters/pyproject.toml +3: argon2-cffi (REFERENCE-DEPENDENCIES 'Passwords' row: argon2-cffi) - KEPT, matrix-listed",
+    "tests/architecture/composition/ver-arch-03-001.py +7: 'argon2' added to ALLOWED_ADAPTER_IMPORTS - the name appears verbatim in REFERENCE-DEPENDENCIES.md (argon2-cffi); evidence-record policy string updated to name the allowlist source - KEPT, justified",
+    "uv.lock +307: uv lock --check exit 0 (lock in sync with the manifest deltas)"
+  ],
+  "wave2_deferred": [
+    "full custody state machine at the API surface (ScheduleCustodyDeletion route/worker, scheduled_deletion expiry, account-deletion gate end-to-end; unit coverage exists for the domain + use cases)",
+    "full 16-action x 3-role authorization matrix battery over HTTP (prototype demonstrates READ_CONTENT + NOTE_MUTATE + admin content denial; the engine evaluates the whole fixture matrix - unit-proven)",
+    "VER evidence batch for ARCH-17-001..033 (artifacts/verification/VER-ARCH-17-*.json not written; D12: no VER batches this wave)",
+    "recovery flows: re-enablement, scheduled-deletion worker, account deletion execution (AD-022 tail), durable (PG-backed) rate limiter (in-memory sliding window is prototype scope)",
+    "users.is_installation_admin column migration (prototype derives the flag from the append-only audit grant row - FND-02 territory)"
+  ],
+  "runtime_deviations": [
+    "PG runtime: the T3 digest-pinned PG18 rootfs scratch was wiped from /tmp by the host reboot, so the QA cluster runs the host PostgreSQL 17 server + pgvector 0.8.2 directly (scratch /tmp/opencode/fnd04-scratch, port 29518). The only PG18-specific element in the DDL is the uuidv7() PK default, emulated for the scratch cluster by a 4-line SQL shim (48-bit unix-ms timestamp | version 7 | variant 10 | rand) - scratch-only, never committed. Baseline migration applies on PG17 in ~110ms and the downgrade/upgrade symmetry was proven in T3 on PG18.",
+    "register-limiter budget: the configured default (3 registrations / IP / hour, uniform 429) is consumed by owner+viewer+newowner, so the rate-limit PROBE account is seeded via SQL with a real argon2id hash (its login key is what the check exercises). This is the limiter working as configured, not a gap.",
+    "CSRF middleware intercepts every unsafe /api/v1 request carrying a live session cookie (including POST /login) - the disabled-owner login probe runs with an empty cookie jar to isolate the authn outcome; the probe account's key is fresh so the 429 threshold is demonstrated exactly."
+  ],
+  "teardown": "rtk pkill -f fnd04-scratch/pgdata; pgrep receipt: no process matching fnd04-scratch/pgdata - only the host's pre-existing system cluster (PID 4021, -D /var/lib/postgresql/17/main, not started by this task) remains"
+}

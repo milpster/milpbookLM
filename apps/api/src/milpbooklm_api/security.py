@@ -1,0 +1,186 @@
+"""
+API security services.
+
+Session cookie discipline (Secure/HttpOnly/SameSite=Lax, rotated at login and
+on privilege change) plus origin/CSRF validation on unsafe methods (ch17 §7).
+Unsafe methods under /api/v1 require a request Origin (falling back to Referer)
+matching the installation origin; when the request carries a live session cookie
+it must also carry the stateless CSRF token (HMAC-derived from the session
+token, so validation needs no storage round-trip).
+"""
+
+from __future__ import annotations
+
+import hmac
+import uuid
+from collections import deque
+from dataclasses import dataclass
+from datetime import timedelta
+from urllib.parse import urlsplit
+
+from fastapi import Request
+from milpbooklm_adapters.security.session_store import derive_csrf_token
+from milpbooklm_application.authn import DEFAULT_SESSION_TTL
+from milpbooklm_application.ports import Clock, SessionTokenStore, UserRepository
+from milpbooklm_domain.identity import User
+from starlette.middleware.base import BaseHTTPMiddleware, RequestResponseEndpoint
+from starlette.responses import JSONResponse, Response
+from starlette.types import ASGIApp
+
+SESSION_COOKIE = "mb_session"
+CSRF_HEADER = "x-csrf-token"
+UNSAFE_METHODS = frozenset({"POST", "PUT", "PATCH", "DELETE"})
+API_PREFIX = "/api/v1"
+
+
+@dataclass(frozen=True, slots=True)
+class SecuritySettings:
+    """Deployment-wide security settings for the API."""
+
+    secret_key: str
+    base_url: str
+    session_ttl: timedelta = DEFAULT_SESSION_TTL
+    login_max_attempts: int = 5
+    login_window: timedelta = timedelta(minutes=15)
+    register_max_attempts: int = 3
+    register_window: timedelta = timedelta(hours=1)
+
+
+@dataclass(frozen=True, slots=True)
+class Principal:
+    """The authenticated request principal (resolved once per request)."""
+
+    user: User
+    session_id: uuid.UUID
+    token: str
+    csrf_token: str
+
+
+class SlidingWindowLimiter:
+    """In-memory sliding-window rate limiter (wave 2: PG-backed durable limiter)."""
+
+    def __init__(self, clock: Clock, max_events: int, window: timedelta) -> None:
+        """Wire the clock and the window shape."""
+        self._clock = clock
+        self._max_events = max_events
+        self._window = window
+        self._events: dict[str, deque[float]] = {}
+
+    def allow(self, key: str) -> bool:
+        """Record an attempt; return False when the window is already full."""
+        now = self._clock.now().timestamp()
+        cutoff = now - self._window.total_seconds()
+        events = self._events.setdefault(key, deque())
+        while events and events[0] <= cutoff:
+            events.popleft()
+        if len(events) >= self._max_events:
+            return False
+        events.append(now)
+        return True
+
+
+def origin_of(url: str) -> str:
+    """Return the scheme+host+port origin of a URL."""
+    parts = urlsplit(url)
+    return f"{parts.scheme}://{parts.netloc}"
+
+
+def _origin_ok(base_url: str, request: Request) -> bool:
+    """Return True when the request Origin (fallback Referer) matches the installation origin."""
+    expected = origin_of(base_url)
+    for header in ("origin", "referer"):
+        value = request.headers.get(header)
+        if value:
+            return origin_of(value) == expected
+    return False
+
+
+def principal_from_request(
+    request: Request,
+    *,
+    sessions: SessionTokenStore,
+    users: UserRepository,
+    secret_key: str,
+    clock: Clock,
+) -> Principal | None:
+    """Resolve the session cookie to a live Principal, or None (caller maps to 401)."""
+    token = request.cookies.get(SESSION_COOKIE, "")
+    if not token:
+        return None
+    resolved = sessions.authenticate(token, now=clock.now())
+    if resolved is None:
+        return None
+    session_id, user_id = resolved
+    user = users.get(user_id)
+    if user is None or not user.enabled:
+        return None
+    return Principal(
+        user=user,
+        session_id=session_id,
+        token=token,
+        csrf_token=derive_csrf_token(secret_key, token),
+    )
+
+
+def set_session_cookie(response: Response, token: str, *, ttl: timedelta) -> None:
+    """Apply the cookie discipline to a session-issuing response."""
+    response.set_cookie(
+        SESSION_COOKIE,
+        token,
+        max_age=int(ttl.total_seconds()),
+        secure=True,
+        httponly=True,
+        samesite="lax",
+        path="/",
+    )
+
+
+def clear_session_cookie(response: Response) -> None:
+    """Clear the session cookie with the same flags it was set with."""
+    response.delete_cookie(SESSION_COOKIE, secure=True, httponly=True, samesite="lax", path="/")
+
+
+class CsrfOriginMiddleware(BaseHTTPMiddleware):
+    """Origin + CSRF enforcement for unsafe methods under the API prefix."""
+
+    def __init__(
+        self,
+        app: ASGIApp,
+        *,
+        settings: SecuritySettings,
+        sessions: SessionTokenStore,
+        users: UserRepository,
+        clock: Clock,
+    ) -> None:
+        """Wire the middleware around the app with the enforcement dependencies."""
+        super().__init__(app)
+        self._settings = settings
+        self._sessions = sessions
+        self._users = users
+        self._clock = clock
+
+    async def dispatch(
+        self, request: Request, call_next: RequestResponseEndpoint
+    ) -> JSONResponse | Response:
+        """Enforce origin (all unsafe) and CSRF (unsafe with a live session)."""
+        if request.method in UNSAFE_METHODS and request.url.path.startswith(API_PREFIX):
+            if not _origin_ok(self._settings.base_url, request):
+                return JSONResponse(
+                    status_code=403, content={"detail": {"reason": "origin_rejected"}}
+                )
+            principal = principal_from_request(
+                request,
+                sessions=self._sessions,
+                users=self._users,
+                secret_key=self._settings.secret_key,
+                clock=self._clock,
+            )
+            if principal is not None:
+                presented = request.headers.get(CSRF_HEADER, "")
+                if not presented.isascii() or not hmac.compare_digest(
+                    presented, principal.csrf_token
+                ):
+                    return JSONResponse(
+                        status_code=403, content={"detail": {"reason": "csrf_rejected"}}
+                    )
+        return await call_next(request)
