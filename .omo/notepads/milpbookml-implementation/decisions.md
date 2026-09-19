@@ -12,3 +12,10 @@ _Auto-scaffolded by /start-work. Append new entries below - never overwrite._
 - **Concurrency**: max ONE active delegated agent at a time (user, 2026-09-18 later: supersedes the earlier "two as before").
 - Task completion during prototype wave = functionality demonstrably works (hands-on evidence) + existing pipeline stays green; VER-evidence batches/mutation QA/new test files = second wave.
 
+## D13 (2026-09-19, user) — Light-QA mode + dispatch gating
+- Workers were doing extensive multi-scenario QA batteries (30-assertion drivers, SIGKILL drills, long transcripts). STOP mandating these.
+- Permitted for workers: **brief manual smoke** (does the core flow work when run by the agent?) + **linting** (ruff/mypy/import-linter + existing test suite green).
+- NOT requested anymore: multi-scenario QA drivers, fault-injection drills, long QA transcripts, heavy verification packs. Evidence JSON stays minimal (commands, exits, deferred list).
+- Deep QA/evidence batteries = wave 2.
+- **Dispatch gating**: orchestrator STOPS after each agent finishes; next dispatch only on explicit user instruction.
+
