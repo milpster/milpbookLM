@@ -1,0 +1,39 @@
+# FND-03: standalone PostgreSQL 18 + pgvector service (TAD-003: the only mandatory data service).
+# Standalone by design: task 8 absorbs this service into the full reference Compose project.
+# Podman-compatible by constraint: rootless, digest-pinned image, no published ports
+# (private network profile per ch04 "Only the reverse proxy/API entry point is published"),
+# no docker-only keys. Podman's compose delegation pins PODMAN_COMPOSE_PROVIDER at deploy time.
+# Image digest pinned per REFERENCE-DEPENDENCIES ("commit ... container digests").
+services:
+  postgres:
+    image: docker.io/pgvector/pgvector@sha256:1d50c689b0a6511b9ea0a15615281c81a59fd04a08eb35057ec8646fb3a2118a
+    container_name: milpbooklm-postgres
+    restart: unless-stopped
+    environment:
+      POSTGRES_USER: postgres
+      POSTGRES_PASSWORD: ${POSTGRES_BOOTSTRAP_PASSWORD:?set POSTGRES_BOOTSTRAP_PASSWORD}
+      POSTGRES_DB: milpbooklm
+      # ch04: required extensions checked at readiness; superuser bootstrap applies roles.sql
+      # from /docker-entrypoint-initdb.d, so the app/migration split exists before first migrate.
+    volumes:
+      - pgdata:/var/lib/postgresql/data
+      # Role DDL (app: no DDL; migration: privileged) ships with the migrations tree.
+      - ../../migrations/roles.sql:/docker-entrypoint-initdb.d/01-roles.sql:ro
+    tmpfs:
+      - /tmp
+    security_opt:
+      - no-new-privileges:true
+    healthcheck:
+      test:
+        [
+          "CMD-SHELL",
+          "pg_isready -U postgres -d milpbooklm && psql -U postgres -d milpbooklm -tAc \"SELECT 1 FROM pg_available_extensions WHERE name='vector'\" | grep -q 1"
+        ]
+      interval: 5s
+      timeout: 3s
+      retries: 24
+      start_period: 10s
+    # Intentionally no `ports:`: the backend stays on the private network (ch04/REFERENCE-DEPENDENCIES).
+volumes:
+  pgdata:
+    driver: vfs

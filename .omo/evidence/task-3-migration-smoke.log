@@ -1,0 +1,57 @@
+=== [0a] server check ===
+127.0.0.1:29517 - accepting connections
+pg_isready exit=0
+=== [0b] roles (cluster-wide, idempotent) ===
+psql:migrations/roles.sql:13: NOTICE:  extension "vector" already exists, skipping
+CREATE EXTENSION
+DO
+DO
+GRANT
+GRANT
+roles(postgres) exit=0
+=== [0c] clean slate: fresh fnd03_test ===
+NOTICE:  database "fnd03_test" does not exist, skipping
+DROP DATABASE
+drop exit=0
+CREATE DATABASE
+create exit=0
+=== [0d] per-db grants + vector ext ===
+CREATE EXTENSION
+DO
+DO
+GRANT
+GRANT
+roles(fnd03_test) exit=0
+=== [1] alembic upgrade head ===
+INFO  [alembic.runtime.migration] Context impl PostgresqlImpl.
+INFO  [alembic.runtime.migration] Will assume transactional DDL.
+INFO  [alembic.runtime.migration] Running upgrade  -> 0001_baseline, FND-03 baseline: all ch05 tables with uuidv7 defaults, invariants, immutability triggers.
+upgrade exit=0
+=== [2] alembic downgrade -1 ===
+INFO  [alembic.runtime.migration] Context impl PostgresqlImpl.
+INFO  [alembic.runtime.migration] Will assume transactional DDL.
+INFO  [alembic.runtime.migration] Running downgrade 0001_baseline -> , FND-03 baseline: all ch05 tables with uuidv7 defaults, invariants, immutability triggers.
+downgrade exit=0
+=== [3] alembic upgrade head (again) ===
+INFO  [alembic.runtime.migration] Context impl PostgresqlImpl.
+INFO  [alembic.runtime.migration] Will assume transactional DDL.
+INFO  [alembic.runtime.migration] Running upgrade  -> 0001_baseline, FND-03 baseline: all ch05 tables with uuidv7 defaults, invariants, immutability triggers.
+upgrade exit=0
+=== [4] app-role roundtrip: DML ok / DDL denied ===
+00000000-0000-4000-8000-00000000f001|smoke@example.com
+INSERT 0 1
+insert exit=0
+1
+select exit=0
+DELETE 1
+delete exit=0
+ERROR:  permission denied for schema public
+LINE 1: CREATE TABLE _smoke_ddl_probe (id uuid);
+                     ^
+ddl-probe exit=1 (expect nonzero: permission denied)
+=== [5] final state ===
+0001_baseline
+alembic_version exit=0
+39
+public-table-count exit=0
+=== SMOKE DONE ===
