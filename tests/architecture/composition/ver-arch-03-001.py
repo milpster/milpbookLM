@@ -17,10 +17,15 @@ from tests._imports import imported_top_level_modules
 ADAPTERS_SRC = REPO_ROOT / "packages" / "adapters" / "src" / "milpbooklm_adapters"
 # The package's own name appears because __init__.py re-exports via absolute
 # self-imports; that is the package's identity, not a dependency.
+# sqlalchemy/alembic/psycopg: the FND-03 persistence line, named verbatim in
+# REFERENCE-DEPENDENCIES.md ("SQLAlchemy 2, Alembic, psycopg 3").
 ALLOWED_ADAPTER_IMPORTS = {
     "milpbooklm_adapters",
     "milpbooklm_domain",
     "milpbooklm_application",
+    "sqlalchemy",
+    "alembic",
+    "psycopg",
 } | set(sys.stdlib_module_names)
 
 
