@@ -10,8 +10,10 @@ from __future__ import annotations
 
 import os
 
+import sqlalchemy as sa
 from fastapi import FastAPI, HTTPException, Request
 from milpbooklm_adapters.db.connections import make_engine
+from milpbooklm_adapters.jobs import PgJobRepository, PgOutboxDispatcher, PolicyAuthzRevalidator
 from milpbooklm_adapters.notebook_repository import InMemoryNotebookRepository
 from milpbooklm_adapters.security.argon2 import Argon2PasswordHasher
 from milpbooklm_adapters.security.clock import SystemClock
@@ -21,6 +23,14 @@ from milpbooklm_adapters.security.pg_identity import PgAuditLog, PgUserRepositor
 from milpbooklm_adapters.security.session_store import PgSessionTokenStore
 from milpbooklm_application.authn import LoginUser, LogoutUser, RegisterUser, RotateSession
 from milpbooklm_application.create_notebook import CreateNotebook
+from milpbooklm_application.job_capacity import load_capacity_policy
+from milpbooklm_application.job_usecases import (
+    CancelJob,
+    CompleteJob,
+    EnqueueJob,
+    JobPorts,
+    RecoverExpiredLeases,
+)
 from milpbooklm_application.policy_engine import PolicyEngine
 from milpbooklm_application.ports import (
     AuditLog,
@@ -36,6 +46,7 @@ from starlette import status
 from .auth_routes import build_auth_router
 from .config_loader import load_config
 from .deps import ApiDeps
+from .job_routes import build_job_router
 from .notebook_routes import build_notebook_router
 from .security import (
     CsrfOriginMiddleware,
@@ -62,6 +73,7 @@ def build_app(
     notebooks: NotebookReader,
     settings: SecuritySettings,
     clock: Clock,
+    jobs: JobPorts | None = None,
 ) -> FastAPI:
     """Build the API app from wired ports (the test/QA seam)."""
     app = FastAPI(title="MilpBook LM API")
@@ -91,6 +103,7 @@ def build_app(
         register_limiter=SlidingWindowLimiter(
             clock, settings.register_max_attempts, settings.register_window
         ),
+        jobs=jobs,
     )
     app.state.deps = deps
 
@@ -112,7 +125,27 @@ def build_app(
 
     app.include_router(build_auth_router(deps, principal))
     app.include_router(build_notebook_router(deps, principal))
+    if jobs is not None:
+        app.include_router(build_job_router(deps, principal, jobs))
     return app
+
+
+def build_job_ports(
+    engine: sa.engine.Engine, users: UserRepository, notebooks: NotebookReader
+) -> JobPorts:
+    """Wire the durable job surface over the PostgreSQL adapters (ch15)."""
+    repo = PgJobRepository(engine)
+    dispatcher = PgOutboxDispatcher(engine)
+    revalidator = PolicyAuthzRevalidator(engine, PolicyEngine(), users, notebooks)
+    policy = load_capacity_policy(os.environ)
+    return JobPorts(
+        repo=repo,
+        dispatcher=dispatcher,
+        enqueue=EnqueueJob(repo, policy),
+        cancel=CancelJob(repo),
+        complete=CompleteJob(repo, revalidator),
+        recover=RecoverExpiredLeases(repo),
+    )
 
 
 def create_app() -> FastAPI:
@@ -124,13 +157,16 @@ def create_app() -> FastAPI:
         secret_key=installation.secret_key.get_secret_value(),
         base_url=installation.base_url,
     )
+    users = PgUserRepository(engine)
+    notebooks = PgNotebookReader(engine)
     return build_app(
-        users=PgUserRepository(engine),
+        users=users,
         hasher=Argon2PasswordHasher(),
         sessions=PgSessionTokenStore(engine, secret_key=settings.secret_key, clock=clock),
         custody=PgNotebookCustodyStore(engine),
         audit=PgAuditLog(engine),
-        notebooks=PgNotebookReader(engine),
+        notebooks=notebooks,
         settings=settings,
         clock=clock,
+        jobs=build_job_ports(engine, users, notebooks),
     )

@@ -1,0 +1,49 @@
+[00:41:39] FND-05 manual QA transcript (scratch PG 29518, API :8123)
+[00:41:39] seed user=975edd1d-ad9f-45ef-be1c-42ce723cde53 notebook=69314004-3235-4cce-9a78-8994f0e9c9a6
+[00:41:39] S1: enqueue -> 202 -> running -> succeeded + SSE terminal event
+[00:41:40] ASSERT OK   S1 enqueue returns 202 :: code=202 body={'job_id': '01a0bbd5-1975-739c-7c6a-ffc735661400', 'state': 'queued', 'waiting_reason': None}
+[00:41:41] ASSERT OK   S1 job reaches succeeded :: succeeded
+[00:41:41] ASSERT OK   S1 SSE delivers job.succeeded with matching job id :: {'job_id': '01a0bbd5-1975-739c-7c6a-ffc735661400', 'payload': {'kind': 'demo.echo', 'state': 'succeeded', 'job_id': '01a0bbd5-1975-739c-7c6a-ffc735661400', 'attempts': 1, 'priority': 0, 'progress': {'phase': 'done', 'status': 'complete', 'fraction': 1.0}, 'error_code': None, 'result_ref': '{"echo": "hello-s1", "length": 8}', 'notebook_id': '69314004-3235-4cce-9a78-8994f0e9c9a6', 'capacity_class': 'interactive_text', 'waiting_reason': None}, 'actor_id': '975edd1d-ad9f-45ef-be1c-42ce723cde53', 'event_id': '4aed98d8-7c5e-4d91-9d76-2729dfd1be35', 'event_type': 'job.succeeded', 'stream_seq': 0, 'visibility': 'private', 'occurred_at': '2026-09-19T22:41:40.949747+00:00', 'aggregate_id': '01a0bbd5-1975-739c-7c6a-ffc735661400', 'operation_id': None, 'aggregate_kind': 'job', 'schema_version': 1, 'aggregate_version': 23}
+[00:41:41] ASSERT OK   S1 single attempt row succeeded :: [('succeeded',)]
+[00:41:41] ASSERT OK   S1 outbox terminal row exists and is dispatched :: [('job.succeeded', True)]
+[00:41:41] sse: stream ended (ReadError: [Errno 9] Bad file descriptor)
+[00:41:41] sse: reader closed (1 events)
+[00:41:41] S2: idempotency reuse (same payload -> same job; different payload -> 409)
+[00:41:41] ASSERT OK   S2 first request 202 :: code=202
+[00:41:41] ASSERT OK   S2 same key + same payload -> 202 with same job id :: code=202 body={'job_id': '01a0bbd5-1f64-739f-481f-c9a2a2b1a400', 'state': 'queued', 'waiting_reason': None}
+[00:41:41] ASSERT OK   S2 same key + different payload -> 409 :: code=409 body={'detail': 'idempotency key conflict'}
+[00:41:41] ASSERT OK   S2 exactly one idempotency_keys row :: [(1,)]
+[00:41:42] ASSERT OK   S2 job succeeded :: succeeded
+[00:41:42] ASSERT OK   S2 exactly one succeeded event (no double run) :: [(1,)]
+[00:41:42] S3: kill worker mid-job -> lease expires -> second worker recovers -> completes once
+[00:41:42] spawned worker w2 pid=2403023
+[00:41:43] ASSERT OK   S3 enqueue 202 :: code=202
+[00:41:43] ASSERT OK   S3 w2 has the job running :: running
+[00:41:45] S3 killed w2 mid-job (checkpoint ~2s into 8s job)
+[00:41:45] spawned worker w2b pid=2404417
+[00:41:55] ASSERT OK   S3 recovered job succeeded :: succeeded
+[00:41:55] ASSERT OK   S3 attempts counter == 2 :: [(2,)]
+[00:41:55] ASSERT OK   S3 attempt rows: #1 aborted (running), #2 succeeded :: [(1, 'w2', 'running'), (2, 'w1', 'succeeded')]
+[00:41:55] ASSERT OK   S3 exactly one terminal event (idempotent completion) :: [(1,)]
+[00:41:55] S4: SSE reconnect with Last-Event-ID -> no lost terminal, no duplicates
+[00:41:56] ASSERT OK   S4 job A enqueued :: code=202
+[00:41:58] ASSERT OK   S4 stream A receives job A terminal :: {'job_id': '01a0bbd5-58aa-71d5-574f-d857d3f8b000', 'payload': {'kind': 'demo.echo', 'state': 'succeeded', 'job_id': '01a0bbd5-58aa-71d5-574f-d857d3f8b000', 'attempts': 1, 'priority': 0, 'progress': {'phase': 'done', 'status': 'complete', 'fraction': 1.0}, 'error_code': None, 'result_ref': '{"echo": "s4a", "length": 3}', 'notebook_id': '69314004-3235-4cce-9a78-8994f0e9c9a6', 'capacity_class': 'interactive_text', 'waiting_reason': None}, 'actor_id': '975edd1d-ad9f-45ef-be1c-42ce723cde53', 'event_id': '6e702656-b78f-4228-9cfe-c16f9a4ae964', 'event_type': 'job.succeeded', 'stream_seq': 0, 'visibility': 'private', 'occurred_at': '2026-09-19T22:41:58.642406+00:00', 'aggregate_id': '01a0bbd5-58aa-71d5-574f-d857d3f8b000', 'operation_id': None, 'aggregate_kind': 'job', 'schema_version': 1, 'aggregate_version': 83}
+[00:41:59] sse: stream ended (ReadError: [Errno 9] Bad file descriptor)
+[00:41:59] sse: reader closed (1 events)
+[00:41:59] S4 stream A closed at last_id=4
+[00:41:59] ASSERT OK   S4 job B enqueued :: code=202
+[00:42:02] ASSERT OK   S4 stream B receives job B terminal after resume :: {'job_id': '01a0bbd5-6667-7f18-42ca-b5a13d0a5c00', 'payload': {'kind': 'demo.echo', 'state': 'succeeded', 'job_id': '01a0bbd5-6667-7f18-42ca-b5a13d0a5c00', 'attempts': 1, 'priority': 0, 'progress': {'phase': 'done', 'status': 'complete', 'fraction': 1.0}, 'error_code': None, 'result_ref': '{"echo": "s4b", "length": 3}', 'notebook_id': '69314004-3235-4cce-9a78-8994f0e9c9a6', 'capacity_class': 'interactive_text', 'waiting_reason': None}, 'actor_id': '975edd1d-ad9f-45ef-be1c-42ce723cde53', 'event_id': 'b498e9bb-1a18-4d58-97ff-7d2264fc8573', 'event_type': 'job.succeeded', 'stream_seq': 0, 'visibility': 'private', 'occurred_at': '2026-09-19T22:42:02.103550+00:00', 'aggregate_id': '01a0bbd5-6667-7f18-42ca-b5a13d0a5c00', 'operation_id': None, 'aggregate_kind': 'job', 'schema_version': 1, 'aggregate_version': 83}
+[00:42:02] sse: stream ended (ReadError: [Errno 9] Bad file descriptor)
+[00:42:02] sse: reader closed (1 events)
+[00:42:02] ASSERT OK   S4 no duplicate event ids across A+B :: 2 events
+[00:42:02] ASSERT OK   S4 stream seq strictly increasing across A+B :: [4, 5]
+[00:42:02] ASSERT OK   S4 stream B did not re-deliver job A events
+[00:42:02] S5: media capacity cap=1 -> second media job parks durably as waiting_capacity
+[00:42:02] ASSERT OK   S5 media job A 202 :: code=202
+[00:42:03] ASSERT OK   S5 media job A running (slot occupied)
+[00:42:03] ASSERT OK   S5 media job B 202 with state=waiting_capacity :: code=202 body={'job_id': '01a0bbd5-731e-7f87-4fae-25aabb083000', 'state': 'waiting_capacity', 'waiting_reason': 'capacity'}
+[00:42:03] ASSERT OK   S5 job B durable-parked (status=queued, payload waiting_reason=capacity) :: [('queued', 'capacity')]
+[00:42:11] ASSERT OK   S5 job A succeeded (frees the media slot)
+[00:42:11] ASSERT OK   S5 job B claimed and succeeded after the slot freed :: succeeded
+[00:42:11] QA worker children stopped
+[00:42:11] QA_RESULT: PASS (30 passed, 0 failed)

@@ -7,6 +7,7 @@ from dataclasses import dataclass
 
 from fastapi import Request
 from milpbooklm_application.authn import LoginUser, LogoutUser, RegisterUser, RotateSession
+from milpbooklm_application.job_usecases import JobPorts
 from milpbooklm_application.policy_engine import PolicyEngine
 from milpbooklm_application.ports import (
     AuditLog,
@@ -38,6 +39,7 @@ class ApiDeps:
     clock: Clock
     login_limiter: SlidingWindowLimiter
     register_limiter: SlidingWindowLimiter
+    jobs: JobPorts | None = None
 
 
 PrincipalDependency = Callable[[Request], Awaitable[Principal]]

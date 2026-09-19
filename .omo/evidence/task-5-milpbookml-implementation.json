@@ -1,0 +1,48 @@
+{
+  "task": "FND-05",
+  "title": "Durable jobs, leases, outbox, SSE, idempotency, capacity classes",
+  "plan_position": "5/55",
+  "mode": "prototype-first (user directive D12): durable job lifecycle proven hands-on over live PG + live HTTP; notification projection, immutable manifests, remote-op reconciliation, disclosure events, fault-injection battery and weighted fairness deferred to wave 2",
+  "gates": [
+    { "name": "mypy strict", "command": "uv run mypy", "exit": 0, "result": "No issues found" },
+    { "name": "ruff check", "command": "uv run ruff check packages/domain packages/application packages/adapters/src/milpbooklm_adapters/jobs apps/api workers", "exit": 0, "result": "All checks passed!" },
+    { "name": "import-linter", "command": "uv run import-linter lint", "exit": 0, "result": "Contracts: 4 kept, 0 broken (108 files, 438 deps)" },
+    { "name": "pytest meta+architecture+unit", "command": "uv run pytest tests/meta tests/architecture tests/unit -q", "exit": 0, "result": "127 passed in 3.04s" }
+  ],
+  "defects_found_and_fixed_during_qa": [
+    "SSE route order (caught in review before QA): GET /events was registered AFTER GET /{job_id}; Starlette matches by path pattern first, so /events hit the UUID-typed /{job_id} route and 422'd - the SSE endpoint was unreachable. Fixed by registering /events before /{job_id} in build_job_router (apps/api job_routes.py), with a why-comment on the ordering constraint.",
+    "idempotency_keys.expires_at NotNullViolation: _claim_idempotency inserted only (scope, key, request_hash) but the T3 table requires expires_at NOT NULL (ck_idempotency_keys_expiry: expires_at > created_at) - every keyed enqueue 500'd. Fixed by setting expires_at = now() + 24h via the previously defined-but-unused _IDEMPOTENCY_TTL_SECONDS constant (pg_jobs.py).",
+    "ck_jobs_lease_consistency CheckViolation on terminal publish: complete() and cancel() moved a job to succeeded/failed/cancelled WITHOUT clearing lease_owner; the T3 invariant requires lease_owner IS NULL outside leased/running, so the worker crashed on the first job (the recovery path had the NULL clears right; the happy path did not). Fixed both terminal UPDATEs to NULL lease_owner + lease_expires_at (pg_jobs.py)."
+  ],
+  "manual_qa": {
+    "driver": "/tmp/opencode/fnd05-qa.py (httpx + psycopg; 30 assertions; transcript written to .omo/evidence/task-5-manual-qa.log)",
+    "log": ".omo/evidence/task-5-manual-qa.log",
+    "result": "QA_RESULT: PASS (30 passed, 0 failed), driver exit 0",
+    "harness": "live scratch PG17 (127.0.0.1:29518, db fnd05_qa, roles per migrations/roles.sql, alembic 0001_baseline, scratch-only uuidv7() SQL shim) + live uvicorn on :8123 (real session cookie mb_session + matching Origin + x-csrf-token) + real worker processes (lease 4s, poll 0.3s, SIGKILL in scenario 3)",
+    "demonstrated": [
+      "S1: enqueue 202 {job_id, state=queued} -> worker claim (job_attempts row outcome=succeeded) -> status succeeded; SSE delivers the job.succeeded envelope (content-free payload: state, progress, result_ref, notebook_id, attempts) with matching job_id; outbox row dispatched=true after delivery",
+      "S2: same idempotency key + same payload -> 202 with the SAME job_id (no double job); same key + different payload -> 409 idempotency key conflict; exactly one idempotency_keys row and exactly one job.succeeded event",
+      "S3: SIGKILL the owning worker mid-job (checkpoint ~2s into an 8s job); lease expires; a second worker recovers (re-queue, attempts=2; attempt rows [1: killed owner 'running', 2: recovering owner 'succeeded']); the job completes exactly once with exactly one terminal outbox event",
+      "S4: SSE stream A closes after job A's terminal (last_id=4); job B is created; stream B opens with Last-Event-ID: 4 and receives job B's terminal (seq 5); combined A+B: no duplicate event ids, seq strictly monotonic, no re-delivery of A's events",
+      "S5: media class cap=1/1: job A occupies the slot (running); job B enqueues 202 state=waiting_capacity; SQL-verified durable parking (status='queued', payload->>'waiting_reason'='capacity' - no in-memory timer, ch15 MUST NOT); after A succeeds, B is claimed and succeeds"
+    ]
+  },
+  "config_audit": [
+    "No new dependencies: the jobs stack reuses existing manifest entries (sqlalchemy + psycopg in packages/adapters, fastapi + httpx in apps/api, stdlib only in workers); no pyproject changes, uv.lock untouched"
+  ],
+  "wave2_deferred": [
+    "notification projection (ARCH-15-023..025): user-facing notifications derived from job events",
+    "immutable GenerationInputManifest wiring (ARCH-15-004..007) and remote-op reconciliation (ARCH-15-009)",
+    "disclosure/audit events (ARCH-15-026)",
+    "fault-injection battery (mid-tx crashes, network partitions) beyond the SIGKILL lease-recovery proof",
+    "weighted fair selection + administrator cost budgets (basic per-class + per-user caps ship)",
+    "job.enqueued / job.started stream events (baseline emits terminal events only; the event-type constants exist in job_events.py)",
+    "dispatch-time budget checks beyond enqueue-time saturation parking (claim already enforces class + user caps via FOR UPDATE SKIP LOCKED)"
+  ],
+  "runtime_deviations": [
+    "PG runtime: host PostgreSQL 17 scratch cluster (port 29518, db fnd05_qa) with a scratch-only SQL uuidv7() shim (48-bit unix-ms timestamp | version 7 | variant 10 | random, lpad zero-padded to 16 hex) - the T3 baseline's only PG18-specific element; the shim lives in /tmp only, never committed (same recipe as FND-04)",
+    "ch15 columns absent from the T3 jobs table (priority, progress, checkpoint, result_ref, error_code, cancel_reason, capability, notebook_id, payload schema version + hash, waiting state) are persisted inside jobs.payload JSONB and re-expanded on read (pack_payload/job_from_row in _rows.py); the physical status is one of 6 rows, and waiting_capacity = status 'queued' + payload waiting_reason marker",
+    "MILPBOOKLM_CAPACITY_* env overrides are honored by the WORKER (load_capacity_policy reads os.environ) but the API startup's config guard rejects unknown MILPBOOKLM_* keys, so API-process capacity overrides are unusable at boot; QA used the default media budget 1/1, which is exactly the scenario requirement"
+  ],
+  "teardown": "pkill uvicorn + workers (bracket-pattern to avoid self-matching the invoking shell); pg_ctl -D /tmp/opencode/fnd05-scratch/pgdata stop -m fast -> 'server stopped'; pgrep receipt: no process matching fnd05-scratch/pgdata | milpbooklm_workers | uvicorn milpbooklm_api (only the invoking shell's own command line matched pgrep -af)"
+}
