@@ -6,10 +6,10 @@
       "work_id": "milpbookml-implementation-a6e9978e",
       "active_plan": "/home/srcds/dev/milpbookLM/.omo/plans/milpbookml-implementation.md",
       "plan_name": "milpbookml-implementation",
-      "status": "active",
-      "pause_reason": null,
+      "status": "paused",
+      "pause_reason": "inference server :8009 down (outage #2, since 2026-09-19); awaiting user restart or alternate-provider authorization; T5 dispatch-ready; plan 4/59",
       "started_at": "2026-09-18T00:53:49.594Z",
-      "updated_at": "2026-09-18T10:49:33.607Z",
+      "updated_at": "2026-09-19T15:30:53.057Z",
       "session_ids": [
         "opencode:ses_f5354471dffeX50hNrrmpSPzuK"
       ],
@@ -35,20 +35,35 @@
           "task_key": "todo:2",
           "task_label": "2",
           "task_title": "FND-02 — Typed configuration, capability profile, specification tooling",
-          "session_id": "opencode:ses_f4d208455ffeUfqyx717whA0Wx",
+          "session_id": "opencode:ses_f4d208440ffejcvGRIeVtFA658",
+          "agent": "Sisyphus-Junior",
+          "category": "quick",
+          "started_at": "2026-09-18T10:49:33.607Z",
+          "status": "completed",
+          "updated_at": "2026-09-19T03:51:07.285Z",
+          "ended_at": "2026-09-19T03:51:07.285Z",
+          "elapsed_ms": 61293678
+        },
+        "todo:4": {
+          "task_key": "todo:4",
+          "task_label": "4",
+          "task_title": "FND-04 — Local identity, sessions, authorization matrix, custody",
+          "session_id": "opencode:ses_f46551169ffetyzI0hCRZrxVGu",
           "agent": "Sisyphus-Junior",
           "category": "deep",
-          "updated_at": "2026-09-18T10:49:33.607Z",
-          "started_at": "2026-09-18T10:49:33.607Z",
-          "status": "running"
+          "started_at": "2026-09-19T12:21:23.808Z",
+          "status": "completed",
+          "updated_at": "2026-09-19T15:30:53.057Z",
+          "ended_at": "2026-09-19T15:30:53.057Z",
+          "elapsed_ms": 11369249
         }
       }
     }
   },
   "active_plan": "/home/srcds/dev/milpbookLM/.omo/plans/milpbookml-implementation.md",
   "started_at": "2026-09-18T00:53:49.594Z",
-  "status": "active",
-  "updated_at": "2026-09-18T10:49:33.607Z",
+  "status": "paused",
+  "updated_at": "2026-09-19T15:30:53.057Z",
   "session_ids": [
     "opencode:ses_f5354471dffeX50hNrrmpSPzuK"
   ],
@@ -74,12 +89,27 @@
       "task_key": "todo:2",
       "task_label": "2",
       "task_title": "FND-02 — Typed configuration, capability profile, specification tooling",
-      "session_id": "opencode:ses_f4d208455ffeUfqyx717whA0Wx",
+      "session_id": "opencode:ses_f4d208440ffejcvGRIeVtFA658",
+      "agent": "Sisyphus-Junior",
+      "category": "quick",
+      "started_at": "2026-09-18T10:49:33.607Z",
+      "status": "completed",
+      "updated_at": "2026-09-19T03:51:07.285Z",
+      "ended_at": "2026-09-19T03:51:07.285Z",
+      "elapsed_ms": 61293678
+    },
+    "todo:4": {
+      "task_key": "todo:4",
+      "task_label": "4",
+      "task_title": "FND-04 — Local identity, sessions, authorization matrix, custody",
+      "session_id": "opencode:ses_f46551169ffetyzI0hCRZrxVGu",
       "agent": "Sisyphus-Junior",
       "category": "deep",
-      "updated_at": "2026-09-18T10:49:33.607Z",
-      "started_at": "2026-09-18T10:49:33.607Z",
-      "status": "running"
+      "started_at": "2026-09-19T12:21:23.808Z",
+      "status": "completed",
+      "updated_at": "2026-09-19T15:30:53.057Z",
+      "ended_at": "2026-09-19T15:30:53.057Z",
+      "elapsed_ms": 11369249
     }
   },
   "agent": "atlas"
