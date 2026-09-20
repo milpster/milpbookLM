@@ -134,6 +134,24 @@ class UserRepository(Protocol):
         ...
 
 
+@dataclass(frozen=True, slots=True)
+class AuditRetentionReport:
+    """
+    Bounded-retention report for the append-only audit trail.
+
+    The trail is immutable (DB trigger: no UPDATE/DELETE for the app role), so
+    retention is a CONSERVATIVE report of which events are eligible for
+    out-of-band purging (created before ``cutoff``) - it never mutates retained
+    events. Physical purging of eligible events is a privileged, out-of-band
+    operation that consumes this report.
+    """
+
+    eligible_count: int
+    cutoff: datetime
+    oldest_created: datetime | None
+    newest_created: datetime | None
+
+
 class AuditLog(Protocol):
     """Append-only audit trail (metadata only; content never enters audit rows)."""
 
@@ -148,6 +166,10 @@ class AuditLog(Protocol):
         request_id: str | None = None,
     ) -> None:
         """Append one audited event."""
+        ...
+
+    def retention_report(self, *, cutoff: datetime) -> AuditRetentionReport:
+        """Report the events eligible for out-of-band purging (created before cutoff)."""
         ...
 
 

@@ -20,7 +20,6 @@ import json
 import logging
 import os
 import signal
-import sys
 import uuid
 from datetime import timedelta
 from pathlib import Path
@@ -36,9 +35,11 @@ from milpbooklm_application.blob_usecases import BlobPorts, CollectBlobGarbage, 
 from milpbooklm_application.job_capacity import load_capacity_policy
 from milpbooklm_application.job_usecases import CancelJob, CompleteJob, RecoverExpiredLeases
 from milpbooklm_application.policy_engine import PolicyEngine
+from milpbooklm_application.structured_logging import configure_structured_logging
 from milpbooklm_domain.blobs import MAX_BACKUP_WINDOW, gc_safety_delay_valid
 from milpbooklm_domain.jobs import CapacityClass
 
+from milpbooklm_workers import credential_cli
 from milpbooklm_workers.handlers import BlobIntegrityScanHandler, DemoEchoHandler, JobHandler
 from milpbooklm_workers.loop import WorkerLoop
 
@@ -50,7 +51,14 @@ ENV_BLOB_ROOT = "MILPBOOKLM_BLOB_ROOT"
 # 48h is the default with one full backup cycle of headroom.
 DEFAULT_GC_SAFETY_DELAY_HOURS = 48.0
 
-COMMANDS = ("loop", "reconcile", "put-blob", "get-blob", "gc")
+CREDENTIAL_COMMANDS = (
+    "store-credential",
+    "dispatch-credential",
+    "rotate-credentials",
+    "log-canary",
+)
+
+COMMANDS = ("loop", "reconcile", "put-blob", "get-blob", "gc", *CREDENTIAL_COMMANDS)
 
 
 def build_parser() -> argparse.ArgumentParser:
@@ -107,6 +115,38 @@ def build_parser() -> argparse.ArgumentParser:
     parser.add_argument("--referrer-id", default=None, help="put-blob: reference referrer id")
     parser.add_argument("--blob-id", default=None, help="get-blob: the blob id to read (uuid)")
     parser.add_argument("--out", default=None, help="get-blob: write the bytes to this file")
+    parser.add_argument(
+        "--keyring", default=None, help="credential commands: protected master keyring JSON path"
+    )
+    parser.add_argument(
+        "--provider-config",
+        default=None,
+        help="store-credential: the provider config id (uuid)",
+    )
+    parser.add_argument(
+        "--credential-kind", default=None, help="store-credential: the credential kind"
+    )
+    parser.add_argument(
+        "--secret-file",
+        default=None,
+        help="store-credential: file whose bytes are the secret (never argv)",
+    )
+    parser.add_argument(
+        "--owner",
+        default=None,
+        help="store-credential: owning user id (uuid; omit for installation-level)",
+    )
+    parser.add_argument(
+        "--credential-id",
+        default=None,
+        help="dispatch-credential: the credential record id (uuid)",
+    )
+    parser.add_argument(
+        "--batch-size",
+        type=int,
+        default=100,
+        help="rotate-credentials: records per committed batch (default 100)",
+    )
     return parser
 
 
@@ -258,9 +298,9 @@ def _run_maintenance(args: argparse.Namespace) -> int:
 def main(argv: list[str] | None = None) -> int:
     """Parse, wire, and run the loop (or a one-shot maintenance command)."""
     args = build_parser().parse_args(argv)
-    logging.basicConfig(
-        stream=sys.stderr, level=logging.INFO, format="%(asctime)s %(levelname)s %(message)s"
-    )
+    configure_structured_logging(level=logging.INFO)
+    if args.command in CREDENTIAL_COMMANDS:
+        return credential_cli.run(args)
     if args.command != "loop":
         return _run_maintenance(args)
     loop = build_worker(args)

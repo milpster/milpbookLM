@@ -8,15 +8,21 @@ uniform 409-free 429 body per key class.
 
 from __future__ import annotations
 
+import logging
+
 from fastapi import APIRouter, Depends, HTTPException, Request
 from fastapi.responses import JSONResponse, Response
 from milpbooklm_adapters.security.session_store import derive_csrf_token
+from milpbooklm_application.audit_actions import AuditAction
 from milpbooklm_application.authn import RegistrationError
+from milpbooklm_domain.telemetry import current_context
 from pydantic import BaseModel, ConfigDict
 from starlette import status
 
 from .deps import ApiDeps, PrincipalDependency
 from .security import Principal, clear_session_cookie, set_session_cookie
+
+logger = logging.getLogger(__name__)
 
 
 class RegisterRequest(BaseModel):
@@ -52,8 +58,19 @@ def _too_many() -> HTTPException:
 
 def _login_response(deps: ApiDeps, email: str, password: str) -> JSONResponse:
     """Build the login JSON response (uniform 401 on any failure)."""
+    ctx = current_context()
+    request_id = ctx.request_id if ctx is not None else None
+    email_norm = email.strip().lower()
     outcome = deps.login(email, password)
     if not outcome.succeeded:
+        deps.audit.record(
+            actor_id=None,
+            action=AuditAction.LOGIN_FAILED,
+            subject_kind="user",
+            details={"email": email_norm, "outcome": "invalid_credentials"},
+            request_id=request_id,
+        )
+        logger.info("login failed", extra={"email": email_norm})
         return JSONResponse(
             status_code=status.HTTP_401_UNAUTHORIZED,
             content={"detail": "invalid credentials"},
@@ -64,6 +81,15 @@ def _login_response(deps: ApiDeps, email: str, password: str) -> JSONResponse:
             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
             content={"detail": "internal"},
         )
+    deps.audit.record(
+        actor_id=outcome.user_id,
+        action=AuditAction.LOGIN_SUCCEEDED,
+        subject_kind="user",
+        subject_id=outcome.user_id,
+        details={"email": email_norm},
+        request_id=request_id,
+    )
+    logger.info("login succeeded", extra={"user_id": str(outcome.user_id)})
     csrf = derive_csrf_token(deps.settings.secret_key, session.token)
     response = JSONResponse(content={"user_id": str(outcome.user_id), "csrf_token": csrf})
     set_session_cookie(response, session.token, ttl=deps.settings.session_ttl)

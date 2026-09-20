@@ -31,6 +31,7 @@ from milpbooklm_domain.job_capacity import CapacityClass
 from milpbooklm_domain.job_events import job_event_payload
 from milpbooklm_domain.jobs import JobRecord
 from milpbooklm_domain.policy import PolicyAction
+from milpbooklm_domain.telemetry import current_context
 from pydantic import BaseModel, ConfigDict
 from starlette import status
 
@@ -170,11 +171,16 @@ def _enqueue(
                 status_code=status.HTTP_403_FORBIDDEN,
                 content={"detail": {"reason": decision.reason.value}},
             )
+    ctx = current_context()
     try:
         job, _created = jobs.enqueue(
             kind=body.kind,
             payload=body.payload,
-            actor=InitiatingActor(user_id=principal.user.id),
+            actor=InitiatingActor(
+                user_id=principal.user.id,
+                request_id=ctx.request_id if ctx is not None else None,
+                trace_id=ctx.trace_id if ctx is not None else None,
+            ),
             capacity_class=job_class,
             priority=body.priority,
             notebook_id=body.notebook_id,

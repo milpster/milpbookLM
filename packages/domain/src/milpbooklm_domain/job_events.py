@@ -86,6 +86,7 @@ class EventEnvelope:
     stream_seq: int = 0
     actor_id: uuid.UUID | None = None
     operation_id: str | None = None
+    trace_id: str | None = None
     job_id: uuid.UUID | None = None
     visibility: str = "private"
 
@@ -103,6 +104,7 @@ class EventEnvelope:
             "occurred_at": self.occurred_at.isoformat(),
             "actor_id": str(self.actor_id) if self.actor_id is not None else None,
             "operation_id": self.operation_id,
+            "trace_id": self.trace_id,
             "job_id": str(self.job_id) if self.job_id is not None else None,
             "visibility": self.visibility,
             "payload": self.payload,

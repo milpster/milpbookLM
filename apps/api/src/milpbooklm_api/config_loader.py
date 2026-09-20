@@ -27,6 +27,10 @@ INSTALLATION_ENV_KEYS = frozenset(
         "MILPBOOKLM_BLOB_ROOT",
         "MILPBOOKLM_BASE_URL",
         "MILPBOOKLM_TRUSTED_PROXY_PEERS",
+        # FND-07: credential keyring path (no _FILE suffix - the path IS a value)
+        # and the audit bounded-retention window in days.
+        "MILPBOOKLM_KEYRING_PATH",
+        "MILPBOOKLM_AUDIT_RETENTION_DAYS",
     }
 )
 
@@ -95,13 +99,38 @@ def load_installation(env: Mapping[str, str]) -> InstallationConfig:
         )
     peers_raw = resolved.get("MILPBOOKLM_TRUSTED_PROXY_PEERS", "")
     peers = tuple(peer.strip() for peer in peers_raw.split(",") if peer.strip())
+    keyring_raw = resolved.get("MILPBOOKLM_KEYRING_PATH", "").strip()
+    keyring = Path(keyring_raw) if keyring_raw else None
+    retention = _parse_retention_days(resolved.get("MILPBOOKLM_AUDIT_RETENTION_DAYS", ""))
     return InstallationConfig(
         database_url=SecretStr(resolved["MILPBOOKLM_DATABASE_URL"]),
         secret_key=SecretStr(resolved["MILPBOOKLM_SECRET_KEY"]),
         blob_root=Path(resolved["MILPBOOKLM_BLOB_ROOT"]),
         base_url=resolved["MILPBOOKLM_BASE_URL"],
         trusted_proxy_peers=peers,
+        master_keyring_file=keyring,
+        audit_retention_days=retention,
     )
+
+
+def _parse_retention_days(raw: str) -> int:
+    """Parse the audit bounded-retention window; a positive integer (days)."""
+    value = raw.strip()
+    if not value:
+        return 365
+    try:
+        days = int(value)
+    except ValueError as exc:
+        raise ConfigError(
+            "MILPBOOKLM_AUDIT_RETENTION_DAYS must be a positive integer",
+            keys=("MILPBOOKLM_AUDIT_RETENTION_DAYS",),
+        ) from exc
+    if days <= 0:
+        raise ConfigError(
+            "MILPBOOKLM_AUDIT_RETENTION_DAYS must be a positive integer",
+            keys=("MILPBOOKLM_AUDIT_RETENTION_DAYS",),
+        )
+    return days
 
 
 def load_user_preferences(data: str | bytes | Mapping[str, object]) -> UserPreferences:

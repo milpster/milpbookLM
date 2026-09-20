@@ -148,6 +148,7 @@ class JobRecord:
     payload_hash_value: str = ""
     actor_user_id: uuid.UUID | None = None
     request_id: str | None = None
+    trace_id: str | None = None
     notebook_id: uuid.UUID | None = None
     capability: str | None = None
     priority: int = 0

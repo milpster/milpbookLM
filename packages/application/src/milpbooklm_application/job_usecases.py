@@ -138,6 +138,7 @@ class EnqueueJob:
             payload_hash_value=payload_hash(kind, payload, ENQUEUE_PAYLOAD_SCHEMA_VERSION),
             actor_user_id=actor.user_id,
             request_id=actor.request_id,
+            trace_id=actor.trace_id,
             notebook_id=notebook_id,
             capability=capability,
             priority=priority,
@@ -181,6 +182,7 @@ class CancelJob:
             payload=payload,
             actor_id=job.actor_user_id,
             operation_id=job.request_id,
+            trace_id=job.trace_id,
             job_id=job.id,
         )
         return self._repo.cancel(job, reason=reason, envelope=envelope)
@@ -222,6 +224,7 @@ class CompleteJob:
             payload=job_event_payload(final),
             actor_id=job.actor_user_id,
             operation_id=job.request_id,
+            trace_id=job.trace_id,
             job_id=job.id,
         )
         return self._repo.complete(

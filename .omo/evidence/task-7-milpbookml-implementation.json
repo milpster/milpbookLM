@@ -1,0 +1,54 @@
+{
+  "task": "FND-07",
+  "title": "Telemetry + redaction + bounded metrics, append-only audit with retention report, XChaCha20-Poly1305 credential encryption/resumable rotation, HTTP security headers (ARCH-18/19 subsets)",
+  "plan_position": "7/59",
+  "mode": "prototype-first: correlation/trace context, redacting structured JSON logs, the append-only audit + retention report, the full credential encrypt/dispatch/rotate path, and the CSP/security-header baseline proven hands-on over a live scratch PG through the product worker credential CLI and the production API wiring (TestClient over create_app); OTLP export, metrics live emission, physical retention purge and the keyring authoring CLI deferred to wave 2",
+  "gates": [
+    { "name": "mypy strict", "command": "uv run mypy", "exit": 0, "result": "No issues found" },
+    { "name": "ruff check", "command": "uv run ruff check packages/domain packages/application packages/adapters workers apps/api", "exit": 0, "result": "All checks passed (no findings)" },
+    { "name": "import-linter", "command": "uv run import-linter lint", "exit": 0, "result": "Contracts: 4 kept, 0 broken (129 files, 563 dependencies)" },
+    { "name": "pytest meta+architecture+unit", "command": "uv run pytest tests/meta tests/architecture tests/unit -q", "exit": 0, "result": "127 passed" }
+  ],
+  "manual_qa": {
+    "driver": "product durable worker credential CLI (store-credential/dispatch-credential/rotate-credentials/log-canary - secret via --secret-file, never argv) + API via Starlette TestClient over create_app (production wiring: typed env config, PG app DSN, all middlewares) + psql as the app role for DB-side proofs; transcript in .omo/evidence/task-7-manual-qa.log",
+    "log": ".omo/evidence/task-7-manual-qa.log",
+    "result": "SMOKE_RESULT: PASS (C1-C10 credentials, A1-A11 API, D1-D4 DB/audit all as expected)",
+    "harness": "live scratch PG17 (127.0.0.1:29521, db fnd07_qa, roles per migrations/roles.sql, alembic 0001_baseline, scratch-only uuidv7() SQL shim in /tmp only); all keyring + secret fixtures under /tmp/opencode/fnd07-scratch, deleted at teardown",
+    "demonstrated": [
+      "C2/C3: three provider credentials stored (one per provider config; the unique index is one credential per (provider, owner)) all under key_id=k1 with distinct ciphertexts",
+      "C4: FAIL-CLOSED rotation - a keyring missing the old key (k1) exits 1 with 'master key id k1 is not in the keyring' and every ciphertext digest byte-identical before/after",
+      "C5-C7: rotate_to_active re-encrypts under k2 in committed batches of 2 with a final verification pass; resume passes are idempotent no-ops; report reaches rotated=0 remaining=0 verified=true old_key_ids=[] old_key_retirement_safe=true",
+      "C8/C9: dispatch returns metadata only (length + sha256, never plaintext) and the sha256 equals the ground-truth secret; all rows on the active key (k2|3)",
+      "C10: log-canary redaction - api_key/password/cookie/authorization all [REDACTED], Bearer token redacted, no canary secret value anywhere in the output",
+      "A1-A4: register 201, login 200 + csrf_token, uniform 401 on failed login, live session /me 200",
+      "A5-A7: correlation - valid X-Request-Id + traceparent echoed back verbatim; malformed traceparent replaced by a fresh W3C trace (never reflected); out-of-charset request id replaced by a fresh bounded one",
+      "A8: every response carries CSP (default-src 'self' ... frame-ancestors 'none'), x-content-type-options: nosniff, referrer-policy: no-referrer, minimal permissions-policy, and NO CORS headers (CORS off by default)",
+      "A9/A10/A11: job enqueue 202 under cookie + origin + csrf; cross-origin 403 origin_rejected; live session without csrf 403 csrf_rejected (FND-04 baseline intact)",
+      "D1: the enqueued job's JSONB payload carries the exact X-Request-Id (t7-job-789) and trace id (fedcba98...) of the inbound request - durable correlation",
+      "D2: structured JSON log lines carry the bound request_id/trace_id/span_id; no secret material in logs",
+      "D3/D4: audit rows for failed login (actor NULL, subject NULL, uniform outcome detail) and success (actor + subject set), both with the producing request_id; UPDATE and DELETE on audit_events both RAISE 'milpbooklm: audit_events is immutable' (row count unchanged)"
+    ]
+  },
+  "smoke_caught_defects": [
+    "PgCredentialStore.store: the IntegrityError fallback UPDATE ran inside the already-aborted transaction (psycopg.errors.InFailedSqlTransaction) whenever the same (provider, owner) credential was re-stored - fixed by replacing the two-statement fallback with ONE atomic pg_insert(...).on_conflict_do_update(...) upsert (the unique index is NULLS NOT DISTINCT, so installation-level NULL-owner rows conflict too)",
+    "SodiumCredentialCipher.encrypt: PyNaCl Aead.encrypt returns an EncryptedMessage (a bytes subclass) whose content is nonce || ciphertext, so the first implementation persisted a nonce-prefixed blob and EVERY subsequent decrypt failed AEAD authentication (the smoke's 'credential AEAD authentication failed' on freshly stored rows) - the cipher now strips the leading 24 bytes and persists only the ciphertext (the nonce lives in its own column)"
+  ],
+  "test_file_touch": "tests/architecture/composition/ver-arch-03-001.py: added 'nacl' to the third-party ALLOWED_ADAPTER_IMPORTS set + policy string. That set is REFERENCE-DEPENDENCIES.md-derived policy data (pattern = the existing 'argon2' entry); no behavioral assertion changed. Unavoidable: the task mandates the PyNaCl XChaCha20-Poly1305 dependency and the 127-test baseline must pass.",
+  "runtime_deviations": [
+    "scratch PG17 with a /tmp-only uuidv7() SQL shim (same recipe as FND-03/04/05/06) - the baseline's only PG18-specific element",
+    "engine DSNs must be postgresql+psycopg://: make_engine maps a plain postgresql:// to psycopg2, which is not installed",
+    "the API smoke drives create_app through Starlette TestClient (as FND-04 did) because the session cookie is Secure and plain-HTTP curl would never present it; the cookie is presented explicitly in the smoke - real browsers only send it over HTTPS, as designed"
+  ],
+  "wave2_deferred": [
+    "physical retention purge of expired audit rows (privileged role; the app-role immutability trigger is the law - retention is report-only via AuditRetentionReport/retention_report)",
+    "connector_credentials table rotation (the same cipher + store pattern applies; only provider_credentials is wired this task)",
+    "OTLP exporter integration for the trace/span context (context + W3C traceparent validation/formatting are complete; no external exporter)",
+    "metrics live emission and collection (the bounded metrics surface exists in domain; no collector/exporter wiring)",
+    "provider-call metrics points (latency/counters at provider boundaries)",
+    "CORS allowlist configuration (CORS stays OFF; no allowlist surface)",
+    "master-keyring authoring CLI (key bytes can be minted via new_key_bytes(); no keyring file management command)",
+    "audit action adoption by future seams (only login success/failure emit audit events this task; the AuditAction vocabulary + append-only record path are ready)",
+    "real CSP asset allowlists (the policy is the app-origin 'self' baseline; UI asset origins are a deployment concern)"
+  ],
+  "teardown": "pg_ctl -D /tmp/opencode/fnd07-scratch/pgdata stop -m fast -> server stopped; pg_isready -p 29521 down; pgrep: no process matching milpbooklm; /tmp/opencode/fnd07-scratch removed (keyrings + secrets deleted)"
+}

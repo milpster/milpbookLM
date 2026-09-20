@@ -24,6 +24,13 @@ from milpbooklm_application.job_usecases import (
 )
 from milpbooklm_domain.job_capacity import CapacityPolicy
 from milpbooklm_domain.jobs import JobProgress, JobRecord, JobState
+from milpbooklm_domain.telemetry import (
+    CorrelationContext,
+    bind_context,
+    new_request_id,
+    new_span_id,
+    reset_context,
+)
 
 from milpbooklm_workers.handlers import HandlerCancelledError, JobHandler, JobResult
 
@@ -156,6 +163,21 @@ class WorkerLoop:
 
     def _run_one(self, job: JobRecord) -> None:
         """Execute one claimed job end-to-end (dispatch check -> run -> publish check)."""
+        token = bind_context(
+            CorrelationContext(
+                request_id=job.request_id or new_request_id(),
+                trace_id=job.trace_id,
+                span_id=new_span_id(),
+                trace_flags="01" if job.trace_id is not None else None,
+            )
+        )
+        try:
+            self._execute(job)
+        finally:
+            reset_context(token)
+
+    def _execute(self, job: JobRecord) -> None:
+        """Run the claim->authz->run->publish sequence for one job (context already bound)."""
         handler = self._handlers.get(job.kind)
         if handler is None:
             logger.warning("no handler for job kind %s; failing job %s", job.kind, job.id)

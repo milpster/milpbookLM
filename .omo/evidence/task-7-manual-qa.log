@@ -1,0 +1,146 @@
+# FND-07 manual QA transcript (2026-09-20)
+
+Harness: live scratch PostgreSQL 17 (127.0.0.1:29521, db fnd07_qa, roles per
+migrations/roles.sql, alembic 0001_baseline applied, scratch-only uuidv7() SQL
+shim kept in /tmp only, never committed). All keyring + secret fixtures lived
+under /tmp/opencode/fnd07-scratch and were deleted at teardown.
+
+Drivers:
+- product durable worker credential CLI:
+  `uv run python -m milpbooklm_workers --command store-credential/dispatch-credential/rotate-credentials/log-canary`
+- API via Starlette TestClient over `create_app()` (production wiring, typed
+  env config, PG app DSN) - the Secure session cookie is presented explicitly
+  (browsers only send Secure cookies over HTTPS, as designed)
+- psql as the app role for DB-side proofs
+
+## C1-C3: store 3 provider credentials under keyring active=k1 (one per provider config;
+        unique index is one credential per (provider, owner))
+$ bash smoke-creds.sh  (fixture + C1-C10; verbatim output)
+== fixtures: reusing existing keyrings under /tmp/opencode/fnd07-scratch (idempotent)
+provider_configs: A=00000050-b4a1-7bd0-800e-f397d118fa34 B=00000080-76e9-7275-b001-a812e2c70d3c C=00000080-7710-70ce-b00b-8d1ddd1e9e02
+## C2: clean slate + store 3 credentials (keyring active=k1), one per provider config
+DELETE 3
+--- store 1
+{"credential_kind": "api_key", "id": "0000008b-b048-76e7-800c-17c59fbe4d4b", "key_id": "k1", "owner_user_id": null, "provider_config_id": "00000050-b4a1-7bd0-800e-f397d118fa34"}
+--- store 2
+{"credential_kind": "api_key", "id": "0000008b-b191-7d4d-a009-52de909d6e19", "key_id": "k1", "owner_user_id": null, "provider_config_id": "00000080-76e9-7275-b001-a812e2c70d3c"}
+--- store 3
+{"credential_kind": "api_key", "id": "0000008b-b2f2-7655-9000-c551bbbb009c", "key_id": "k1", "owner_user_id": null, "provider_config_id": "00000080-7710-70ce-b00b-8d1ddd1e9e02"}
+## C3: state before rotation (key_id + ciphertext digest per row)
+0000008b|k1|d006feb4f2926ad9e4520adb0394e771
+0000008b|k1|02ce98f3b770dd007454d2995175d219
+0000008b|k1|cb30280061e16b87b9014d78b7e23e07
+
+## C4: FAIL-CLOSED - rotate with a keyring missing the old key (k1)
+error: master key id 'k1' is not in the keyring
+exit_code=1
+-- ciphertext unchanged after the failed rotation (digests identical to C3)
+0000008b|k1|d006feb4f2926ad9e4520adb0394e771
+0000008b|k1|02ce98f3b770dd007454d2995175d219
+0000008b|k1|cb30280061e16b87b9014d78b7e23e07
+
+## C5-C7: rotate to active=k2 in committed batches of 2, then resume, then final pass
+C5: {"old_key_ids": [], "old_key_retirement_safe": true, "remaining": 0, "rotated": 3, "verified": true}
+C6: {"old_key_ids": [], "old_key_retirement_safe": true, "remaining": 0, "rotated": 0, "verified": true}
+C7: {"old_key_ids": [], "old_key_retirement_safe": true, "remaining": 0, "rotated": 0, "verified": true}
+(batch-committed: an interrupted run resumes - rows already on the active key
+are skipped, so C6/C7 are no-op verifications; retirement safe only after the
+full verification pass)
+
+## C8: dispatch credential 1 (metadata only - never plaintext on stdout)
+$ uv run python -m milpbooklm_workers --command dispatch-credential ... --credential-id 0000008b-b048-76e7-800c-17c59fbe4d4b
+{"id": "0000008b-b048-76e7-800c-17c59fbe4d4b", "length": 29, "sha256": "4c865b72552cacc4903303df17414c426e74a5d50419068db6663a50cebaf222"}
+-- ground truth:
+4c865b72552cacc4903303df17414c426e74a5d50419068db6663a50cebaf222  /tmp/opencode/fnd07-scratch/secret1.txt
+MATCH: dispatched secret decrypts to the exact stored secret (sha256 equal)
+
+## C9: all rows on the active key
+k2|3
+
+## C10: log-canary (redaction proof)
+{"ts": "2026-09-20T13:20:23+0200", "level": "WARNING", "logger": "milpbooklm_workers.credential_cli", "message": "log-canary: issued a Bearer [REDACTED] for diagnostics", "fields": {"api_key": "[REDACTED]", "password": "[REDACTED]", "cookie": "[REDACTED]", "authorization": "[REDACTED]"}}
+{"canary": "MILPBOOKLM-CANARY"}
+No canary secret value (-KEY/-PASS/-COOKIE/-AUTH/-TOKEN) appears anywhere in
+the output; only [REDACTED] markers + the non-secret base marker.
+
+## A1-A11: API phase (TestClient over create_app, production wiring)
+[PASS] A1 register 201 :: {"user_id":"0000009c-c32d-78d5-900c-322f30d31b7c"}
+[PASS] A2 login 200 + csrf :: {"user_id":"0000009c-c32d-78d5-900c-322f30d31b7c","csrf_token":"Kc1MsKtNBRs7xaKRWWk3moUeqqTq74dV-MLJ6Im0l9Q="}
+[PASS] A2 correlation echoed
+[PASS] A3 failed login uniform 401 :: {"detail":"invalid credentials"}
+[PASS] A4 /me 200 (live session) :: {"user_id":"0000009c-c32d-78d5-900c-322f30d31b7c","email":"qa7-9588666974@example.com","display_name":"QA 7","status":"active","installation_admin":false}
+[PASS] A5 request-id echoed :: t7-req-123
+[PASS] A5 traceparent echoed :: 00-0123456789abcdef0123456789abcdef-abcdef0123456789-01
+[PASS] A6 malformed traceparent -> fresh, not reflected :: 00-259aeacb13d274928c95facd314dd327-1310995179c6068c-01
+[PASS] A6 request-id echoed
+[PASS] A7 invalid request-id replaced (not reflected) :: 376aa4a168f34a3eade9554d08a6cc61
+[PASS] A8 CSP frame-ancestors 'none' :: default-src 'self'; script-src 'self'; style-src 'self'; img-src 'self' data:; media-src 'self'; connect-src 'self'; frame-ancestors 'none'; base-uri 'self'; form-action 'self'
+[PASS] A8 nosniff
+[PASS] A8 referrer-policy
+[PASS] A8 permissions-policy
+[PASS] A8 no CORS headers
+[PASS] A9 enqueue 202 :: {"job_id":"0000009c-c3a5-77ea-a00e-c8bf10a55b3c","state":"queued","waiting_reason":null}
+[PASS] A9 correlation echoed on enqueue :: 00-fedcba9876543210fedcba9876543210-0123456789abcdef-01
+[PASS] A10 cross-origin 403 origin_rejected :: {"detail":{"reason":"origin_rejected"}}
+[PASS] A11 live session without csrf -> 403 csrf_rejected :: {"detail":{"reason":"csrf_rejected"}}
+API_SMOKE: 19/19 passed
+
+## D1: durable job correlation (psql, app role)
+$ psql -tAc "SELECT id, payload->>'request_id', payload->>'trace_id' FROM jobs WHERE id='0000009c-c3a5-77ea-a00e-c8bf10a55b3c';"
+0000009c-c3a5-77ea-a00e-c8bf10a55b3c|t7-job-789|fedcba9876543210fedcba9876543210
+MATCH: the enqueued job's JSONB payload carries the exact X-Request-Id and the
+trace id of the inbound traceparent sent with the enqueue request.
+
+## D2: structured JSON logs (API stderr) carry the bound correlation context
+{"ts": "2026-09-20T13:38:59+0200", "level": "INFO", "logger": "milpbooklm_api.auth_routes", "message": "login succeeded", "request_id": "t7-login-ok", "trace_id": "9c38dd8ef00307e18ce8f0913255d43b", "span_id": "428ae532d83ecf02", "fields": {"user_id": "0000009c-c32d-78d5-900c-322f30d31b7c"}}
+{"ts": "2026-09-20T13:38:59+0200", "level": "INFO", "logger": "milpbooklm_api.auth_routes", "message": "login failed", "request_id": "t7-login-fail", "trace_id": "1fa66bc37a5946cd48da6d1059e7da97", "span_id": "69a095e6b1473553", "fields": {"email": "qa7-9588666974@example.com"}}
+(request_id matches the sent X-Request-Id; trace/span ids are the bound context;
+no secret material in the log lines)
+
+## D3: audit rows (psql, app role) - login events with actor discipline
+$ psql -xAc "SELECT action, actor_user_id IS NOT NULL, subject_kind, subject_id IS NOT NULL, request_id, details FROM audit_events ORDER BY created_at DESC LIMIT 2;"
+action|auth.login.failed
+has_actor|f
+subject_kind|user
+has_subject|f
+request_id|t7-login-fail
+details|{"email": "qa7-9588666974@example.com", "outcome": "invalid_credentials"}
+
+action|auth.login.succeeded
+has_actor|t
+subject_kind|user
+has_subject|t
+request_id|t7-login-ok
+details|{"email": "qa7-9588666974@example.com"}
+(failed login: no actor, no subject, uniform outcome detail; success: actor +
+subject set; both carry the request_id of the request that produced them)
+
+## D4: audit immutability (psql, app role)
+$ psql -tAc "UPDATE audit_events SET action='tampered' WHERE action='auth.login.succeeded' RETURNING 'should-not-appear';"
+ERROR:  milpbooklm: audit_events is immutable
+CONTEXT:  PL/pgSQL function milpbooklm_immutability_violation() line 3 at RAISE
+update_exit=1
+$ psql -tAc "DELETE FROM audit_events WHERE action='auth.login.failed' RETURNING 'should-not-appear';"
+ERROR:  milpbooklm: audit_events is immutable
+CONTEXT:  PL/pgSQL function milpbooklm_immutability_violation() line 3 at RAISE
+delete_exit=1
+$ psql -tAc "SELECT count(*) FROM audit_events;"
+4   (row count unchanged - the attempted tamper was rejected)
+
+SMOKE_RESULT: PASS (C1-C10, A1-A11, D1-D4 all as expected; no process left running; scratch PG stopped)
+
+Operational notes:
+- Two real defects were caught by this smoke and fixed before commit (see
+  smoke_caught_defects in task-7-milpbookml-implementation.json):
+  1. store() IntegrityError-fallback ran in the already-aborted transaction
+     (InFailedSqlTransaction) -> replaced with one atomic ON CONFLICT DO UPDATE
+     upsert (the unique index is NULLS NOT DISTINCT, so NULL-owner rows conflict).
+  2. PyNaCl Aead.encrypt returns an EncryptedMessage (bytes subclass) whose
+     content is nonce || ciphertext; the first store persisted the nonce-prefixed
+     blob and every subsequent decrypt failed AEAD authentication -> the cipher
+     now persists only the ciphertext (the nonce lives in its own column).
+- The smoke's first credential pass (before defect 2's fix) produced the
+  "credential AEAD authentication failed" failure mode - which independently
+  demonstrated the fail-closed decryption path on corrupted-in-format data.
+- Engine DSNs must be postgresql+psycopg:// (make_engine maps plain
+  postgresql:// to psycopg2, which is not installed) - FND-04/06 learning re-confirmed.

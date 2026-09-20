@@ -12,7 +12,7 @@ import uuid
 from collections.abc import Mapping
 from datetime import UTC, datetime
 
-from milpbooklm_application.ports import NotebookView, UserRecord
+from milpbooklm_application.ports import AuditRetentionReport, NotebookView, UserRecord
 from milpbooklm_domain.custody import CustodyPhase, CustodyRecord
 from milpbooklm_domain.identity import User, UserStatus
 from milpbooklm_domain.ownership import (
@@ -117,6 +117,12 @@ class InMemoryAuditLog:
     ) -> None:
         """Append one audited event."""
         self.entries.append((actor_id, action, subject_kind, subject_id, details, request_id))
+
+    def retention_report(self, *, cutoff: datetime) -> AuditRetentionReport:
+        """Report an empty eligible range (the fake keeps no timestamps)."""
+        return AuditRetentionReport(
+            eligible_count=0, cutoff=cutoff, oldest_created=None, newest_created=None
+        )
 
 
 class InMemoryNotebookCustodyStore:

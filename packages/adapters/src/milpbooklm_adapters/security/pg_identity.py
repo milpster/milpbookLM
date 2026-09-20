@@ -11,10 +11,11 @@ wave-2 migration (FND-02 territory), not a prototype gap.
 from __future__ import annotations
 
 import uuid
+from datetime import datetime
 from typing import Any
 
 import sqlalchemy as sa
-from milpbooklm_application.ports import UserRecord
+from milpbooklm_application.ports import AuditRetentionReport, UserRecord
 from milpbooklm_domain.identity import User, UserStatus
 
 from milpbooklm_adapters.db.tables.blobs import audit_events
@@ -192,3 +193,27 @@ class PgAuditLog:
                     request_id=request_id,
                 )
             )
+
+    def retention_report(self, *, cutoff: datetime) -> AuditRetentionReport:
+        """
+        Report the append-only events eligible for out-of-band purging.
+
+        Conservative by design: the app role cannot UPDATE/DELETE audit rows (the
+        immutability trigger is authoritative), so this only SELECTs the events
+        created before ``cutoff`` and reports their range - it never mutates
+        retained events. Physical purging is a privileged operation.
+        """
+        with self._engine.begin() as conn:
+            row = conn.execute(
+                sa.select(
+                    sa.func.count().label("eligible"),
+                    sa.func.min(audit_events.c.created_at).label("oldest"),
+                    sa.func.max(audit_events.c.created_at).label("newest"),
+                ).where(audit_events.c.created_at < cutoff)
+            ).one()
+        return AuditRetentionReport(
+            eligible_count=int(row.eligible),
+            cutoff=cutoff,
+            oldest_created=row.oldest,
+            newest_created=row.newest,
+        )

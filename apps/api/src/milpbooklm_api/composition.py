@@ -41,6 +41,7 @@ from milpbooklm_application.ports import (
     SessionTokenStore,
     UserRepository,
 )
+from milpbooklm_application.structured_logging import configure_structured_logging
 from starlette import status
 
 from .auth_routes import build_auth_router
@@ -48,6 +49,7 @@ from .config_loader import load_config
 from .deps import ApiDeps
 from .job_routes import build_job_router
 from .notebook_routes import build_notebook_router
+from .observability import CorrelationMiddleware, SecurityHeadersMiddleware
 from .security import (
     CsrfOriginMiddleware,
     Principal,
@@ -84,6 +86,9 @@ def build_app(
         users=users,
         clock=clock,
     )
+    # Last added runs outermost: correlation wraps headers, headers wrap CSRF.
+    app.add_middleware(SecurityHeadersMiddleware)
+    app.add_middleware(CorrelationMiddleware)
     deps = ApiDeps(
         users=users,
         sessions=sessions,
@@ -150,6 +155,7 @@ def build_job_ports(
 
 def create_app() -> FastAPI:
     """Build the production app from the environment (typed config + PG app DSN)."""
+    configure_structured_logging()
     installation = load_config(os.environ).installation
     engine = make_engine(installation.database_url.get_secret_value())
     clock = SystemClock()

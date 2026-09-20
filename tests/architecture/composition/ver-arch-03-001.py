@@ -21,6 +21,9 @@ ADAPTERS_SRC = REPO_ROOT / "packages" / "adapters" / "src" / "milpbooklm_adapter
 # REFERENCE-DEPENDENCIES.md ("SQLAlchemy 2, Alembic, psycopg 3").
 # argon2: the FND-04 identity line, named verbatim in REFERENCE-DEPENDENCIES.md
 # (Passwords row: "argon2-cffi").
+# nacl: the FND-07 credential-encryption line (PyNaCl binding), named in
+# REFERENCE-DEPENDENCIES.md ("libsodium XChaCha20-Poly1305 through a
+# maintained binding").
 ALLOWED_ADAPTER_IMPORTS = {
     "milpbooklm_adapters",
     "milpbooklm_domain",
@@ -29,6 +32,7 @@ ALLOWED_ADAPTER_IMPORTS = {
     "alembic",
     "psycopg",
     "argon2",
+    "nacl",
 } | set(sys.stdlib_module_names)
 
 
@@ -63,7 +67,7 @@ def test_evidence_record_written() -> None:
             "adapter_imports": sorted(imported_top_level_modules(ADAPTERS_SRC)),
             "allowed_adapter_imports_policy": (
                 "stdlib + internal packages + REFERENCE-DEPENDENCIES.md third parties "
-                "(sqlalchemy, alembic, psycopg, argon2)"
+                "(sqlalchemy, alembic, psycopg, argon2, nacl)"
             ),
         },
     )

@@ -11,7 +11,7 @@ from __future__ import annotations
 from enum import StrEnum
 from pathlib import Path
 
-from pydantic import BaseModel, ConfigDict, SecretStr
+from pydantic import BaseModel, ConfigDict, Field, SecretStr
 
 
 class AppearanceTheme(StrEnum):
@@ -45,6 +45,8 @@ class InstallationConfig(BaseModel):
     blob_root: Path
     base_url: str
     trusted_proxy_peers: tuple[str, ...] = ()
+    master_keyring_file: Path | None = None
+    audit_retention_days: int = Field(default=365, gt=0)
 
 
 class UserPreferences(BaseModel):

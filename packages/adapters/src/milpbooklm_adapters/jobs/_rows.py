@@ -45,6 +45,8 @@ def pack_payload(job: JobRecord) -> dict[str, object]:
     progress = job.progress
     return {
         "params": job.payload,
+        "request_id": job.request_id,
+        "trace_id": job.trace_id,
         "priority": job.priority,
         "payload_schema_version": job.payload_schema_version,
         "payload_hash": job.payload_hash_value,
@@ -104,6 +106,8 @@ def job_from_row(row: Any) -> JobRecord:
     cancel_raw = raw.get("cancel_reason")
     result_raw = raw.get("result_ref")
     error_raw = raw.get("error_code")
+    request_id_raw = raw.get("request_id")
+    trace_id_raw = raw.get("trace_id")
     return JobRecord(
         id=row.id,
         kind=row.kind,
@@ -112,6 +116,8 @@ def job_from_row(row: Any) -> JobRecord:
         payload_schema_version=version_raw if isinstance(version_raw, int) else 1,
         payload_hash_value=str(raw.get("payload_hash") or ""),
         actor_user_id=row.requested_by_user_id,
+        request_id=request_id_raw if isinstance(request_id_raw, str) else None,
+        trace_id=trace_id_raw if isinstance(trace_id_raw, str) else None,
         notebook_id=uuid.UUID(str(notebook_raw)) if notebook_raw else None,
         capability=capability_raw if isinstance(capability_raw, str) else None,
         priority=priority_raw if isinstance(priority_raw, int) else 0,
