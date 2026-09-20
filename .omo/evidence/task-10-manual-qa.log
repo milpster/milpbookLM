@@ -1,0 +1,62 @@
+
+== 1. Live llama.cpp (http://127.0.0.1:8009/v1) ==
+probe: server up, model=/home/srcds/ai/ai/Swift-Qwen3.8-27B-Q6_K.gguf
+[PASS] adapter probe_models — ('/home/srcds/ai/ai/Swift-Qwen3.8-27B-Q6_K.gguf',)
+  event seq=1 type=Accepted
+  event seq=2 type=Delta
+  event seq=3 type=Delta
+  event seq=4 type=Delta
+  event seq=5 type=Delta
+  event seq=6 type=Delta
+  event seq=7 type=Delta
+  event seq=8 type=Delta
+  event seq=9 type=Delta
+  event seq=10 type=Delta
+  event seq=11 type=Delta
+  event seq=12 type=Delta
+  event seq=13 type=Delta
+  event seq=14 type=Delta
+  event seq=15 type=Delta
+  event seq=16 type=Delta
+  event seq=17 type=Delta
+  event seq=18 type=Usage
+  event seq=19 type=Completed
+[PASS] first event Accepted
+[PASS] seq strictly monotonic — [1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 17, 18, 19]
+[PASS] visible deltas streamed
+[PASS] usage before completed — usage@17 completed@18
+[PASS] terminal Completed — Completed(seq=19, finish_reason='stop', result_ref=None)
+  first-visible-delta latency: 12.73s
+  visible text: 'OK'
+  reasoning deltas: 57 chars (interleaved reasoning_content handled)
+
+== 2. Routing: local-first order llama.cpp -> Big Pickle -> Muse Spark ==
+  order: ['llama.cpp local', 'Big Pickle', 'Muse Spark Standard']
+[PASS] local-first order — ['llama.cpp local', 'Big Pickle', 'Muse Spark Standard']
+[PASS] unapproved filtered out
+[PASS] local_only keeps only local — ['llama.cpp local']
+
+== 3. Orchestrator: single-flight + GPU policy + preemption ==
+[PASS] single-flight: two concurrent loads -> one start — starts={'chat-27b': 1}
+[PASS] health reflects load state — ModelHealth(model_id='chat-27b', available=True, loaded=True, reason=None)
+[PASS] media waits while chat hot (waiting_capacity analog)
+[PASS] media loads after refcount release
+[PASS] idle hot evicted for media
+[PASS] cold media stops after final reference
+[PASS] preemption parks media as waiting_capacity
+[PASS] preemption releases the lease
+[PASS] preemption keeps the manifest checkpoint
+[PASS] preemption sets durable waiting reason
+[PASS] preemption uses an existing ch15 pending state (no new states)
+
+== 4. Fakes: quota/refusal normalization + bounded retries (no storm) ==
+[PASS] quota -> normalized non-retryable code
+[PASS] refusal -> Refused terminal
+[PASS] quota: no retry storm (exactly 1 attempt) — calls=1
+[PASS] timeout: bounded to 3 attempts with backoff — calls=3 sleeps=[0.01, 0.02]
+
+== 5. Disclosure persisted before external dispatch ==
+[PASS] external transport failure normalized
+[PASS] disclosure recorded (before dispatch; headers built pre-request) — [{'actor_id': UUID('dc392540-21bc-4640-9e5b-eae37713a0d3'), 'action': 'provider.external_dispatch_disclosed', 'subject_kind': 'model_operation', 'subject_id': UUID('622372bf-281f-4b40-ba05-de6410232c22'), 'details': {'provider': 'Big Pickle', 'model_role': 'chat'}, 'request_id': 'smoke-req-1'}]
+
+SMOKE: ALL CHECKS PASSED

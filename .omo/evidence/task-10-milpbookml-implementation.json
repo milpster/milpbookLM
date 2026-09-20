@@ -1,0 +1,43 @@
+{
+  "task": "10. MOD-01 core - Provider ports, registry/routing, OpenAI-compat + llama.cpp adapters, fakes, inference orchestrator",
+  "scope": "prototype-first wave 1",
+  "status": "prototype_complete_wave_2_deferred",
+  "requirements": ["ARCH-10-001..029 (model_platform)", "ARCH-20-001..004 (adapter_contracts)"],
+  "implemented": [
+    "Typed async ports (application/models/ports.py): chat, structured, embeddings, rerank, image, TTS, STT, video, realtime duplex + contract-only RemoteMediaOperations (poll/webhook signature seam)",
+    "Shared request envelope (application/models/contracts.py): request_id, operation_id, actor-owned provider-config ref, model role, input-manifest hash, required capabilities, content classification, absolute deadline, idempotency key",
+    "Normalized lifecycle events with monotonic seq: accepted/delta(+reasoning)/tool_call/usage/completed/refused/cancelled/failed; usage emitted before completed",
+    "13-code provider error taxonomy with retryability (application/models/errors.py) + deadline-bound bounded exponential RetryPolicy and a BoundedChatDispatcher that retries ONLY before visible output (restart, never concatenated providers)",
+    "Registry + routing (application/models/registry.py): installation providers separate from user credentials, capability descriptors probed -> admin-approved, policy/ownership/trust-class/modality/context/structured-output filter THEN local-first preference, health, cost",
+    "OpenAI-compatible adapter (adapters/models/openai_compat.py): SSE streaming, reasoning_content interleaved, disclosure persisted via AuditLog BEFORE any external dispatch (headers built pre-request), credentials resolve ONLY via CredentialStore.dispatch at dispatch with ownership check, 13-code HTTP normalization incl. 408->timeout",
+    "Native local llama.cpp adapter with /models probe (fixed loopback, no credentials, no disclosure)",
+    "PostgreSQL provider registry (adapters/models/pg_registry.py) over FND-07 tables: user-owned credential preferred over installation-level, no credential decryption in candidate listing",
+    "Deterministic fakes (adapters/models/fakes.py): success, stream interrupt, quota, timeout, malformed structured, safety refusal, cancel, async completion",
+    "Inference orchestrator (workers/inference.py, D10): hot set embeddings+reranker+chat, media cold-load, single-flight refcounted load (refcount reserved under the GPU gate BEFORE the slow start), per-model serial queues, idle-hot eviction for media, cold-model stop after final ref, ModelHealth projection",
+    "Interactive-preempts-batch (D10): InteractivePreemptor parks running media via ch15 state machine only (checkpoint + running -> waiting_capacity, lease released, durable waiting_reason=capacity, NO new job states); WorkerLoop runs it for interactive_text claims via new JobRepository.running_jobs (PG: leased+running, oldest first); pg_jobs.transition now releases the lease on pending/queued re-enqueues (ck_jobs_lease_consistency)"
+  ],
+  "verification": [
+    {"command": "uv run ruff check packages/application packages/adapters workers tests/architecture", "exit": 0},
+    {"command": "uv run mypy", "exit": 0, "result": "112 source files clean"},
+    {"command": "uv run import-linter lint", "exit": 0, "result": "4 contracts kept, 0 broken"},
+    {"command": "uv run pytest tests/meta tests/architecture tests/unit -q", "exit": 0, "result": "127 passed"},
+    {"command": "live smoke: probe http://127.0.0.1:8009/v1 (rtk curl) + smoke driver", "exit": 0, "result": "see task-10-manual-qa.log: live llama.cpp chat (qwen3.8-27B Q6_K), 16 streamed deltas (first visible 12.73s), 55 chars reasoning_content interleaved, strictly monotonic seq 1..19, usage before completed, finish_reason=stop; routing order llama.cpp local -> Big Pickle -> Muse Spark Standard with unapproved filtered and local_only honored; orchestrator single-flight (2 concurrent loads -> 1 start), media waits while chat hot then loads after refcount release, idle hot evicted, cold media stopped after final ref; preemption parks media as waiting_capacity with checkpoint kept, lease released, durable waiting reason; fake quota/refusal -> normalized codes with exactly 1 attempt (no storm); fake timeout -> bounded 3 attempts with backoff [0.01, 0.02] inside deadline; EXTERNAL adapter records provider.external_dispatch_disclosed (metadata only) before dispatch and normalizes transport failure"}
+  ],
+  "dependency_review": "adapters pyproject additions VERIFIED against REFERENCE-DEPENDENCIES.md: httpx = HTTP row ('only behind the dedicated fetch/provider transports' - the OpenAI-compat adapter is that transport), pydantic = API line (Pydantic v2) for private adapter boundary models, anyio = httpx/httpcore async backend (declared explicitly in adapters + workers because both import it directly). No unauthorized dependencies added. tests/architecture/composition/ver-arch-03-001.py ALLOWED_ADAPTER_IMPORTS policy set updated in the same spirit as the FND-07 nacl entry (flagged transparently here as the one test-file touch).",
+  "done": [
+    "ports + envelope + lifecycle events (micro 10.1)",
+    "registry/routing incl. probe->approve and local-first order (micro 10.2)",
+    "OpenAI-compat + llama.cpp adapters + 13-code normalization + bounded retry bounds (micro 10.3)",
+    "deterministic fakes for the full 8-scenario matrix (micro 10.4.1)",
+    "orchestrator: process manager + GPU policy, refcounted single-flight loads, serial queues, preemption hooks into capacity classes, health projection (micro 10.5)",
+    "live smoke against the restored 127.0.0.1:8009 llama.cpp server; disclosure-before-dispatch; single-flight; routing order; no retry storm",
+    "integration: pg_jobs lease release on re-enqueue, JobRepository.running_jobs, WorkerLoop interactive-preempts-batch seam"
+  ],
+  "deferred_wave_2": [
+    "10.4.2 reusable contract test suite per adapter (new test files banned in wave 1) + recording-mode real-config suite",
+    "10.6 orchestrator ADR (full extension record, ARCH-10-*/ARCH-15-* mapping) - mechanism implemented and smoke-proven; the written ADR is deferred",
+    "orchestrator p95 interactive-latency assert (needs a load harness)",
+    "structured/embedding/rerank/media methods on the OpenAI adapter (chat-first prototype; ports + fakes + remote-media seam already in place)",
+    "capability health -> /api/v1/capabilities wiring: api and workers are import-independent (import-linter contract), so the orchestrator's ModelHealth needs a cross-process seam (worker health route or DB projection) - ModelHealth seam exists on the orchestrator for that task"
+  ]
+}
