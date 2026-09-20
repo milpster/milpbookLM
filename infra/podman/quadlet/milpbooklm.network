@@ -1,0 +1,6 @@
+[Unit]
+Description=MilpBook LM rootless private network
+
+[Network]
+NetworkName=milpbooklm-backend
+Internal=true

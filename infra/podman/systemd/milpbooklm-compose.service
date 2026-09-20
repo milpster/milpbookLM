@@ -1,0 +1,21 @@
+[Unit]
+Description=MilpBook LM rootless Podman Compose project
+Wants=network-online.target
+After=network-online.target
+StartLimitIntervalSec=120
+StartLimitBurst=3
+
+[Service]
+Type=oneshot
+RemainAfterExit=yes
+Environment=PODMAN_COMPOSE_PROVIDER=%h/.local/share/uv/tools/podman-compose/bin/podman-compose
+WorkingDirectory=%h/.local/share/milpbooklm/infra/podman
+ExecStart=/usr/bin/podman compose --file compose.yaml up --detach --remove-orphans
+ExecStop=/usr/bin/podman compose --file compose.yaml down
+TimeoutStartSec=300
+TimeoutStopSec=120
+StandardOutput=journal
+StandardError=journal
+
+[Install]
+WantedBy=default.target
