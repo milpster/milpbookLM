@@ -67,5 +67,16 @@
     ],
     "teardown": "Scratch PostgreSQL stopped; all temporary database, keyring, and secret fixtures removed."
   },
+  "phase1_review_follow_up": {
+    "base_commit": "2c28b52",
+    "result": "PASS",
+    "manual_smoke": "With both inbound correlation headers absent, the effective generated context captured inside the raising endpoint exactly matched the structured unhandled-error log and 500 response headers; valid inbound IDs remained unchanged.",
+    "gates": [
+      { "name": "ruff check", "exit": 0, "result": "All checks passed" },
+      { "name": "mypy strict", "exit": 0, "result": "No issues found in 95 source files" },
+      { "name": "import-linter", "exit": 0, "result": "Contracts: 4 kept, 0 broken (130 files, 570 dependencies)" },
+      { "name": "pytest meta+architecture+unit", "exit": 0, "result": "127 passed, 2 dependency deprecation warnings" }
+    ]
+  },
   "teardown": "pg_ctl -D /tmp/opencode/fnd07-scratch/pgdata stop -m fast -> server stopped; pg_isready -p 29521 down; pgrep: no process matching milpbooklm; /tmp/opencode/fnd07-scratch removed (keyrings + secrets deleted)"
 }

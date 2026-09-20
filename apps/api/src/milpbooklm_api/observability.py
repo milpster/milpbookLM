@@ -42,6 +42,8 @@ logger = logging.getLogger(__name__)
 
 REQUEST_ID_HEADER = "x-request-id"
 TRACEPARENT_HEADER = "traceparent"
+_CORRELATION_STATE_ATTR = "_milpbooklm_effective_correlation"
+type _EffectiveCorrelation = tuple[CorrelationContext, str, str, str]
 
 # App-origin CSP: only our own assets, no framing, no base/form escapes.
 _CONTENT_SECURITY_POLICY = (
@@ -68,9 +70,7 @@ def _apply_security_headers(response: Response) -> None:
     response.headers["permissions-policy"] = _PERMISSIONS_POLICY
 
 
-def _inbound_context(
-    request: Request,
-) -> tuple[CorrelationContext, str, str, str]:
+def _inbound_context(request: Request) -> _EffectiveCorrelation:
     """
     Validate inbound ids, starting a fresh sampled trace when absent (ch18).
 
@@ -109,7 +109,9 @@ class CorrelationMiddleware(BaseHTTPMiddleware):
         self, request: Request, call_next: RequestResponseEndpoint
     ) -> Response:
         """Validate inbound ids, bind the context, echo the effective ids."""
-        ctx, trace_id, span_id, trace_flags = _inbound_context(request)
+        effective = _inbound_context(request)
+        setattr(request.state, _CORRELATION_STATE_ATTR, effective)
+        ctx, trace_id, span_id, trace_flags = effective
         token = bind_context(ctx)
         try:
             response = await call_next(request)
@@ -169,7 +171,12 @@ class UnhandledErrorMiddleware:
                 # Bytes already on the wire: nothing coherent left to send.
                 raise
             request = Request(scope, receive, send)
-            ctx, trace_id, span_id, trace_flags = _inbound_context(request)
+            effective: _EffectiveCorrelation | None = getattr(
+                request.state, _CORRELATION_STATE_ATTR, None
+            )
+            if effective is None:
+                effective = _inbound_context(request)
+            ctx, trace_id, span_id, trace_flags = effective
             token = bind_context(ctx)
             try:
                 logger.error(

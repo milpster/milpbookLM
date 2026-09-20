@@ -156,3 +156,13 @@ Operational notes:
 - Teardown: scratch PostgreSQL stopped and all temporary keyring/secret/database files removed.
 
 CORRECTION_SMOKE_RESULT: PASS
+
+## Phase-1 single-context follow-up (2026-09-20)
+
+- Red reproduction, absent both inbound correlation headers: endpoint-vs-error/response request ID match was false and traceparent match was false.
+- Green smoke, same absent-header request: the request ID captured inside the raising endpoint exactly matched the structured `unhandled request error` log `request_id` and the 500 `X-Request-Id`; the endpoint traceparent exactly matched the 500 traceparent and the log trace ID.
+- A valid inbound request ID and traceparent remained byte-for-byte unchanged on the 500 response.
+- The uniform non-secret `{"detail":"internal"}` body and security headers remained intact; request ContextVar reset still runs in `finally`.
+- Gates: Ruff passed; strict mypy passed (95 files); import-linter kept 4/4 contracts (130 files, 570 dependencies); existing meta/architecture/unit suite passed (127 tests, 2 dependency deprecation warnings).
+
+SINGLE_CONTEXT_SMOKE_RESULT: PASS
