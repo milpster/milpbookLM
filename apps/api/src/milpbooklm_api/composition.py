@@ -47,6 +47,7 @@ from starlette import status
 from .auth_routes import build_auth_router
 from .config_loader import load_config
 from .deps import ApiDeps
+from .health_routes import DeploymentHealth, build_health_router
 from .job_routes import build_job_router
 from .notebook_routes import build_notebook_router
 from .observability import (
@@ -80,6 +81,7 @@ def build_app(
     settings: SecuritySettings,
     clock: Clock,
     jobs: JobPorts | None = None,
+    health: DeploymentHealth | None = None,
 ) -> FastAPI:
     """Build the API app from wired ports (the test/QA seam)."""
     app = FastAPI(title="MilpBook LM API")
@@ -134,6 +136,7 @@ def build_app(
             )
         return resolved
 
+    app.include_router(build_health_router(health, principal))
     app.include_router(build_auth_router(deps, principal))
     app.include_router(build_notebook_router(deps, principal))
     if jobs is not None:
@@ -181,4 +184,9 @@ def create_app() -> FastAPI:
         settings=settings,
         clock=clock,
         jobs=build_job_ports(engine, users, notebooks),
+        health=DeploymentHealth(
+            engine,
+            installation.blob_root,
+            installation.prerequisites_file,
+        ),
     )

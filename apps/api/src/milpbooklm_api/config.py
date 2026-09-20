@@ -47,6 +47,7 @@ class InstallationConfig(BaseModel):
     trusted_proxy_peers: tuple[str, ...] = ()
     master_keyring_file: Path | None = None
     audit_retention_days: int = Field(default=365, gt=0)
+    prerequisites_file: Path = Path("/run/milpbooklm/prerequisites.json")
 
 
 class UserPreferences(BaseModel):

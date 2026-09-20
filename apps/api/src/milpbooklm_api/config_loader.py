@@ -31,6 +31,7 @@ INSTALLATION_ENV_KEYS = frozenset(
         # and the audit bounded-retention window in days.
         "MILPBOOKLM_KEYRING_PATH",
         "MILPBOOKLM_AUDIT_RETENTION_DAYS",
+        "MILPBOOKLM_PREREQUISITES_PATH",
     }
 )
 
@@ -110,6 +111,12 @@ def load_installation(env: Mapping[str, str]) -> InstallationConfig:
         trusted_proxy_peers=peers,
         master_keyring_file=keyring,
         audit_retention_days=retention,
+        prerequisites_file=Path(
+            resolved.get(
+                "MILPBOOKLM_PREREQUISITES_PATH",
+                "/run/milpbooklm/prerequisites.json",
+            )
+        ),
     )
 
 
