@@ -211,7 +211,7 @@ Blocks column = DIRECT dependants only (tasks listing X in their Depends on); a 
   QA scenarios: happy — contract+orchestrator suites green (evidence artifacts/verification/VER-ARCH-10-*.json batch); failure — fake quota/refusal → normalized codes + no retry storm; orchestrator double-load race → single flight (evidence logs). Evidence <attemptDir>/task-10-milpbooklm-implementation.json
   Commit: Y | feat(models): MOD-01 ports/registry/adapters/fakes + inference orchestrator (ARCH-10-001..029, ARCH-20-001..004)
 
-- [ ] 11. Phase-0 gate — Harness evidence bundle
+- [~] 11. Phase-0 gate — Harness evidence bundle
   What to do / Must NOT do: Run full PR + nightly tier sets applicable to Phase 0 (meta, architecture, deploy/rootless, domain/invariants, faults/jobs, security/authorization, contracts/providers); emit conformance.json v0 (all implemented capabilities marked, none advertised that aren't); write phase-gate report listing per-workstream completion evidence per PLANNING-HANDOFF Phase 0 exit row. MUST NOT: pass gate with placeholder adapters, unclassified requirements, or stale evidence.
   Micro-index: 11.1 tier runs · 11.2 conformance emit · 11.3 gate report + review signoff file.
   Parallelization: Wave 0 | Blocked by: 1..10 | Blocks: Wave 1 (gate)
