@@ -194,17 +194,32 @@ class AcquireSource:
             capability="source_mutate",
             idempotency_key=key,
         )
-        if not created:
-            return job
-        leased = self._jobs.repo.transition(
-            job,
-            JobState.LEASED,
-            lease_owner=f"api-acquisition:{job.id}",
-            lease_expires_at=self._clock.now(),
+        if created:
+            leased = self._jobs.repo.transition(
+                job,
+                JobState.LEASED,
+                lease_owner=f"api-acquisition:{job.id}",
+                lease_expires_at=self._clock.now(),
+            )
+            running = self._jobs.repo.transition(leased, JobState.RUNNING)
+            self._jobs.complete(
+                running,
+                succeeded=True,
+                result_ref=f"source-version:{view.source_version_id}",
+            )
+        parse_job, _ = self._jobs.enqueue(
+            kind="ingestion.parse",
+            payload={
+                "source_id": str(view.source_id),
+                "source_version_id": str(view.source_version_id),
+                "blob_id": str(view.blob_id),
+                "content_sha256": view.content_sha256,
+                "importer_version": IMPORTER_VERSION,
+            },
+            actor=actor,
+            capacity_class=CapacityClass.INGESTION_INDEXING,
+            notebook_id=command.notebook_id,
+            capability="source_mutate",
+            idempotency_key=f"parse:{view.source_version_id}:canonical-v1",
         )
-        running = self._jobs.repo.transition(leased, JobState.RUNNING)
-        return self._jobs.complete(
-            running,
-            succeeded=True,
-            result_ref=f"source-version:{view.source_version_id}",
-        )
+        return parse_job

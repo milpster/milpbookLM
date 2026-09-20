@@ -28,6 +28,8 @@ import sqlalchemy as sa
 from milpbooklm_adapters.blobs import FilesystemBlobStore, PgBlobRepository
 from milpbooklm_adapters.db.connections import make_engine
 from milpbooklm_adapters.jobs import PgJobRepository, PolicyAuthzRevalidator
+from milpbooklm_adapters.parsers.isolation import IsolatedParser
+from milpbooklm_adapters.parsers.pg_canonical import PgCanonicalRepository
 from milpbooklm_adapters.security.clock import SystemClock
 from milpbooklm_adapters.security.notebook_reader import PgNotebookReader
 from milpbooklm_adapters.security.pg_identity import PgUserRepository
@@ -40,7 +42,12 @@ from milpbooklm_domain.blobs import MAX_BACKUP_WINDOW, gc_safety_delay_valid
 from milpbooklm_domain.jobs import CapacityClass
 
 from milpbooklm_workers import credential_cli
-from milpbooklm_workers.handlers import BlobIntegrityScanHandler, DemoEchoHandler, JobHandler
+from milpbooklm_workers.handlers import (
+    BlobIntegrityScanHandler,
+    DemoEchoHandler,
+    JobHandler,
+    SourceParseHandler,
+)
 from milpbooklm_workers.loop import WorkerLoop
 
 ENV_WORKER_DSN = "MILPBOOKLM_WORKER_DSN"
@@ -191,6 +198,11 @@ def build_worker(args: argparse.Namespace) -> WorkerLoop:
     if args.blob_root:
         blob_ports = build_blob_ports(engine, Path(args.blob_root), _gc_safety_delay(args))
         handlers[BlobIntegrityScanHandler.kind] = BlobIntegrityScanHandler(blob_ports.reconcile)
+        handlers[SourceParseHandler.kind] = SourceParseHandler(
+            blob_ports.store,
+            IsolatedParser(),
+            PgCanonicalRepository(engine),
+        )
     return WorkerLoop(
         repo=repo,
         handlers=handlers,
