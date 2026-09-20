@@ -30,7 +30,7 @@
   ],
   "verification_fixes": [
     "DEFECT 1 (temp sweep race): GC used to sweep every listed temp immediately, so a temp of a concurrent in-flight put (visible while writing/validating) could be unlinked from under it - list_temporaries() now returns TemporaryStats (relative_path + mtime), the finding carries the temp's mtime as its GC age anchor, and the SAME safety delay gates the temp sweep (an active put keeps its temp's mtime fresh, so a fresh temp can never be swept); one coherent policy, validated once at the composition boundary",
-    "DEFECT 2 (fsync ordering): the tmp-dir fsync ran inside _finalize BEFORE put()'s 'finally: temp.unlink(...)' (the docstring falsely claimed 'after the unlink'), and a newly created objects/<prefix> bucket was fsynced without its parent objects/ - fixes: tmp-dir fsync moved to put()'s finally AFTER the unlink, and objects/ is fsynced when (and only when) the bucket was newly created; docstring now matches the real ordering",
+    "DEFECT 2 (fsync ordering): the tmp-dir fsync ran inside _finalize BEFORE put()'s 'finally: temp.unlink(...)' (the docstring falsely claimed 'after the unlink'), and a newly created objects/<prefix> bucket was fsynced without its parent objects/ - fixes: tmp-dir fsync moved to put()'s finally AFTER the unlink, and objects/ is fsynced unconditionally after publishing/fsyncing the object so concurrent bucket creation cannot bypass parent-directory durability; docstring now matches the real ordering",
     "CLI rejects an invalid --gc-safety-delay-hours with a clean usage error (SystemExit) at composition; the use-case constructor keeps its ValueError as the typed backstop"
   ],
   "verification_smoke": {
