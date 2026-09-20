@@ -1,0 +1,102 @@
+# FND-06 manual QA transcript (2026-09-20, takeover re-run)
+
+Note: this is the takeover session's independent re-run. The abandoned worker
+had committed its own smoke evidence; every step below was executed and
+verified fresh through the product's durable maintenance path. The takeover
+run is what caught a defect the abandoned smoke had missed (see S5 + log foot
+in task-6-milpbookml-implementation.json).
+
+Harness: live scratch PostgreSQL 17 (127.0.0.1:29519, db fnd06_qa, roles per
+migrations/roles.sql, alembic 0001_baseline applied, scratch-only uuidv7() SQL
+shim kept in /tmp only). Blob root: /tmp/opencode/fnd06-scratch/blobs.
+Entry point: the product's durable maintenance path -
+`uv run python -m milpbooklm_workers --command <put-blob|get-blob|reconcile|gc>`
+(the same BlobPorts wiring the worker loop uses for blob.integrity_scan).
+
+DSN (note: make_engine maps plain postgresql:// to psycopg2, which is not
+installed; the engine DSN must be postgresql+psycopg://):
+  DSN=postgresql+psycopg://milpbooklm_app:milpbooklm_app@127.0.0.1:29519/fnd06_qa
+
+Pre-existing scratch DB state (left by the abandoned worker's run, reused as
+planted anomalies): blob_objects row a1b2c3d4... (finalized, referenced via
+blob_references note/66666666-7777-..., NO file on disk) = a planted
+missing-referenced incident; healthy row 1c12d9c8... (80 B, referenced,
+file present).
+
+## S1: write/finalize one blob (crash-consistent protocol + DB reference commit)
+$ uv run python -m milpbooklm_workers --command put-blob --dsn $DSN \
+    --blob-root /tmp/opencode/fnd06-scratch/blobs --file /tmp/opencode/fnd06-scratch/takeover-sample.txt \
+    --content-type text/plain --referrer-kind source_version --referrer-id 12121212-3434-5656-7878-909090909090
+-> {"content_sha256": "0d72c9cb09268937d5e192cedaf06c95e060cb1a25f6082fa3a9ee94581563be",
+    "id": "000001a0-bd05-7cac-9053-80f6b99a6e95", "size_bytes": 124, "state": "finalized"}
+
+Disk: blobs/objects/0d/0d72c9cb... exists (124 B); blobs/tmp/ is empty.
+DB: blob_objects row (state=finalized, finalized_at NOT NULL,
+storage_path=objects/0d/0d72c9cb...) + blob_references row (source_version).
+
+## S2: read back with integrity verification
+$ uv run python -m milpbooklm_workers --command get-blob --dsn $DSN \
+    --blob-root /tmp/opencode/fnd06-scratch/blobs \
+    --blob-id 000001a0-bd05-7cac-9053-80f6b99a6e95 --out /tmp/opencode/fnd06-scratch/takeover-readback.bin
+-> {"bytes": 124, "id": "000001a0-bd05-7cac-9053-80f6b99a6e95",
+    "sha256": "0d72c9cb09268937d5e192cedaf06c95e060cb1a25f6082fa3a9ee94581563be"}
+$ cmp takeover-sample.txt takeover-readback.bin  ->  (no diff) READBACK_IDENTICAL
+
+## S3: plant anomaly classes
+- orphan temporary:   blobs/tmp/bbbb0000-2222-3333-4444-555566667777.tmp (24 B)
+- record-only unreferenced final: blob_objects row eeee...e (64 hex e), state=finalized,
+  finalized_at = now() - 3 days, NO file, NO bucket dir, NO references
+  (exercises GC on a record whose file is already gone)
+- aged file-only unreferenced final: blobs/objects/ff/ffff...f (40 B), touch -d '3 days ago',
+  NO blob_objects row
+- missing referenced (pre-existing): a1b2c3d4... row + reference, no file
+
+## S4: reconciliation classifies all classes; healthy blobs are clean
+$ uv run python -m milpbooklm_workers --command reconcile --dsn $DSN --blob-root /tmp/opencode/fnd06-scratch/blobs
+-> findings:
+    1. kind=missing_referenced    blob_id=000001a0-bc97-... content_sha256=a1b2c3d4...
+       (detail: referenced blob has no object file on disk)
+    2. kind=unreferenced_final    blob_id=000001a0-bd07-... content_sha256=eeee...
+       (detail: finalized record has no object file on disk)
+    3. kind=orphan_temporary      storage_path=tmp/bbbb0000-2222-3333-4444-555566667777.tmp
+    Healthy referenced blobs (1c12d9c8..., 0d72c9cb...): NO finding.
+    Scan verified non-destructive (planted files still on disk after the scan).
+
+## S5: GC pass (48h safety delay > 24h max backup window, ch21)
+$ uv run python -m milpbooklm_workers --command gc --dsn $DSN --blob-root /tmp/opencode/fnd06-scratch/blobs --gc-safety-delay-hours 48
+-> {"swept_temps": 1, "deleted_finals": 1, "pending_safety_delay": 0, "integrity_incidents": 1}
+    - orphan temp swept (temps are never referenced / never in a backup snapshot)
+    - aged file-only final (ff/ffff..., 3 days old > 48h) deleted; bucket left empty
+    - record-only eeee... (file already gone): settled, NOT re-mutated, no crash
+      (this is the path the abandoned version crashed on: it attempted
+      mark_purged, which the FND-03 trg_blob_objects_finalize_guard trigger
+      rejects - finalized rows are terminal in the DB)
+    - missing-referenced incident (a1b2c3d4...) NOT deleted - counted only
+    Note: a first gc attempt on the abandoned code crashed here with
+    "finalized blob objects may only be purged, never re-staged" after having
+    swept the temp; the repair removed the row mutation (see learnings item 7).
+
+## S6: post-GC reconciliation is stable and idempotent
+$ uv run python -m milpbooklm_workers --command reconcile --dsn $DSN --blob-root /tmp/opencode/fnd06-scratch/blobs
+-> findings: exactly the two expected bookkeeping remainders -
+    1. kind=missing_referenced   a1b2c3d4... (incident, never GC'd)
+    2. kind=unreferenced_final   eeee... (settled record, file gone)
+   No temporaries, no ff file, healthy blobs clean.
+
+## S7: DB + disk final state
+Disk: blobs/tmp/ empty; blobs/objects/ff/ empty (aged final deleted);
+      healthy objects 1c/ + 0d/ intact.
+DB (psql): all four blob_objects rows still state=finalized with finalized_at
+NOT NULL (0d72c9cb..., 1c12d9c8..., a1b2c3d4..., eeee...) - GC deleted files
+only, never mutated a finalized row (trigger intact).
+
+SMOKE_RESULT: PASS (S1-S7 all as expected; no process left running; scratch PG stopped)
+
+Operational notes:
+- Scratch PG startup: socket dir /var/run/postgresql is not writable for the
+  user; start with `-k /tmp/opencode/fnd06-scratch` (TCP DSN unaffected).
+- Engine DSNs must be postgresql+psycopg:// (make_engine maps plain
+  postgresql:// to psycopg2, not installed) - FND-04 learning re-confirmed.
+- The abandoned smoke's S5 had only exercised GC on a FILE-ONLY final
+  (no row -> no mark_purged call), which is why it missed the trigger crash
+  on the record-based path.

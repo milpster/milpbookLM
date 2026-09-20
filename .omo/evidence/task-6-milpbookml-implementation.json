@@ -1,0 +1,48 @@
+{
+  "task": "FND-06",
+  "title": "Immutable filesystem blob store + crash-consistent reconciliation (ARCH-19 blob subset)",
+  "plan_position": "6/59",
+  "mode": "prototype-first (user directives D12/D13): write/finalize/read, reconciliation classification and the GC safety-delay gate proven hands-on over a live scratch PG through the worker's durable maintenance CLI; crash-point fault-injection battery, corrupt-bytes planting, purge traversal and streaming large-object reads deferred to wave 2",
+  "takeover": "re-ran and repaired the abandoned worker's committed slice (178c31c, audited line-by-line); gates re-verified independently; smoke re-executed fresh - the takeover run caught a real defect the abandoned smoke missed (GC mark_purged vs the FND-03 finalize-guard trigger)",
+  "gates": [
+    { "name": "mypy strict", "command": "uv run mypy", "exit": 0, "result": "Success: no issues found in 85 source files" },
+    { "name": "ruff check", "command": "uv run ruff check packages/domain packages/application packages/adapters workers", "exit": 0, "result": "All checks passed!" },
+    { "name": "import-linter", "command": "uv run import-linter lint", "exit": 0, "result": "Contracts: 4 kept, 0 broken (114 files, 490 dependencies)" },
+    { "name": "pytest meta+architecture+unit", "command": "uv run pytest tests/meta tests/architecture tests/unit -q", "exit": 0, "result": "127 passed" }
+  ],
+  "manual_qa": {
+    "driver": "product durable maintenance path: uv run python -m milpbooklm_workers --command put-blob/get-blob/reconcile/gc (same BlobPorts wiring the worker loop uses for the blob.integrity_scan job kind); transcript in .omo/evidence/task-6-manual-qa.log",
+    "log": ".omo/evidence/task-6-manual-qa.log",
+    "result": "SMOKE_RESULT: PASS (S1-S7 all as expected)",
+    "harness": "live scratch PG17 (127.0.0.1:29519, db fnd06_qa, roles per migrations/roles.sql, alembic 0001_baseline, scratch-only uuidv7() SQL shim kept in /tmp only, never committed)",
+    "demonstrated": [
+      "S1: put-blob streams 124 bytes -> temp write + sha256/size validation + fsync -> atomic no-overwrite finalize (os.link) -> directory fsync -> ONE-transaction commit of blob_objects (state=finalized, finalized_at set, storage_path objects/0d/0d72c9cb...) + blob_references (source_version row)",
+      "S2: get-blob verifies digest + size before returning; readback file byte-identical to the original (cmp clean)",
+      "S3/S4: planted orphan temp, record-only unreferenced final, aged file-only unreferenced final, and referenced-row-with-missing-file; reconcile classified exactly orphan_temporary / unreferenced_final / missing_referenced; healthy referenced blobs produced no finding; scan was non-destructive",
+      "S5: gc with 48h safety delay (strictly > 24h max backup window, ch21) swept the temp (swept_temps=1), deleted exactly the aged file-only final (deleted_finals=1), never touched the missing-referenced incident (integrity_incidents=1), and settled the record-only finding without mutating its row",
+      "S6/S7: post-GC reconcile is stable/idempotent (only the two expected bookkeeping remainders); all finalized DB rows remain state=finalized - GC deletes files only, never mutates finalized rows"
+    ]
+  },
+  "repairs_from_takeover": [
+    "GC no longer mutates finalized rows: the abandoned mark_purged UPDATE (finalized->purged) is rejected by the FND-03 trg_blob_objects_finalize_guard trigger (finalized is terminal in the DB) and crashed any GC over a record-based unreferenced final; removed from port + adapter, GC now deletes files only and treats record-without-file findings as settled (ReconciliationFinding.file_present added as the action discriminator)",
+    "FilesystemBlobStore.delete_final: fsync the bucket dir only if it exists (a record-only finding's bucket dir is absent; the unconditional os.open raised FileNotFoundError mid-GC)",
+    "PgBlobRepository.commit_finalized: removed '# type: ignore[return-value]' - the committed row is read inside the same transaction with an explicit unreachable-None guard"
+  ],
+  "runtime_deviations": [
+    "scratch PG17 with a /tmp-only uuidv7() SQL shim (same recipe as FND-03/04/05) - the baseline's only PG18-specific element",
+    "engine DSNs must be postgresql+psycopg://: make_engine maps a plain postgresql:// to psycopg2, which is not installed",
+    "no staging-row-first two phase: the schema's storage_path is NOT NULL and digest-derived, so a row cannot exist before the digest is known; the guide's exact ordering is followed (temp -> validate -> fsync -> finalize -> dir fsync -> DB commit), and commit_finalized reuses/completes a stale staging row for the same digest",
+    "reconciliation skips staging rows (in-flight write intent) and purged rows; orphan-temp sweep inside gc is immediate by design - temps are never referenced and never part of a backup snapshot; only finalized object files observe the safety delay",
+    "GC leaves the GC'd object's record in state=finalized (terminal per the FND-03 trigger): reconciliation reports it as an unreferenced record-without-file, which GC settles (skips) - the bookkeeping remainder is intentional, not drift"
+  ],
+  "wave2_deferred": [
+    "crash-point fault-injection battery (kill at each protocol step) beyond the protocol-ordering proof",
+    "corrupt-bytes planting drill (missing-file incident proven hands-on; corrupt digest/size path implemented in get/verify/verify_content but not planted)",
+    "AD-016 purge traversal over blob references (the purged state exists in the schema but is unreachable via UPDATE from finalized - the finalize guard makes it terminal; a future privileged path owns it)",
+    "streaming reads for large objects (get materializes via read_bytes; verify paths already stream in 1 MiB chunks)",
+    "blob API endpoints (upload/download) - the API surface is deliberately untouched this task",
+    "backup-manifest/blob-snapshot tooling integration (ch21 manifest fields)",
+    "concurrency test for the finalize race (os.link EEXIST dedupe path)"
+  ],
+  "teardown": "pg_ctl -D /tmp/opencode/fnd06-scratch/pgdata stop -m fast -> 'server stopped'; pg_ctl status: no server running; pgrep: no process matching fnd06-scratch (post-shutdown), milpbooklm_[w]orkers, or uvicorn milpbooklm"
+}

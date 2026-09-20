@@ -16,6 +16,8 @@ import time
 from dataclasses import dataclass
 from typing import Protocol
 
+from milpbooklm_application.blob_usecases import ReconcileBlobs
+from milpbooklm_domain.blobs import ReconciliationClass
 from milpbooklm_domain.jobs import JobRecord
 
 
@@ -57,6 +59,34 @@ class JobHandler(Protocol):
 
 
 _DEMO_STEP_MS = 50
+
+
+class BlobIntegrityScanHandler:
+    """
+    Durable maintenance job kind: the non-destructive blob reconciliation scan (FND-06).
+
+    Idempotent by construction - the scan only reads and classifies (it never
+    deletes), so a re-execution after lease recovery is safe. The result
+    reference carries the classification summary (metadata only, no content).
+    """
+
+    kind = "blob.integrity_scan"
+
+    def __init__(self, reconcile: ReconcileBlobs) -> None:
+        """Wire the reconciliation use case."""
+        self._reconcile = reconcile
+
+    def run(self, job: JobRecord, context: JobContext) -> JobResult:
+        """Scan and classify; return the summary as the result reference."""
+        report = self._reconcile()
+        summary = {
+            "scanned_at": report.at.isoformat(),
+            **{
+                f"count_{kind.value}": len(report.findings_of(kind))
+                for kind in ReconciliationClass
+            },
+        }
+        return JobResult(result_ref=json.dumps(summary, sort_keys=True))
 
 
 class DemoEchoHandler:
