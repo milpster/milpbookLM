@@ -166,7 +166,7 @@ Blocks column = DIRECT dependants only (tasks listing X in their Depends on); a 
   QA scenarios: happy — tests/faults/jobs suite green (evidence artifacts/verification/VER-ARCH-15-*.json batch); failure — worker killed mid-handler, second worker recovers lease for idempotent handler and uncertain external submission lands in operator-visible state (evidence fault log). Evidence <attemptDir>/task-5-milpbookml-implementation.json
   Commit: Y | feat(jobs): FND-05 durable jobs/leases/outbox/SSE + capacity classes (ARCH-15-001..027)
 
-- [ ] 6. FND-06 — Immutable filesystem blob store + crash-consistent reconciliation
+- [x] 6. FND-06 — Immutable filesystem blob store + crash-consistent reconciliation
   What to do / Must NOT do: BlobStore port + filesystem adapter: temp write → hash/size validate → fsync → atomic finalize → commit DB reference; reconciliation identifying orphan temporaries/unreferenced finals/missing referenced blobs; missing data = integrity incident (never empty content); GC safety delay > max backup window (ch21); blob_objects/references bookkeeping. MUST NOT: mutate finalized blobs; run GC without safety delay.
   Micro-index: 6.1 protocol (6.1.1 write path w/ fsync+rename; 6.1.2 reference commit; 6.1.3 read/verify) · 6.2 reconciliation (6.2.1 orphan sweep; 6.2.2 missing-reference incident; 6.2.3 integrity scan job) · 6.3 GC delay policy.
   Parallelization: Wave 0 | Blocked by: 3 | Blocks: 11 (gate), 12, 31, 50
