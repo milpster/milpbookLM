@@ -1,0 +1,23 @@
+Task 13 manual parser QA, 2026-09-21
+
+Command (isolated child, rootless srcds process):
+  printf 'Hello\\n\\nمرحبا\\n\\n你好\\n' | rtk uv run python -m milpbooklm_adapters.parsers.child /tmp/opencode/t13-parser-qa/text-a.json 00000000-0000-0000-0000-000000000013 text/plain
+
+Real result:
+  state=succeeded
+  document_id=370607d1-9d78-50a3-a9d3-cb9a9368fa04
+  node IDs: b6de9bd8-ab46-544a-bc9e-6d90b3d049dc, 34302baf-e285-5a1b-a738-13b06fa2374b, 7f1780cd-2c24-5424-b17a-8fdc26580575, 20f31ae1-5024-53c3-a453-8e4dce5d4c14
+  parser: milpbooklm.text v1, profile=text-paragraphs-v1, python=3.13.3
+  locators: document/paragraph/{1,2,3}; spans 0:5, 7:12, 14:16
+
+Repeat command wrote text-b.json. `cmp -s text-a.json text-b.json` exited 0: reparse output, including IDs, is byte-identical.
+
+Malformed-PDF command:
+  printf 'not-a-pdf' | rtk uv run python -m milpbooklm_adapters.parsers.child /tmp/opencode/t13-parser-qa/malformed.json 00000000-0000-0000-0000-000000000013 application/pdf
+
+Real result:
+  {"state":"corrupt","detail":"PDF is malformed"}
+
+Isolation profile exercised: separate `python -I -m milpbooklm_adapters.parsers.child` subprocess, empty per-run TMPDIR/cwd, stdin-only source bytes, RLIMIT_CPU=10s, RLIMIT_AS=536870912, RLIMIT_FSIZE=33554432, wall timeout=20s, and import guard before pypdf/pdfplumber imports.
+
+Scratch PostgreSQL at /tmp/opencode/t12-qa:29519 was unavailable (socket absent), so persistence-state QA and the requested benign/encrypted PDF fixture generation could not run in this dispatch. The encrypted branch is code-traced through `PdfReader.is_encrypted -> PdfEncryptedError -> encrypted` and is not claimed as hands-on verified.

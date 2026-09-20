@@ -1,0 +1,15 @@
+{
+  "task": "13 ING-01b",
+  "date": "2026-09-21",
+  "commit": null,
+  "commands": [
+    {"command": "rtk uv run ruff check .", "exit": 0},
+    {"command": "rtk uv run mypy", "exit": 0},
+    {"command": "rtk uv run import-linter lint", "exit": 0, "contracts": "4 kept, 0 broken"},
+    {"command": "rtk uv run pytest tests/meta tests/architecture tests/unit -q", "exit": 0, "result": "127 passed"},
+    {"command": "isolated text parser reparse", "exit": 0, "result": "byte-identical JSON and IDs"},
+    {"command": "isolated malformed PDF parser", "exit": 0, "result": "explicit corrupt state"}
+  ],
+  "policy_updates": ["pypdf, pdfplumber, pdfminer added to ALLOWED_ADAPTER_IMPORTS from REFERENCE-DEPENDENCIES parser matrix"],
+  "deferred": ["Scratch PostgreSQL unavailable for persistence QA", "Benign/encrypted PDF hands-on fixture QA deferred; encrypted route code-traced only", "Golden/pytest corpus deferred to Wave 2 per D12/D13"]
+}
