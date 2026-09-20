@@ -1,0 +1,18 @@
+Task 9 manual QA - 2026-09-20
+
+Surface: GET /api/v1/capabilities through FastAPI TestClient built with the existing security fakes.
+Authentication: no session cookie or Authorization header supplied.
+Fixture: reviewed registry loaded from the packaged canonical YAML; grounded_chat changed only in-memory to compiled/enabled; admin flag cap.grounded_chat enabled; configured providers empty.
+
+Observed:
+- HTTP 200
+- 57 target capability entries
+- grounded_chat state=degraded reason=provider_not_configured
+- response fields: id, name, classification, state, reason
+- native_mobile_client absent
+- pwa_offline_client absent
+- google_account_coupling absent
+- third_party_plugin_marketplace absent
+- Kubernetes, Kafka, Redis, Elasticsearch/OpenSearch, standalone vector DB, MinIO absent because none is a capability identity in the canonical registry
+
+Result: PASS

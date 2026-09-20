@@ -1,0 +1,30 @@
+{
+  "task": "9. SCOPE-GUARD - Non-target enforcement + capability-gating surface",
+  "scope": "prototype-first wave 1",
+  "status": "prototype_complete_wave_2_deferred",
+  "requirements": ["TECH-00-003", "TECH-02-002", "ARCH-00-049"],
+  "implemented": [
+    "Unauthenticated GET /api/v1/capabilities with typed response models",
+    "Effective states from reviewed compiled-support claims, admin feature flags, configured provider capabilities, and deployment dependency health",
+    "Bounded states: available, disabled, degraded, provisional",
+    "Bounded secret-free reasons: compiled_support_missing, admin_policy_disabled, provider_not_configured, dependency_unhealthy, provisional_not_claimed",
+    "Canonical capability YAML packaged with milpbooklm_contracts and consumed without importing tools",
+    "Deliberate non-target registry entries omitted from the public surface"
+  ],
+  "verification": [
+    {"command": "uv run ruff check .", "exit": 0},
+    {"command": "uv run mypy", "exit": 0, "result": "100 source files clean"},
+    {"command": "uv run import-linter lint", "exit": 0, "result": "4 contracts kept; 137 files, 606 dependencies"},
+    {"command": "uv run pytest --ignore=tests/domain/invariants", "exit": 0, "result": "127 passed"},
+    {"command": "uv run pytest tests/meta/capabilities", "exit": 0, "result": "29 passed"},
+    {"command": "uv run python tools/spec/check_capabilities.py --check", "exit": 0, "result": "61 registry entries conform"},
+    {"command": "TestClient manual smoke", "exit": 0, "result": "anonymous 200; 57 target entries; grounded_chat degraded/provider_not_configured; deliberate non-targets absent"}
+  ],
+  "known_environment_limit": "An unfiltered pytest run reached the 20 existing database invariant tests but their scratch PostgreSQL fixture was absent at /run/user/1000/fnd03-ctd/pg-run.log. The baseline 127-test non-database suite passed.",
+  "deferred_wave_2": [
+    "New advertisement-scan meta-test file",
+    "New excluded-infrastructure dependency-graph meta-test file",
+    "New feature-flag-to-obligation activation meta-test file",
+    "Plan commit template test(meta): is wave-2 scope; wave 1 uses feat(api): for the working endpoint"
+  ]
+}
