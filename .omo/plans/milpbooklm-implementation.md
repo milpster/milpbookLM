@@ -220,7 +220,7 @@ Blocks column = DIRECT dependants only (tasks listing X in their Depends on); a 
   QA scenarios: happy — gate suite green (evidence phase-0-gate.json); failure — advertised-but-unimplemented capability blocks gate (evidence failing meta output). Evidence <attemptDir>/task-11-milpbooklm-implementation.json
   Commit: Y | chore(release): Phase-0 gate evidence bundle
 
-- [ ] 12. ING-01a — Acquisition + quarantine + identify (text/PDF path)
+- [~] 12. ING-01a — Acquisition + quarantine + identify (text/PDF path)
   What to do / Must NOT do: Streaming multipart upload → quarantine with byte limits + SHA-256; never trust filename/extension/client-MIME (sniffing per adapter rules); acquisition key = source + upstream revision/content-hash + importer version (repeats return existing op unless explicit reprocess w/ new pipeline revision); duplicate content shares blobs never ownership/ACL; paste-text acquisition; PDF acquisition. Sources/source_versions/source_restrictions rows + notebook selection semantics. MUST NOT: write outside quarantine pre-validation; trust client metadata.
   Micro-index: 12.1 upload path (12.1.1 streaming w/ limits; 12.1.2 hash+size; 12.1.3 multipart contract) · 12.2 identify (12.2.1 sniffing; 12.2.2 dedup + blob sharing) · 12.3 idempotency keys · 12.4 paste-text entry.
   Parallelization: Wave 1 | Blocked by: 5,6 | Blocks: 13, 14, 20 (gate)
