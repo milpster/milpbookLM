@@ -1,0 +1,38 @@
+{
+  "cuda": {
+    "available": true,
+    "output": "Cuda compilation tools, release 13.1, V13.1.115\nBuild cuda_13.1.r13.1/compiler.37061995_0"
+  },
+  "decisions": [
+    "PCI inventory confirms two Radeon VII (Vega 20, device 1002:66af) and one RTX 3080 Laptop GPU.",
+    "ROCm/HIP is installed and enumerates both Radeon VII devices; runtime names are recorded verbatim.",
+    "CUDA toolkit and NVIDIA driver are present for the RTX 3080; task 42 must benchmark before backend selection.",
+    "Vulkan enumerates the integrated AMD GPU, RTX 3080, and both Radeon VII devices.",
+    "HSA_OVERRIDE_GFX_VERSION=9.0.0 is active, so rocminfo reports gfx900 rather than native gfx906."
+  ],
+  "gpu_inventory": {
+    "display_controllers": [
+      "01:00.0 VGA compatible controller [0300]: NVIDIA Corporation GA104M [GeForce RTX 3080 Mobile / Max-Q 8GB/16GB] [10de:249c] (rev a1)",
+      "04:00.0 VGA compatible controller [0300]: Advanced Micro Devices, Inc. [AMD/ATI] Vega 20 [Radeon VII] [1002:66af] (rev c1)",
+      "07:00.0 VGA compatible controller [0300]: Advanced Micro Devices, Inc. [AMD/ATI] Vega 20 [Radeon VII] [1002:66af] (rev c1)",
+      "0a:00.0 VGA compatible controller [0300]: Advanced Micro Devices, Inc. [AMD/ATI] Cezanne [Radeon Vega Series / Radeon Vega Mobile Series] [1002:1638] (rev c4)"
+    ],
+    "radeon_vii_count": 2,
+    "rtx_3080_count": 1
+  },
+  "host": "GUAM",
+  "kernel": "7.2.6-x64v3-xanmod1",
+  "nvidia": {
+    "available": true,
+    "output": "NVIDIA GeForce RTX 3080 Laptop GPU, 595.99.02, 8192 MiB"
+  },
+  "rocm": {
+    "available": true,
+    "output": "HIP version: 7.15.0-0000000\nAMD clang version 23.0.0git (https://github.com/ROCm/llvm-project.git aa451e1fe6a793394d6733051b1778633063ae96)\nRuntime Version:         1.21\nName:                    AMD Ryzen 9 5900HX with Radeon Graphics\nMarketing Name:          AMD Ryzen 9 5900HX with Radeon Graphics\nVendor Name:             CPU\nName:                    gfx900\nMarketing Name:          AMD Radeon VII\nVendor Name:             AMD\nName:                    amdgcn-amd-amdhsa--gfx900:xnack-\nName:                    amdgcn-amd-amdhsa--gfx9-generic:xnack-\nName:                    gfx900\nMarketing Name:          AMD Radeon VII\nVendor Name:             AMD\nName:                    amdgcn-amd-amdhsa--gfx900:xnack-\nName:                    amdgcn-amd-amdhsa--gfx9-generic:xnack-\nName:                    gfx900\nMarketing Name:          AMD Radeon Graphics\nVendor Name:             AMD"
+  },
+  "schema_version": 1,
+  "vulkan": {
+    "available": true,
+    "output": "Vulkan Instance Version: 1.4.304\ndeviceName         = AMD Radeon Graphics (RADV RENOIR)\ndriverName         = radv\ndriverInfo         = Mesa 25.0.7-0ubuntu0.25.04.2\ndeviceName         = NVIDIA GeForce RTX 3080 Laptop GPU\ndriverName         = NVIDIA\ndriverInfo         = 595.99.02\ndeviceName         = AMD Radeon VII (RADV VEGA20)\ndriverName         = radv\ndriverInfo         = Mesa 25.0.7-0ubuntu0.25.04.2\ndeviceName         = AMD Radeon VII (RADV VEGA20)\ndriverName         = radv\ndriverInfo         = Mesa 25.0.7-0ubuntu0.25.04.2\ndeviceName         = llvmpipe (LLVM 20.1.2, 256 bits)\ndriverName         = llvmpipe\ndriverInfo         = Mesa 25.0.7-0ubuntu0.25.04.2 (LLVM 20.1.2)"
+  }
+}
