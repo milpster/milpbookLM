@@ -6,6 +6,7 @@ requires-python = ">=3.13,<3.14"
 dependencies = [
     "milpbooklm-domain",
     "milpbooklm-application",
+    "milpbooklm-contracts",
     # REFERENCE-DEPENDENCIES: "SQLAlchemy 2, Alembic, psycopg 3" (persistence line)
     "sqlalchemy>=2.0,<3",
     "alembic>=1.16,<2",
@@ -19,6 +20,9 @@ dependencies = [
     # install/upgrade and stored with each hash (FND-04).
     "argon2-cffi>=25.1,<26",
     "pynacl==1.6.2",
+    # REFERENCE-DEPENDENCIES parser matrix: PDF extraction chain.
+    "pypdf>=6.0,<7",
+    "pdfplumber>=0.11,<1",
 ]
 
 [dependency-groups]
@@ -30,6 +34,7 @@ dev = [
 [tool.uv.sources]
 milpbooklm-domain = { workspace = true }
 milpbooklm-application = { workspace = true }
+milpbooklm-contracts = { workspace = true }
 
 [build-system]
 requires = ["hatchling"]

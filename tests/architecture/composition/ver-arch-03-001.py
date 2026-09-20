@@ -29,10 +29,12 @@ ADAPTERS_SRC = REPO_ROOT / "packages" / "adapters" / "src" / "milpbooklm_adapter
 # pydantic: the REFERENCE-DEPENDENCIES.md API line (Pydantic v2) for the adapter's
 # private response boundary models.
 # anyio: the httpx/httpcore async transport backend (MOD-01 streaming adapter).
+# pypdf/pdfplumber/pdfminer: the ING-01b PDF chain named verbatim in the parser matrix.
 ALLOWED_ADAPTER_IMPORTS = {
     "milpbooklm_adapters",
     "milpbooklm_domain",
     "milpbooklm_application",
+    "milpbooklm_contracts",
     "sqlalchemy",
     "alembic",
     "psycopg",
@@ -41,6 +43,9 @@ ALLOWED_ADAPTER_IMPORTS = {
     "httpx",
     "pydantic",
     "anyio",
+    "pypdf",
+    "pdfplumber",
+    "pdfminer",
 } | set(sys.stdlib_module_names)
 
 
