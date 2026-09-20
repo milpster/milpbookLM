@@ -31,6 +31,7 @@ INSTALLATION_ENV_KEYS = frozenset(
         # and the audit bounded-retention window in days.
         "MILPBOOKLM_KEYRING_PATH",
         "MILPBOOKLM_AUDIT_RETENTION_DAYS",
+        "MILPBOOKLM_MAX_ACQUISITION_BYTES",
         "MILPBOOKLM_PREREQUISITES_PATH",
         "MILPBOOKLM_ENABLED_CAPABILITY_FLAGS",
         "MILPBOOKLM_CONFIGURED_PROVIDER_CAPABILITIES",
@@ -113,6 +114,11 @@ def load_installation(env: Mapping[str, str]) -> InstallationConfig:
         trusted_proxy_peers=peers,
         master_keyring_file=keyring,
         audit_retention_days=retention,
+        max_acquisition_bytes=_parse_positive_int(
+            resolved.get("MILPBOOKLM_MAX_ACQUISITION_BYTES", ""),
+            key="MILPBOOKLM_MAX_ACQUISITION_BYTES",
+            default=10 * 1024 * 1024,
+        ),
         prerequisites_file=Path(
             resolved.get(
                 "MILPBOOKLM_PREREQUISITES_PATH",
@@ -146,6 +152,19 @@ def _parse_retention_days(raw: str) -> int:
             keys=("MILPBOOKLM_AUDIT_RETENTION_DAYS",),
         )
     return days
+
+
+def _parse_positive_int(raw: str, *, key: str, default: int) -> int:
+    value = raw.strip()
+    if not value:
+        return default
+    try:
+        parsed = int(value)
+    except ValueError as exc:
+        raise ConfigError(f"{key} must be a positive integer", keys=(key,)) from exc
+    if parsed <= 0:
+        raise ConfigError(f"{key} must be a positive integer", keys=(key,))
+    return parsed
 
 
 def _parse_csv(raw: str) -> tuple[str, ...]:

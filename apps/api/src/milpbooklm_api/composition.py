@@ -71,8 +71,6 @@ from .security import (
 )
 from .source_routes import build_source_router
 
-MAX_ACQUISITION_BYTES = 10 * 1024 * 1024
-
 
 def build_create_notebook() -> tuple[CreateNotebook, InMemoryNotebookRepository]:
     """Return a ready-to-use use case and its repository (deterministic fake)."""
@@ -201,7 +199,7 @@ def create_app() -> FastAPI:
     source_acquisition = AcquireSource(
         quarantine=FilesystemQuarantineStore(
             installation.blob_root,
-            max_bytes=MAX_ACQUISITION_BYTES,
+            max_bytes=installation.max_acquisition_bytes,
         ),
         blobs=FilesystemBlobStore(
             installation.blob_root,

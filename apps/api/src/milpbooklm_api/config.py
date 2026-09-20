@@ -47,6 +47,7 @@ class InstallationConfig(BaseModel):
     trusted_proxy_peers: tuple[str, ...] = ()
     master_keyring_file: Path | None = None
     audit_retention_days: int = Field(default=365, gt=0)
+    max_acquisition_bytes: int = Field(default=10 * 1024 * 1024, gt=0)
     prerequisites_file: Path = Path("/run/milpbooklm/prerequisites.json")
     enabled_capability_flags: tuple[str, ...] = ()
     configured_provider_capabilities: tuple[str, ...] = ()

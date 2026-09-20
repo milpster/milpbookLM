@@ -59,7 +59,7 @@ class PgNotebookReader:
     def notebook_with_membership(
         self, user_id: uuid.UUID, notebook_id: uuid.UUID
     ) -> NotebookView | None:
-        """One notebook + the user's role (None = no membership); the engine decides."""
+        """Return one notebook only when the user has a membership row."""
         with self._engine.begin() as conn:
             row = conn.execute(
                 sa.select(
@@ -68,7 +68,7 @@ class PgNotebookReader:
                     notebooks.c.custody_state,
                     notebook_memberships.c.role,
                 )
-                .outerjoin(
+                .join(
                     notebook_memberships,
                     (notebook_memberships.c.notebook_id == notebooks.c.id)
                     & (notebook_memberships.c.user_id == user_id),
