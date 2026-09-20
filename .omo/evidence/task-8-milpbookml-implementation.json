@@ -1,0 +1,53 @@
+{
+  "task": "OPS-01a",
+  "title": "Rootless compose deployment, Caddy edge, installer prerequisites, host probes",
+  "plan_position": "8/59",
+  "mode": "prototype-first wave 1 (D12/D13)",
+  "result": "PARTIAL_ENVIRONMENT_VERIFIED",
+  "done": [
+    "Rootless Podman Compose project authored for web-api, worker-core, research-profile browser-worker and SearXNG, PostgreSQL, one-shot migration, and Caddy",
+    "All containers use fixed non-root UIDs, read-only roots, dropped capabilities, no-new-privileges, tmpfs scratch, and explicit separate postgres/blob/config/backup volumes",
+    "Caddy 2.10.2 and SearXNG 2026.9.20 are tag+digest pinned; Caddy uses internal CA TLS for milpbooklm.local and reaches the API only by private Unix socket",
+    "podman-compose 1.6.0 provider lock, Quadlet network, user compose unit, execution socket/service placeholder, delegation drop-in, lingering and journal documentation authored",
+    "Installer verifies Podman/provider, subordinate IDs, user namespaces, cgroup v2 controllers/delegation, Bubblewrap, atomic hardlink finalization, and host MAC state; failures disable execution and fail readiness",
+    "Unauthenticated liveness/readiness and installation-admin diagnostics wired through the existing API composition; diagnostics expose bounded reasons without configuration or secrets",
+    "Host deployment facts committed for two Radeon VII, RTX 3080, ROCm/HIP, CUDA/NVIDIA, and Vulkan"
+  ],
+  "host_prerequisites": {
+    "command": "infra/podman/install-check.sh /tmp/opencode/task8-blobs infra/podman/host-prerequisites.json",
+    "exit": 4,
+    "ready": false,
+    "execution_enabled": false,
+    "failed": [
+      "podman not installed",
+      "podman-compose 1.6.0 not installed",
+      "execution-worker cgroup delegation drop-in not active",
+      "AppArmor module present but disabled"
+    ]
+  },
+  "host_inventory": {
+    "file": "infra/podman/deployment-facts.json",
+    "radeon_vii": 2,
+    "rtx_3080_laptop": 1,
+    "rocm_hip": "7.15.0-0000000",
+    "cuda": "13.1",
+    "nvidia_driver": "595.99.02",
+    "vulkan": "1.4.304",
+    "runtime_note": "HSA_OVERRIDE_GFX_VERSION=9.0.0 makes rocminfo label native gfx906 Radeon VII cards as gfx900"
+  },
+  "gates": [
+    {"name": "ruff", "exit": 0, "result": "clean"},
+    {"name": "mypy strict", "exit": 0, "result": "no issues"},
+    {"name": "import-linter", "exit": 0, "result": "4 kept, 0 broken"},
+    {"name": "pytest", "exit": 0, "result": "127 passed"},
+    {"name": "compose YAML/policy", "exit": 0, "result": "valid"},
+    {"name": "scratch-PG TestClient", "exit": 0, "result": "live 200, ready 503 expected host degradation, protected diagnostics 200"}
+  ],
+  "manual_qa_log": ".omo/evidence/task-8-manual-qa.log",
+  "deferred": [
+    {
+      "item": "live rootless Podman bring-up drill (compose health, Caddy local-CA TLS, ready 200, stopped-PostgreSQL degradation)",
+      "reason": "Podman and podman-compose are absent; installation requires sudo and was explicitly prohibited in this task"
+    }
+  ]
+}

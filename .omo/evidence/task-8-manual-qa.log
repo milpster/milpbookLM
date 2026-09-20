@@ -1,0 +1,43 @@
+OPS-01a manual QA - 2026-09-20
+
+DONE
+1. Host prerequisite check
+   command: infra/podman/install-check.sh /tmp/opencode/task8-blobs infra/podman/host-prerequisites.json
+   exit: 4 (intentional fail-closed count)
+   result: execution_enabled=false; failed podman, podman-compose 1.6.0, active cgroup delegation, AppArmor enabled-state. Passed subordinate UID/GID ranges, unprivileged user namespaces, cgroup v2 controllers, Bubblewrap 0.11.0, and hardlink atomic finalization.
+
+2. Host runtime inventory
+   command: uv run infra/podman/probe-host.py infra/podman/deployment-facts.json
+   exit: 0
+   result: 2 Radeon VII + RTX 3080 Laptop confirmed; ROCm/HIP 7.15 present, CUDA 13.1 present, NVIDIA 595.99.02 present, Vulkan 1.4.304 enumerates all three discrete GPUs. HSA_OVERRIDE_GFX_VERSION=9.0.0 explains rocminfo gfx900 labels for the native gfx906 Radeon VII cards.
+
+3. Deployment configuration validation
+   command: uv run python YAML policy assertion over infra/podman/compose.yaml
+   exit: 0
+   result: all seven services present; fixed UIDs/read-only/cap-drop/no-new-privileges enforced; only Caddy publishes; research profile and private backend/egress split valid.
+   command: static Caddy policy assertion
+   exit: 0
+   result: tls internal, Unix-socket upstream, identity/proxy stripping, normalized forwarding present; Authorization is preserved.
+   command: bash -n infra/podman/install-check.sh
+   exit: 0
+
+4. Live API smoke against scratch PostgreSQL
+   harness: PostgreSQL 17 at 127.0.0.1:29522, UTF8/C locale, pgvector, /tmp-only uuidv7() shim, 0001_baseline, postgresql+psycopg:// DSNs, TestClient base_url=https://testserver, explicit Secure cookie.
+   command: uv run --project apps/api python /tmp/opencode/task8-scratch/smoke.py
+   exit: 0
+   result: SMOKE_RESULT PASS; /health/live 200; /health/ready 503 with schema+blob ready and honest PG18/prerequisite degradations; anonymous diagnostics 401; installation-admin diagnostics 200; no password or DSN in response.
+
+5. Repository gates
+   ruff: exit 0
+   mypy strict: exit 0, no issues
+   import-linter: exit 0, 4 kept / 0 broken (131 files, 581 dependencies)
+   pytest tests/meta tests/architecture tests/unit -q: exit 0, 127 passed
+
+DEFERRED - SINGLE OPEN VERIFICATION ITEM
+Live rootless Podman bring-up drill: install Podman, activate the task-29 broker placeholder only after that task lands, run podman compose up with podman-compose 1.6.0, validate Caddy local-CA TLS and /health/ready 200, then stop PostgreSQL and observe readiness/diagnostics degradation. This was not simulated because Podman and podman-compose are absent and installation is sudo-gated.
+
+Administrator commands required before the drill:
+sudo apt-get update && sudo apt-get install -y podman bubblewrap
+sudo usermod --add-subuids 100000-165535 --add-subgids 100000-165535 "$USER"
+loginctl enable-linger "$USER"
+uv tool install podman-compose==1.6.0
