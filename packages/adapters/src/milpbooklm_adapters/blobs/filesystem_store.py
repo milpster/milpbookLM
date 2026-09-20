@@ -12,8 +12,9 @@ Crash-consistent ordering of ``put``:
   3. re-validate the temp on disk (digest + size)
   4. atomic NO-OVERWRITE finalize: ``os.link`` (EEXIST means an identical
      content-addressed object already exists; a mismatch is an incident)
-  5. fsync the bucket directory - and the objects/ directory when the bucket
-     was newly created, so the bucket's own directory entry is durable
+  5. fsync the bucket directory AND the objects/ directory (unconditional: a
+     concurrent writer can create the bucket at any moment, so only an
+     unconditional parent fsync durably records the bucket's entry)
   6. unlink the temp, then fsync the tmp directory so the unlink is durable
   7. commit the DB object/reference row (one transaction, strictly AFTER 4-6)
 
@@ -140,7 +141,6 @@ class FilesystemBlobStore:
         if final.exists():
             self._require_identical(final, content_sha256, size_bytes)
         else:
-            bucket_created = not final.parent.is_dir()
             final.parent.mkdir(parents=True, exist_ok=True)
             try:
                 # link() is atomic on POSIX and refuses to overwrite (EEXIST):
@@ -151,11 +151,12 @@ class FilesystemBlobStore:
                 # the existing object identical - verify, then dedupe.
                 self._require_identical(final, content_sha256, size_bytes)
             self._fsync_dir(final.parent)
-            if bucket_created:
-                # The bucket's own entry in objects/ is a new directory entry:
-                # fsync objects/ too, or a crash can lose the bucket (and every
-                # object inside it) while the DB row already points at it.
-                self._fsync_dir(self._objects_dir)
+            # Conservative, unconditional: a concurrent process can create the
+            # bucket between any existence check and the mkdir, so a conditional
+            # parent fsync is not a valid cross-process durability proof.
+            # Fsyncing objects/ always keeps the bucket entry durable before the
+            # DB row pointing at it is committed.
+            self._fsync_dir(self._objects_dir)
 
     @staticmethod
     def _require_identical(final: Path, content_sha256: str, size_bytes: int) -> None:
@@ -277,11 +278,12 @@ class FilesystemBlobStore:
     # ------------------------------------------------------------------ sweep
 
     def delete_temporary(self, relative_path: str) -> None:
-        """Delete one staged temp file (sweep action; temps are never referenced)."""
+        """Delete one staged temp file and durably record the removal (GC sweep)."""
         path = self._root / relative_path
         if path.parent != self._tmp_dir:
             raise ValueError(f"not a temporary path: {relative_path}")
         path.unlink(missing_ok=True)
+        self._fsync_dir(self._tmp_dir)
 
     def delete_final(self, content_sha256: str) -> None:
         """Delete one finalized object file (only after the GC safety delay)."""

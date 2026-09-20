@@ -40,7 +40,7 @@
     "scratch PG17 with a /tmp-only uuidv7() SQL shim (same recipe as FND-03/04/05) - the baseline's only PG18-specific element",
     "engine DSNs must be postgresql+psycopg://: make_engine maps a plain postgresql:// to psycopg2, which is not installed",
     "no staging-row-first two phase: the schema's storage_path is NOT NULL and digest-derived, so a row cannot exist before the digest is known; the guide's exact ordering is followed (temp -> validate -> fsync -> finalize -> dir fsync -> DB commit), and commit_finalized reuses/completes a stale staging row for the same digest",
-    "reconciliation skips staging rows (in-flight write intent) and purged rows; orphan-temp sweep inside gc is immediate by design - temps are never referenced and never part of a backup snapshot; only finalized object files observe the safety delay",
+    "reconciliation skips staging rows (in-flight write intent) and purged rows; orphan-temp sweep inside gc is gated by the same configured safety delay - the temp inventory carries each temp's mtime, which an in-flight put keeps fresh, so only temps idle for the full delay are swept; temps are never part of a backup snapshot",
     "GC leaves the GC'd object's record in state=finalized (terminal per the FND-03 trigger): reconciliation reports it as an unreferenced record-without-file, which GC settles (skips) - the bookkeeping remainder is intentional, not drift"
   ],
   "wave2_deferred": [
