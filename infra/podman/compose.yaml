@@ -1,0 +1,203 @@
+name: milpbooklm
+
+x-application-image: &application-image ${MILPBOOKLM_IMAGE:?set MILPBOOKLM_IMAGE to a digest-pinned application image}
+x-hardening: &hardening
+  read_only: true
+  cap_drop: [ALL]
+  security_opt:
+    - no-new-privileges:true
+  init: true
+  restart: unless-stopped
+
+services:
+  postgres:
+    <<: *hardening
+    image: docker.io/pgvector/pgvector@sha256:1d50c689b0a6511b9ea0a15615281c81a59fd04a08eb35057ec8646fb3a2118a
+    user: "999:999"
+    environment:
+      POSTGRES_USER: postgres
+      POSTGRES_PASSWORD_FILE: /run/secrets/postgres-bootstrap-password
+      POSTGRES_DB: milpbooklm
+    secrets:
+      - postgres-bootstrap-password
+    volumes:
+      - postgres:/var/lib/postgresql/data
+      - ../../migrations/roles.sql:/docker-entrypoint-initdb.d/01-roles.sql:ro,Z
+      - backups:/backups
+    tmpfs:
+      - /tmp:rw,noexec,nosuid,nodev,size=64m
+      - /run/postgresql:rw,noexec,nosuid,nodev,size=16m
+    networks: [backend]
+    healthcheck:
+      test: [CMD-SHELL, "pg_isready -U postgres -d milpbooklm"]
+      interval: 5s
+      timeout: 3s
+      retries: 24
+      start_period: 10s
+
+  migrate:
+    <<: *hardening
+    image: *application-image
+    user: "10004:10004"
+    restart: "no"
+    command:
+      - /bin/sh
+      - -c
+      - export MILPBOOKLM_DB_URL="$$(cat /run/secrets/migration-database-url)" && exec uv run alembic -c migrations/alembic.ini upgrade head
+    secrets:
+      - migration-database-url
+    volumes:
+      - config:/etc/milpbooklm:ro
+    tmpfs:
+      - /tmp:rw,noexec,nosuid,nodev,size=64m
+    networks: [backend]
+    depends_on:
+      postgres:
+        condition: service_healthy
+
+  web-api:
+    <<: *hardening
+    image: *application-image
+    user: "10001:10001"
+    command:
+      - uv
+      - run
+      - uvicorn
+      - milpbooklm_api.composition:create_app
+      - --factory
+      - --uds
+      - /run/milpbooklm/api/api.sock
+      - --proxy-headers
+      - --forwarded-allow-ips
+      - "*"
+    env_file: [milpbooklm.env]
+    environment:
+      MILPBOOKLM_DATABASE_URL_FILE: /run/secrets/app-database-url
+      MILPBOOKLM_SECRET_KEY_FILE: /run/secrets/session-secret
+      MILPBOOKLM_BLOB_ROOT: /var/lib/milpbooklm/blobs
+      MILPBOOKLM_PREREQUISITES_PATH: /etc/milpbooklm/prerequisites.json
+      MILPBOOKLM_TRUSTED_PROXY_PEERS: caddy
+    secrets:
+      - app-database-url
+      - session-secret
+    volumes:
+      - blobs:/var/lib/milpbooklm/blobs
+      - config:/etc/milpbooklm:ro
+      - api-socket:/run/milpbooklm/api
+    tmpfs:
+      - /tmp:rw,noexec,nosuid,nodev,size=128m
+    networks: [backend]
+    depends_on:
+      migrate:
+        condition: service_completed_successfully
+
+  worker-core:
+    <<: *hardening
+    image: *application-image
+    user: "10002:10002"
+    command:
+      - /bin/sh
+      - -c
+      - export MILPBOOKLM_WORKER_DSN="$$(cat /run/secrets/app-database-url)" && exec uv run python -m milpbooklm_workers --blob-root /var/lib/milpbooklm/blobs
+    env_file: [milpbooklm.env]
+    environment:
+      MILPBOOKLM_EXECUTION_SOCKET: /run/milpbooklm/execution/execution.sock
+    secrets:
+      - app-database-url
+    volumes:
+      - blobs:/var/lib/milpbooklm/blobs
+      - config:/etc/milpbooklm:ro
+      - ${XDG_RUNTIME_DIR}/milpbooklm:/run/milpbooklm/execution
+    tmpfs:
+      - /tmp:rw,noexec,nosuid,nodev,size=128m
+    networks: [backend]
+    depends_on:
+      migrate:
+        condition: service_completed_successfully
+
+  browser-worker:
+    <<: *hardening
+    image: *application-image
+    user: "10003:10003"
+    profiles: [research]
+    command:
+      - /bin/sh
+      - -c
+      - export MILPBOOKLM_WORKER_DSN="$$(cat /run/secrets/app-database-url)" && exec uv run python -m milpbooklm_workers
+    env_file: [milpbooklm.env]
+    environment:
+      MILPBOOKLM_SEARXNG_URL: http://searxng:8080
+    secrets:
+      - app-database-url
+    volumes:
+      - config:/etc/milpbooklm:ro
+    tmpfs:
+      - /tmp:rw,noexec,nosuid,nodev,size=512m
+    networks: [backend]
+    depends_on:
+      migrate:
+        condition: service_completed_successfully
+      searxng:
+        condition: service_healthy
+
+  searxng:
+    <<: *hardening
+    image: docker.io/searxng/searxng:2026.9.20-2e624bed4@sha256:76f9ec5b3832921c8734c06c34248c9538d94a6cae0cf5e579fa5b41c8479789
+    user: "977:977"
+    profiles: [research]
+    environment:
+      SEARXNG_BASE_URL: http://searxng:8080/
+    volumes:
+      - ./searxng/settings.yml:/etc/searxng/settings.yml:ro,Z
+    tmpfs:
+      - /tmp:rw,noexec,nosuid,nodev,size=128m
+      - /var/cache/searxng:rw,noexec,nosuid,nodev,size=128m
+    networks: [backend, research-egress]
+    healthcheck:
+      test: [CMD, wget, --quiet, --spider, http://127.0.0.1:8080/healthz]
+      interval: 10s
+      timeout: 3s
+      retries: 12
+
+  caddy:
+    <<: *hardening
+    image: docker.io/library/caddy:2.10.2-alpine@sha256:4c6e91c6ed0e2fa03efd5b44747b625fec79bc9cd06ac5235a779726618e530d
+    user: "1000:1000"
+    environment:
+      MILPBOOKLM_LAN_HOST: ${MILPBOOKLM_LAN_HOST:-milpbooklm.local}
+    ports:
+      - ${MILPBOOKLM_HTTP_PORT:-8080}:8080
+      - ${MILPBOOKLM_HTTPS_PORT:-8443}:8443
+    volumes:
+      - ./Caddyfile:/etc/caddy/Caddyfile:ro,Z
+      - api-socket:/run/milpbooklm/api:ro
+      - caddy-data:/data
+      - caddy-config:/config
+    tmpfs:
+      - /tmp:rw,noexec,nosuid,nodev,size=64m
+    networks: [backend]
+    depends_on: [web-api]
+
+networks:
+  backend:
+    internal: true
+  research-egress: {}
+
+volumes:
+  postgres: {}
+  blobs: {}
+  config: {}
+  backups: {}
+  api-socket: {}
+  caddy-data: {}
+  caddy-config: {}
+
+secrets:
+  postgres-bootstrap-password:
+    file: ./secrets/postgres-bootstrap-password
+  migration-database-url:
+    file: ./secrets/migration-database-url
+  app-database-url:
+    file: ./secrets/app-database-url
+  session-secret:
+    file: ./secrets/session-secret
