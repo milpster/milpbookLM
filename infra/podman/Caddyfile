@@ -11,9 +11,16 @@
 		header_up -Proxy-Authorization
 		header_up -Remote-User
 		header_up -X-Authenticated-User
+		header_up -X-Auth-Request-Email
+		header_up -X-Auth-Request-User
+		header_up -X-Email
 		header_up -X-Forwarded-For
 		header_up -X-Forwarded-Host
 		header_up -X-Forwarded-Proto
+		header_up -X-Forwarded-User
+		header_up -X-Remote-User
+		header_up -X-User
+		header_up -X-User-Id
 		header_up Host {http.request.host}
 		header_up X-Forwarded-For {http.request.remote.host}
 		header_up X-Forwarded-Host {http.request.host}
