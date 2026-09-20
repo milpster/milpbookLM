@@ -193,7 +193,7 @@ Blocks column = DIRECT dependants only (tasks listing X in their Depends on); a 
   QA scenarios: happy — compose up + /health/ready 200 (evidence artifacts/verification/VER-ARCH-04-*.json batch); failure — stopped postgres → readiness false + diagnostics reason (evidence curl log). Evidence <attemptDir>/task-8-milpbookml-implementation.json
   Commit: Y | feat(deploy): OPS-01a rootless compose + Caddy + installer + host probes (ARCH-04-001..022)
 
-- [ ] 9. SCOPE-GUARD — Non-target enforcement + capability-gating surface
+- [~] 9. SCOPE-GUARD — Non-target enforcement + capability-gating surface
   What to do / Must NOT do: Meta-tests proving deliberate non-targets (native_mobile_client, pwa_offline_client, google_account_coupling, third_party_plugin_marketplace + infra exclusions K8s/Kafka/Redis-except-limiter-off/ES/vector-db/MinIO) are neither advertised in /api/v1/capabilities nor importable; capability endpoint computes effective state from compiled support + admin policy + configured providers + dependency health with disabled/degraded reason; enabling a capability activates its test obligations (feature_flag wiring cap.*). MUST NOT: hardcode capability lists in frontend; advertise disabled/provisional as available.
   Micro-index: 9.1 non-target proofs (9.1.1 advertisement scan; 9.1.2 dependency-graph scan for excluded infra) · 9.2 gating surface (9.2.1 /api/v1/capabilities contract; 9.2.2 reason vocabulary; 9.2.3 flag→obligation activation test).
   Parallelization: Wave 0 | Blocked by: 2 | Blocks: 11 (gate), 43, 47
