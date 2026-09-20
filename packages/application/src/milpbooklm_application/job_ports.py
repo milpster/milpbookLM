@@ -146,6 +146,10 @@ class JobRepository(Protocol):
         """
         ...
 
+    def running_jobs(self, capacity_class: str) -> list[JobRecord]:
+        """List leased+running jobs of the class, oldest first (preemption targets)."""
+        ...
+
     def in_flight(self, capacity_class: str) -> int:
         """Count leased+running jobs of the class (installation-wide)."""
         ...

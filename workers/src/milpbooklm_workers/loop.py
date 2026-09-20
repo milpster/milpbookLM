@@ -23,7 +23,7 @@ from milpbooklm_application.job_usecases import (
     RecoverExpiredLeases,
 )
 from milpbooklm_domain.job_capacity import CapacityPolicy
-from milpbooklm_domain.jobs import JobProgress, JobRecord, JobState
+from milpbooklm_domain.jobs import CapacityClass, JobProgress, JobRecord, JobState
 from milpbooklm_domain.telemetry import (
     CorrelationContext,
     bind_context,
@@ -33,6 +33,7 @@ from milpbooklm_domain.telemetry import (
 )
 
 from milpbooklm_workers.handlers import HandlerCancelledError, JobHandler, JobResult
+from milpbooklm_workers.inference import InteractivePreemptor
 
 logger = logging.getLogger(__name__)
 
@@ -100,6 +101,7 @@ class WorkerLoop:
         recover: RecoverExpiredLeases,
         cancel: CancelJob,
         revalidator: AuthzRevalidator | None = None,
+        preemptor: InteractivePreemptor | None = None,
     ) -> None:
         """Wire the ports, the handler table, and the loop's timing/identity."""
         self._repo = repo
@@ -113,6 +115,7 @@ class WorkerLoop:
         self._recover = recover
         self._cancel = cancel
         self._revalidator = revalidator
+        self._preemptor = preemptor
         self._stopping = False
 
     def request_stop(self) -> None:
@@ -193,6 +196,7 @@ class WorkerLoop:
         if not self._authz_ok(job):
             self._cancel_job(job, reason="authorization_revoked")
             return
+        self._preempt_batch_media(job)
         try:
             running = self._repo.transition(job, JobState.RUNNING)
         except JobCasConflictError:
@@ -243,6 +247,20 @@ class WorkerLoop:
             self._cancel(job.id, reason=reason)
         except JobCasConflictError:
             logger.info("cancel for job %s lost the CAS race", job.id)
+
+    def _preempt_batch_media(self, job: JobRecord) -> None:
+        """Interactive text preempts running batch media (D10): park it durably."""
+        if self._preemptor is None or job.queue != CapacityClass.INTERACTIVE_TEXT.value:
+            return
+        for media_job in self._repo.running_jobs(CapacityClass.MEDIA.value):
+            parked = self._preemptor.preempt_media(media_job, media_job.checkpoint or {})
+            if parked.state is JobState.WAITING_CAPACITY:
+                logger.info(
+                    "preempted media job %s (checkpointed, re-queued as waiting_capacity) "
+                    "for interactive job %s",
+                    media_job.id,
+                    job.id,
+                )
 
     def _authz_ok(self, job: JobRecord) -> bool:
         """Check the actor's current authorization (system jobs without an actor pass)."""

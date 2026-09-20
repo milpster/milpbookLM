@@ -30,6 +30,7 @@ from milpbooklm_domain.job_events import (
     job_event_payload,
 )
 from milpbooklm_domain.jobs import (
+    PENDING_STATES,
     CapacityClass,
     JobProgress,
     JobRecord,
@@ -283,12 +284,17 @@ class PgJobRepository:
                     """
                     UPDATE jobs
                     SET status = :status, payload = CAST(:payload AS jsonb),
+                        lease_owner = CASE WHEN :release_lease THEN NULL ELSE lease_owner END,
+                        lease_expires_at = CASE
+                            WHEN :release_lease THEN NULL ELSE lease_expires_at
+                        END,
                         revision = revision + 1, etag = (revision + 1)::text, updated_at = now()
                     WHERE id = :id AND status = :expected AND revision = :rev
                     """
                 ),
                 {
                     "status": physical_status(new_state),
+                    "release_lease": new_state in PENDING_STATES or new_state is JobState.QUEUED,
                     "payload": _json(pack_payload(updated)),
                     "id": job.id,
                     "expected": physical_status(job.state),
@@ -453,6 +459,21 @@ class PgJobRepository:
             ),
             {"o": outcome, "id": job_id},
         )
+
+    def running_jobs(self, capacity_class: str) -> list[JobRecord]:
+        """List leased+running jobs of the class, oldest first (preemption targets)."""
+        with self._engine.begin() as conn:
+            rows = conn.execute(
+                sa.text(
+                    """
+                    SELECT * FROM jobs
+                    WHERE queue = :q AND status IN ('leased','running')
+                    ORDER BY enqueued_at ASC
+                    """
+                ),
+                {"q": capacity_class},
+            ).fetchall()
+        return [job_from_row(row) for row in rows]
 
     def in_flight(self, capacity_class: str) -> int:
         """Count leased+running jobs of the class (installation-wide)."""
