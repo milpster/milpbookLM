@@ -76,6 +76,7 @@ source_versions = sa.Table(
     ),
     sa.Column("activated_at", sa.DateTime(timezone=True), nullable=True),
     sa.Column("tombstoned_at", sa.DateTime(timezone=True), nullable=True),
+    sa.Column("parse_error_code", sa.Text, nullable=True),
     uuid_fk("created_by_user_id", "users"),
     created_at(),
     sa.UniqueConstraint("source_id", "version_number", name="uq_source_versions_source_number"),
@@ -89,8 +90,13 @@ source_versions = sa.Table(
     ),
     sa.CheckConstraint("version_number > 0", name="ck_source_versions_number"),
     sa.CheckConstraint(
-        "status IN ('activating', 'active', 'inactive', 'tombstoned')",
+        "status IN ('activating', 'parsing', 'parsed', 'encrypted', 'parse_failed', "
+        "'active', 'inactive', 'tombstoned')",
         name="ck_source_versions_status",
+    ),
+    sa.CheckConstraint(
+        "(status IN ('encrypted', 'parse_failed')) = (parse_error_code IS NOT NULL)",
+        name="ck_source_versions_parse_error",
     ),
 )
 
@@ -131,7 +137,11 @@ canonical_documents = sa.Table(
     # A retained SourceVersion may carry multiple immutable representations over its lifetime;
     # exactly one is active for new retrieval (partial unique below). Fully immutable (trigger).
     sa.Column("canonical_schema_version", sa.Text, nullable=False),
+    sa.Column("parser_identity", sa.Text, nullable=False),
     sa.Column("parser_version", sa.Text, nullable=False),
+    sa.Column("parser_profile", sa.Text, nullable=False),
+    sa.Column("tool_versions", JSONB, nullable=False),
+    sa.Column("contract_json", JSONB, nullable=False),
     sa.Column("active", sa.Boolean, nullable=False, server_default=sa.text("false")),
     sa.Column("activated_at", sa.DateTime(timezone=True), nullable=True),
     created_at(),
@@ -158,6 +168,9 @@ canonical_nodes = sa.Table(
     sa.Column("heading_level", sa.Integer, nullable=True),
     sa.Column("seq", sa.Integer, nullable=False),
     sa.Column("text_content", sa.Text, nullable=True),
+    sa.Column("structural_identity", sa.Text, nullable=False),
+    sa.Column("authority_class", sa.Text, nullable=False),
+    sa.Column("language", sa.Text, nullable=True),
     created_at(),
     sa.UniqueConstraint("canonical_document_id", "seq", name="uq_canonical_nodes_document_seq"),
     sa.CheckConstraint(
@@ -165,8 +178,10 @@ canonical_nodes = sa.Table(
         name="ck_canonical_nodes_heading_level",
     ),
     sa.CheckConstraint(
-        "node_type IN ('heading', 'paragraph', 'list', 'list_item', 'table', 'image', "
-        "'page', 'slide', 'sheet')",
+        "node_type IN ('document', 'section', 'paragraph', 'heading', 'list', "
+        "'list_item', 'quote', 'code', 'table', 'row', 'cell', 'image', 'figure', "
+        "'caption', 'page', 'slide', 'sheet', 'transcript_segment', 'speaker_turn', "
+        "'attachment', 'reference', 'generic')",
         name="ck_canonical_nodes_type",
     ),
 )
@@ -193,6 +208,7 @@ canonical_locators = sa.Table(
     sa.Column("time_ms_start", sa.BigInteger, nullable=True),
     sa.Column("time_ms_end", sa.BigInteger, nullable=True),
     sa.Column("bbox", JSONB, nullable=True),
+    sa.Column("structural_path", JSONB, nullable=False),
     created_at(),
     # One locator of a given kind and extent per node (NULLs must not collide).
     sa.Index(
