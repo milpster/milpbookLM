@@ -1,4 +1,4 @@
-# packages/contracts/capabilities.yaml — reviewed capability registry (FND-02).
+# milpbooklm_contracts/capabilities.yaml — packaged reviewed capability registry (FND-02).
 #
 # Seeded 1:1 from milpbookml-implementation-guide/capabilities.generated.json
 # (v1.2 FINAL, 61 entries: 43 parity-matrix rows, 14 source families,

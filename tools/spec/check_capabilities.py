@@ -1,7 +1,7 @@
 """
 Capability registry gate (ch02 feature parity, TECH-02-001, ARCH-02-001..007).
 
-The checked-in registry ``packages/contracts/capabilities.yaml`` is a reviewed
+The packaged registry ``milpbooklm_contracts/capabilities.yaml`` is a reviewed
 seed of ``capabilities.generated.json``. This tool reparses the frozen
 architecture Chapter 02 table (parity matrix + source families) and fails if:
 
@@ -31,7 +31,9 @@ from jsonschema import Draft202012Validator
 
 REPO_ROOT = Path(__file__).resolve().parents[2]
 GUIDE = REPO_ROOT / "milpbookml-implementation-guide"
-REGISTRY_YAML = REPO_ROOT / "packages" / "contracts" / "capabilities.yaml"
+REGISTRY_YAML = (
+    REPO_ROOT / "packages" / "contracts" / "src" / "milpbooklm_contracts" / "capabilities.yaml"
+)
 SEED_JSON = GUIDE / "capabilities.generated.json"
 CAPABILITIES_SCHEMA = GUIDE / "schemas" / "capabilities.schema.json"
 BASELINE_CH02 = GUIDE / "architecture-baseline" / "02-feature-parity-target.md"
@@ -230,7 +232,9 @@ def _check_non_target(cap: dict) -> list[Problem]:
 def check_capabilities(repo_root: Path = REPO_ROOT) -> list[Problem]:
     """Full registry gate; return all findings (empty = conformant)."""
     problems: list[Problem] = []
-    doc = load_registry(repo_root / "packages" / "contracts" / "capabilities.yaml")
+    doc = load_registry(
+        repo_root / "packages" / "contracts" / "src" / "milpbooklm_contracts" / "capabilities.yaml"
+    )
     problems.extend(validate_registry_schema(doc))
     problems.extend(_check_seed_drift(doc))
 

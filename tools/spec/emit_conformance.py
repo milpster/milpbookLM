@@ -1,7 +1,7 @@
 """
 Emit artifacts/conformance.json for the current build (TECH-00-003, ch00).
 
-Reads the reviewed capability registry (packages/contracts/capabilities.yaml)
+Reads the packaged reviewed capability registry (milpbooklm_contracts/capabilities.yaml)
 and the requirement ledger, computes effective capability state via the
 feature-gating skeleton, and writes the per-build conformance profile:
 capability ID, architecture classification, implementation status, enabled
@@ -37,7 +37,9 @@ def _git_sha() -> str:
 
 def emit() -> Path:
     """Write artifacts/conformance.json for the current build; return its path."""
-    registry = load_registry(REPO_ROOT / "packages" / "contracts" / "capabilities.yaml")
+    registry = load_registry(
+        REPO_ROOT / "packages" / "contracts" / "src" / "milpbooklm_contracts" / "capabilities.yaml"
+    )
     capabilities = registry["capabilities"]
     ledger = json.loads(LEDGER.read_text(encoding="utf-8"))["requirements"]
     # Feature gating (ch02): compiled support + administrator policy +
