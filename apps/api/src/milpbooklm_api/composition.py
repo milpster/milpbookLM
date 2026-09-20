@@ -22,6 +22,7 @@ from milpbooklm_adapters.security.notebook_reader import PgNotebookReader
 from milpbooklm_adapters.security.pg_identity import PgAuditLog, PgUserRepository
 from milpbooklm_adapters.security.session_store import PgSessionTokenStore
 from milpbooklm_application.authn import LoginUser, LogoutUser, RegisterUser, RotateSession
+from milpbooklm_application.capabilities import CapabilityRuntime
 from milpbooklm_application.create_notebook import CreateNotebook
 from milpbooklm_application.job_capacity import load_capacity_policy
 from milpbooklm_application.job_usecases import (
@@ -42,9 +43,12 @@ from milpbooklm_application.ports import (
     UserRepository,
 )
 from milpbooklm_application.structured_logging import configure_structured_logging
+from milpbooklm_domain.capabilities import CapabilityDefinition, DependencyId, FeatureFlag
 from starlette import status
 
 from .auth_routes import build_auth_router
+from .capability_registry import load_capability_registry
+from .capability_routes import build_capability_router
 from .config_loader import load_config
 from .deps import ApiDeps
 from .health_routes import DeploymentHealth, build_health_router
@@ -82,6 +86,8 @@ def build_app(
     clock: Clock,
     jobs: JobPorts | None = None,
     health: DeploymentHealth | None = None,
+    capability_definitions: tuple[CapabilityDefinition, ...] | None = None,
+    capability_runtime: CapabilityRuntime | None = None,
 ) -> FastAPI:
     """Build the API app from wired ports (the test/QA seam)."""
     app = FastAPI(title="MilpBook LM API")
@@ -136,7 +142,12 @@ def build_app(
             )
         return resolved
 
+    definitions = (
+        load_capability_registry() if capability_definitions is None else capability_definitions
+    )
+    runtime = CapabilityRuntime() if capability_runtime is None else capability_runtime
     app.include_router(build_health_router(health, principal))
+    app.include_router(build_capability_router(definitions, runtime, health))
     app.include_router(build_auth_router(deps, principal))
     app.include_router(build_notebook_router(deps, principal))
     if jobs is not None:
@@ -188,5 +199,13 @@ def create_app() -> FastAPI:
             engine,
             installation.blob_root,
             installation.prerequisites_file,
+        ),
+        capability_runtime=CapabilityRuntime(
+            enabled_feature_flags=frozenset(
+                FeatureFlag(flag) for flag in installation.enabled_capability_flags
+            ),
+            configured_providers=frozenset(
+                DependencyId(provider) for provider in installation.configured_provider_capabilities
+            ),
         ),
     )

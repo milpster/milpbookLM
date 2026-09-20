@@ -48,6 +48,8 @@ class InstallationConfig(BaseModel):
     master_keyring_file: Path | None = None
     audit_retention_days: int = Field(default=365, gt=0)
     prerequisites_file: Path = Path("/run/milpbooklm/prerequisites.json")
+    enabled_capability_flags: tuple[str, ...] = ()
+    configured_provider_capabilities: tuple[str, ...] = ()
 
 
 class UserPreferences(BaseModel):

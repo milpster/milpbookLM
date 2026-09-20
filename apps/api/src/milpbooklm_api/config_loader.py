@@ -32,6 +32,8 @@ INSTALLATION_ENV_KEYS = frozenset(
         "MILPBOOKLM_KEYRING_PATH",
         "MILPBOOKLM_AUDIT_RETENTION_DAYS",
         "MILPBOOKLM_PREREQUISITES_PATH",
+        "MILPBOOKLM_ENABLED_CAPABILITY_FLAGS",
+        "MILPBOOKLM_CONFIGURED_PROVIDER_CAPABILITIES",
     }
 )
 
@@ -117,6 +119,12 @@ def load_installation(env: Mapping[str, str]) -> InstallationConfig:
                 "/run/milpbooklm/prerequisites.json",
             )
         ),
+        enabled_capability_flags=_parse_csv(
+            resolved.get("MILPBOOKLM_ENABLED_CAPABILITY_FLAGS", "")
+        ),
+        configured_provider_capabilities=_parse_csv(
+            resolved.get("MILPBOOKLM_CONFIGURED_PROVIDER_CAPABILITIES", "")
+        ),
     )
 
 
@@ -138,6 +146,10 @@ def _parse_retention_days(raw: str) -> int:
             keys=("MILPBOOKLM_AUDIT_RETENTION_DAYS",),
         )
     return days
+
+
+def _parse_csv(raw: str) -> tuple[str, ...]:
+    return tuple(value.strip() for value in raw.split(",") if value.strip())
 
 
 def load_user_preferences(data: str | bytes | Mapping[str, object]) -> UserPreferences:
