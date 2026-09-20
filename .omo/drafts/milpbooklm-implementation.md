@@ -1,18 +1,18 @@
 ---
-slug: milpbookml-implementation
+slug: milpbooklm-implementation
 status: drafting
 intent: clear
 review_required: true
-plan_path: .omo/plans/milpbookml-implementation.md
+plan_path: .omo/plans/milpbooklm-implementation.md
 plan_sha256: null
 review_round_id: null
-pending-action: write and review .omo/plans/milpbookml-implementation.md
+pending-action: write and review .omo/plans/milpbooklm-implementation.md
 review:
   momus:
     status: pending
     workspace_root: null
     runtime_home: null
-    target: .omo/plans/milpbookml-implementation.md
+    target: .omo/plans/milpbooklm-implementation.md
     round_id: null
     plan_sha256: null
     launch_id: null
@@ -22,7 +22,7 @@ review:
     status: pending
     workspace_root: null
     runtime_home: null
-    target: .omo/plans/milpbookml-implementation.md
+    target: .omo/plans/milpbooklm-implementation.md
     round_id: null
     plan_sha256: null
     launch_id: null
@@ -40,7 +40,7 @@ approach: >-
   agents at a time, interview before defaults.
 ---
 
-# Draft: milpbookml-implementation
+# Draft: milpbooklm-implementation
 
 ## Components (topology ledger)
 <!-- Lock the SHAPE before depth. One row per top-level component that can succeed or fail independently. -->
@@ -147,15 +147,15 @@ REVIEW LOOP COMPLETE (rr-01 inconclusive/infra → rr-02 both changes 11 fixed �
   "applies_when": ["both_lanes_approved"],
   "atomic": true,
   "review_required": true,
-  "plan_path": ".omo/plans/milpbookml-implementation.md",
+  "plan_path": ".omo/plans/milpbooklm-implementation.md",
   "plan_sha256": "5ba76bc0d8ed656ad0fcb15afba45429a874c714e6e9dcabaafeb0e8340612e5",
   "review_round_id": "rr-milpbooklm-20260917-05",
   "round_status": "approved",
   "completion_cas": ["status=in_flight", "workspace_root", "runtime_home", "target", "launch_id", "round_id", "plan_sha256", "session", "receipt_identity=session", "live_plan_sha256=plan_sha256", "echoed_binding", "terminal_transition=in_flight->approved|changes_requested|inconclusive"],
   "pending-action": "none — handoff",
   "review": {
-    "momus": { "status": "approved", "workspace_root": "/home/srcds/dev/milpbookLM", "runtime_home": null, "target": ".omo/plans/milpbookml-implementation.md", "round_id": "rr-milpbooklm-20260917-05", "plan_sha256": "5ba76bc0d8ed656ad0fcb15afba45429a874c714e6e9dcabaafeb0e8340612e5", "launch_id": "launch-momus-rr05-20260917T2350Z", "session": "ses_f4e380101ffeylGvwWTx6nQAmm", "result": "VERDICT-APPROVED" },
-    "independent": { "status": "approved", "workspace_root": "/home/srcds/dev/milpbookLM", "runtime_home": null, "target": ".omo/plans/milpbookml-implementation.md", "round_id": "rr-milpbooklm-20260917-05", "plan_sha256": "5ba76bc0d8ed656ad0fcb15afba45429a874c714e6e9dcabaafeb0e8340612e5", "launch_id": "launch-oracle-rr05-20260917T2350Z", "session": "ses_f4e3800fbffeRV7UHPDbT9kEAo", "result": "VERDICT-APPROVED (restated after in-round retraction of misquoted defect 1; original filing VERDICT-CHANGES-REQUESTED superseded by the same session's byte-level re-adjudication)" }
+    "momus": { "status": "approved", "workspace_root": "/home/srcds/dev/milpbookLM", "runtime_home": null, "target": ".omo/plans/milpbooklm-implementation.md", "round_id": "rr-milpbooklm-20260917-05", "plan_sha256": "5ba76bc0d8ed656ad0fcb15afba45429a874c714e6e9dcabaafeb0e8340612e5", "launch_id": "launch-momus-rr05-20260917T2350Z", "session": "ses_f4e380101ffeylGvwWTx6nQAmm", "result": "VERDICT-APPROVED" },
+    "independent": { "status": "approved", "workspace_root": "/home/srcds/dev/milpbookLM", "runtime_home": null, "target": ".omo/plans/milpbooklm-implementation.md", "round_id": "rr-milpbooklm-20260917-05", "plan_sha256": "5ba76bc0d8ed656ad0fcb15afba45429a874c714e6e9dcabaafeb0e8340612e5", "launch_id": "launch-oracle-rr05-20260917T2350Z", "session": "ses_f4e3800fbffeRV7UHPDbT9kEAo", "result": "VERDICT-APPROVED (restated after in-round retraction of misquoted defect 1; original filing VERDICT-CHANGES-REQUESTED superseded by the same session's byte-level re-adjudication)" }
   }
 }
 ```

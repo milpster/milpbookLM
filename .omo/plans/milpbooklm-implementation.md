@@ -1,4 +1,4 @@
-# milpbookml-implementation - Work Plan
+# milpbooklm-implementation - Work Plan
 
 ## TL;DR (For humans)
 <!-- Fill this LAST, after the detailed plan below is written, so it summarizes the REAL plan. -->
@@ -14,11 +14,11 @@
 **Risk:** Medium — the load-bearing risks are local-model quality on German content, Bubblewrap/host isolation setup on this machine, and pgvector retrieval quality at scale; each is fenced behind an on-host benchmark/ADR task that can degrade the feature honestly instead of blocking the platform.
 **Decisions to sanity-check:** local-first media incl. Cinematic (Wan 2.2 envelope, downgradable by benchmark); serial GPU orchestration (media never starves chat); pgBackRest+restic backups; Muse Spark STANDARD tier only (never the data-training tier).
 
-Your next move: run the dual high-accuracy review (next step in this session), then hand the plan to a worker session (`$start-work milpbookml-implementation`). Full execution detail follows below.
+Your next move: run the dual high-accuracy review (next step in this session), then hand the plan to a worker session (`$start-work milpbooklm-implementation`). Full execution detail follows below.
 
 ## Scope
 ### Must have
-The complete milpbookML v1.2 FINAL specification implemented across Phases 0–7 per `milpbookml-implementation-guide/PLANNING-HANDOFF.md`: all 22 workstreams (FND-01..07, MOD-01, ING-01/02, IDX-01, RAG-01, UI-01, RSR-01, EXE-01, STD-01/02/03, MED-01, COL-01, OPS-01, SCOPE-GUARD — matching the handoff's 22-row table), all 44 stable/core capabilities plus cinematic_video (the one advanced/provider-dependent capability enabled locally per D9; interactive_audio_overview stays disabled — see guardrails) from `capabilities.generated.json`, and all 495 normative requirements from `requirements.generated.json` each assigned to exactly one owning task or gate except DECLARED shared cross-cutting records (distribution in the master index below; ID runs per `.omo/research/registry-digest.md`). Stack and decisions frozen per TAD-001..012 plus user decisions D1–D11 in `.omo/drafts/milpbookml-implementation.md` (this host, llama.cpp→Big Pickle→Muse Spark, Caddy, pgBackRest+restic, Tesseract+whisper.cpp, DE+EN mandatory, team from day one, local-first media incl. Cinematic, SearXNG minimal, OIDC deferred, serial inference orchestration).
+The complete milpbookML v1.2 FINAL specification implemented across Phases 0–7 per `milpbookml-implementation-guide/PLANNING-HANDOFF.md`: all 22 workstreams (FND-01..07, MOD-01, ING-01/02, IDX-01, RAG-01, UI-01, RSR-01, EXE-01, STD-01/02/03, MED-01, COL-01, OPS-01, SCOPE-GUARD — matching the handoff's 22-row table), all 44 stable/core capabilities plus cinematic_video (the one advanced/provider-dependent capability enabled locally per D9; interactive_audio_overview stays disabled — see guardrails) from `capabilities.generated.json`, and all 495 normative requirements from `requirements.generated.json` each assigned to exactly one owning task or gate except DECLARED shared cross-cutting records (distribution in the master index below; ID runs per `.omo/research/registry-digest.md`). Stack and decisions frozen per TAD-001..012 plus user decisions D1–D11 in `.omo/drafts/milpbooklm-implementation.md` (this host, llama.cpp→Big Pickle→Muse Spark, Caddy, pgBackRest+restic, Tesseract+whisper.cpp, DE+EN mandatory, team from day one, local-first media incl. Cinematic, SearXNG minimal, OIDC deferred, serial inference orchestration).
 ### Must NOT have (guardrails, anti-slop, scope boundaries)
 Kubernetes, Kafka, Redis (except SearXNG-internal limiter — OFF per D7), Elasticsearch/OpenSearch, standalone vector DB, MinIO, knowledge graph, plugin marketplace/public SDK, runtime code loading, native mobile/PWA clients, SaaS billing/multi-tenant orgs, Google ecosystem coupling, pixel-perfect UI cloning, BrowserOS dependency (PARITY-SCOPE-AUDIT.md exclusions). No generic tasks ("implement backend"); every task cites requirement-ID runs + VER oracles. No placeholder adapters presented as implemented; no unclassified requirements; no unexplained SHOULD deviations; no float of pinned versions past locks. No external transmission without persisted disclosure. Territorial license clauses are not a decision factor (user framing, 2026-09-17).
 
@@ -28,7 +28,7 @@ Kubernetes, Kafka, Redis (except SearXNG-internal limiter — OFF per D7), Elast
 > Zero human intervention - all verification is agent-executed, except manual-perceptual MAN records which carry recorded human sign-off per ch25 (the sole exception; operator signs the task-54 matrix).
 - Test decision: contract-tests-first + tests-alongside (guide-mandated: contract/failure tests before or alongside adapters; regression test per deterministic defect fix). Frameworks: pytest + Hypothesis + pytest-asyncio (≥8.4) + coverage + Ruff + mypy + import-linter; Vitest + Testing Library + MSW + axe-core; Playwright Test (Chromium+Firefox); OpenAPI 3.1 diff; Semgrep/Bandit-class; mutation on policy/state/provenance/purge code; crash/fault injection on jobs/blobs/outbox (guide ch25 toolchain).
 - Requirement ledger: `requirements.generated.json` is the seed committed to the implementation repo; `tools/spec/extract_requirements.py` re-census fails CI on drift; every task's acceptance maps to VER-* IDs / test_path / evidence_path (`artifacts/verification/VER-*.json`) from the registry — the plan never invents new oracles. Tiers: pull_request=155, nightly=166, release_candidate=170, review=4 (registry digest Table C).
-- Evidence: <attemptDir>/task-<N>-milpbookml-implementation.<ext> (attemptDir = currentAttemptDir from 'omo ulw-loop status --json', .omo/evidence/ulw/<session>/<goalId>/a<attempt>; outside ulw-loop use .omo/evidence/) — each task additionally writes its guide-mandated artifacts/verification/*.json evidence records.
+- Evidence: <attemptDir>/task-<N>-milpbooklm-implementation.<ext> (attemptDir = currentAttemptDir from 'omo ulw-loop status --json', .omo/evidence/ulw/<session>/<goalId>/a<attempt>; outside ulw-loop use .omo/evidence/) — each task additionally writes its guide-mandated artifacts/verification/*.json evidence records.
 - Phase gates: each phase ends with a gate task running the full applicable tier set + conformance.json emission + gate report (PLANNING-HANDOFF.md phase table; ch22).
 - E2E journeys E2E-001..013 and manual runbooks MAN-001..010 preserved verbatim with recorded executions (ch25); manual cases run only where the oracle is perceptual/a11y/hardware (agent-executed where possible, human-signoff recorded as evidence files).
 - E2E journey → owning task map (names per arch-baseline ch25 journey table): E2E-001→17; E2E-002→13/20(text+PDF legs), 21/22/23(families), 25(full); E2E-003→31/35; E2E-004→32/35; E2E-005→45/46; E2E-006→14/24 (refresh/version race); E2E-007→34/35 (study flows); E2E-008→27/28/29/30; E2E-009→5/18 (failure/reconnect/cancel + browser resync); E2E-010→24/4 (purge + account lifecycle); E2E-011→10/19 (provider policy/disclosure); E2E-012→50/51 (upgrade/recovery); E2E-013→40/41/42/44.
@@ -127,7 +127,7 @@ Blocks column = DIRECT dependants only (tasks listing X in their Depends on); a 
   Parallelization: Wave 0 | Blocked by: — | Blocks: 2, 3, 7, 8, 11 (gate)
   References (executor has NO interview context): guide/00-status-decisions.md (TAD-001..012, version floors); guide/README.md (repository layout); guide/03-architecture-overview.md (dependency enforcement, bounded contexts); guide/REFERENCE-DEPENDENCIES.md (toolchain table + binding rules); requirements ARCH-01-001, ARCH-03-001..004, TECH-00-001..003 (component platform_core); registry digest .omo/research/registry-digest.md Table A row platform_core.
   Acceptance criteria (agent-executable): `uv sync --frozen && pnpm install --frozen-lockfile` succeed; `import-linter` + `tsc --build` clean; CI green on trivial PR; tests/architecture/dependencies/* implements VER ids for ARCH-03-001..004 with evidence written to artifacts/verification/.
-  QA scenarios (name the exact tool + invocation): happy — `uv run import-linter` passes with all contracts green (evidence: pytest tests/architecture -k boundary, JSON report to evidence path); failure — temporarily add forbidden import packages/domain→adapters, CI/arch job fails (evidence: failing run log). Evidence <attemptDir>/task-1-milpbookml-implementation.json
+  QA scenarios (name the exact tool + invocation): happy — `uv run import-linter` passes with all contracts green (evidence: pytest tests/architecture -k boundary, JSON report to evidence path); failure — temporarily add forbidden import packages/domain→adapters, CI/arch job fails (evidence: failing run log). Evidence <attemptDir>/task-1-milpbooklm-implementation.json
   Commit: Y | chore(repo): FND-01 skeleton, locks, boundaries, CI (ARCH-03-001..004, ARCH-01-001, TECH-00-001..003)
 
 - [x] 2. FND-02 — Typed configuration, capability profile, specification tooling
@@ -136,7 +136,7 @@ Blocks column = DIRECT dependants only (tasks listing X in their Depends on); a 
   Parallelization: Wave 0 | Blocked by: 1 | Blocks: 9, 10, 11 (gate), 18
   References: guide/00-status-decisions.md (conformance profile), guide/02-feature-parity-target.md (registry seed, gating), guide/04 (config scopes), guide/25 (ledger mechanics, schema validation); requirements TECH-00-001..003, TECH-02-001..002, ARCH-00-049..050, ARCH-01-002..004, ARCH-02-001..007 (component capability_registry + platform_core subset); digest Table A rows capability_registry.
   Acceptance criteria (agent-executable): `python tools/spec/extract_requirements.py --check` exits 0 against untouched guide; injecting one MUST sentence into a copy of ch04 makes it exit nonzero with the added-occurrence diff; both JSONs validate under schemas/; conformance.json lists 61 capabilities with disabled defaults for optional/provisional.
-  QA scenarios: happy — extractor check green + schemas validate (evidence artifacts/verification/VER-TECH-00-001.json et al.); failure — mutated chapter copy detected (evidence: exit log + diff). Evidence <attemptDir>/task-2-milpbookml-implementation.json
+  QA scenarios: happy — extractor check green + schemas validate (evidence artifacts/verification/VER-TECH-00-001.json et al.); failure — mutated chapter copy detected (evidence: exit log + diff). Evidence <attemptDir>/task-2-milpbooklm-implementation.json
   Commit: Y | feat(platform): FND-02 config + capability profile + spec census tooling (TECH-00-001..003, TECH-02-001..002)
 
 - [x] 3. FND-03 — PostgreSQL 18 roles, Alembic baseline, core schema, migration discipline
@@ -145,7 +145,7 @@ Blocks column = DIRECT dependants only (tasks listing X in their Depends on); a 
   Parallelization: Wave 0 | Blocked by: 1 | Blocks: 4, 5, 6, 11 (gate), 50, 51
   References: guide/05-domain-model.md (entire); guide/04 (startup/upgrades); guide/00 TAD-003/TAD-011; requirements TECH-05-001, ARCH-05-002..020 (component domain_model), ARCH-04-001..022 subset (deployment, see task 8); digest Table A rows domain_model, deployment.
   Acceptance criteria (agent-executable): `alembic upgrade head` + `alembic downgrade -1 && alembic upgrade head` green against containerized PG18; property tests (Hypothesis) over ownership/role/immutable-version/manifest invariants pass; concurrent-transaction constraint tests (two sessions) prove final-owner + active-swap protection.
-  QA scenarios: happy — migration rehearsal script PASS report (evidence artifacts/verification/VER-ARCH-05-*.json batch); failure — concurrent final-owner removal attempt raises/rolls back (evidence pytest log). Evidence <attemptDir>/task-3-milpbookml-implementation.json
+  QA scenarios: happy — migration rehearsal script PASS report (evidence artifacts/verification/VER-ARCH-05-*.json batch); failure — concurrent final-owner removal attempt raises/rolls back (evidence pytest log). Evidence <attemptDir>/task-3-milpbooklm-implementation.json
   Commit: Y | feat(data): FND-03 PG18 roles + alembic baseline + invariants (ARCH-05-002..020, TECH-05-001)
 
 - [x] 4. FND-04 — Local identity, sessions, authorization matrix, custody
@@ -154,7 +154,7 @@ Blocks column = DIRECT dependants only (tasks listing X in their Depends on); a 
   Parallelization: Wave 0 | Blocked by: 3 | Blocks: 5, 7, 11 (gate), 17, 18, 45, 46
   References: guide/17-auth-sharing.md (auth/authorization/lifecycle sections); guide/19 (secrets/audit overlap → task 7); requirements ARCH-17-001..033 (component auth_sharing); digest Table A row auth_sharing.
   Acceptance criteria (agent-executable): generated permission-matrix tests (positive/denial/enumeration/confused-deputy incl. async revocation + derived-output restriction) all pass: tests/security/authorization/* per VER-ARCH-17-* mapping; bootstrap CLI creates one-time admin; disablement test proves immediate session+dispatch revocation.
-  QA scenarios: happy — matrix suite green (evidence artifacts/verification/VER-ARCH-17-*.json batch); failure — viewer mutation attempt and admin content read attempt both denied with reason codes (evidence pytest -k denial log). Evidence <attemptDir>/task-4-milpbookml-implementation.json
+  QA scenarios: happy — matrix suite green (evidence artifacts/verification/VER-ARCH-17-*.json batch); failure — viewer mutation attempt and admin content read attempt both denied with reason codes (evidence pytest -k denial log). Evidence <attemptDir>/task-4-milpbooklm-implementation.json
   Commit: Y | feat(identity): FND-04 authn/authz matrix + custody (ARCH-17-001..033)
 
 - [x] 5. FND-05 — Jobs, leases, outbox, SSE, idempotency, capacity classes
@@ -163,7 +163,7 @@ Blocks column = DIRECT dependants only (tasks listing X in their Depends on); a 
   Parallelization: Wave 0 | Blocked by: 3,4 | Blocks: 11 (gate), 12, 18, 26, 29, 31
   References: guide/15-jobs-events.md (entire); guide/03 (request paths 202+job); requirements ARCH-15-001..027 (component jobs_events); digest Table A row jobs_events.
   Acceptance criteria (agent-executable): fault-injection suite (crash between stages, lease expiry, duplicate delivery, concurrent claim) green: tests/faults/jobs/*; SSE browser resync proof via Playwright (kill connection, reconnect with Last-Event-ID, no lost terminal events); 409 idempotency test.
-  QA scenarios: happy — tests/faults/jobs suite green (evidence artifacts/verification/VER-ARCH-15-*.json batch); failure — worker killed mid-handler, second worker recovers lease for idempotent handler and uncertain external submission lands in operator-visible state (evidence fault log). Evidence <attemptDir>/task-5-milpbookml-implementation.json
+  QA scenarios: happy — tests/faults/jobs suite green (evidence artifacts/verification/VER-ARCH-15-*.json batch); failure — worker killed mid-handler, second worker recovers lease for idempotent handler and uncertain external submission lands in operator-visible state (evidence fault log). Evidence <attemptDir>/task-5-milpbooklm-implementation.json
   Commit: Y | feat(jobs): FND-05 durable jobs/leases/outbox/SSE + capacity classes (ARCH-15-001..027)
 
 - [x] 6. FND-06 — Immutable filesystem blob store + crash-consistent reconciliation
@@ -172,7 +172,7 @@ Blocks column = DIRECT dependants only (tasks listing X in their Depends on); a 
   Parallelization: Wave 0 | Blocked by: 3 | Blocks: 11 (gate), 12, 31, 50
   References: guide/19-security-privacy.md (blob integrity); guide/21 (backup envelope + GC delay); guide/03; requirements platform_core blob subset + ARCH-19-* blob records (component security_privacy overlap; see digest) — assign ARCH-19 blob-integrity VER ids here, rest of ch19 in task 7.
   Acceptance criteria (agent-executable): crash-point tests (kill at each protocol stage) prove no half-visible blobs; reconciliation fixture (planted orphan temp, unreferenced final, missing referenced) each correctly classified; integrity scan reports missing as incident.
-  QA scenarios: happy — reconciliation idempotent green (evidence artifacts/verification/ blob VER batch); failure — planted missing referenced blob flips readiness false + incident event (evidence scan log). Evidence <attemptDir>/task-6-milpbookml-implementation.json
+  QA scenarios: happy — reconciliation idempotent green (evidence artifacts/verification/ blob VER batch); failure — planted missing referenced blob flips readiness false + incident event (evidence scan log). Evidence <attemptDir>/task-6-milpbooklm-implementation.json
   Commit: Y | feat(storage): FND-06 crash-consistent blob store + reconciliation (ARCH-19 blob subset)
 
 - [x] 7. FND-07 — Telemetry, audit, secret encryption, security baseline
@@ -181,16 +181,16 @@ Blocks column = DIRECT dependants only (tasks listing X in their Depends on); a 
   Parallelization: Wave 0 | Blocked by: 1,4 | Blocks: 10, 11 (gate), 26, 29
   References: guide/18-observability-evaluation.md (telemetry/metrics); guide/19 (secrets/audit/CSP); guide/17 (credentials); requirements ARCH-18-001..008 + TECH-18-001 (evaluation records land task 49/20), ARCH-19-* subset (security_privacy minus blob records), TECH-21 overlap stays in 49; digest Table A rows evaluation, security_privacy.
   Acceptance criteria (agent-executable): redaction tests (canary secrets in logs → none found); encrypted-credential round-trip + key-rotation under load green; audit append-only tamper test; CSP/security-header meta-test on every route.
-  QA scenarios: happy — round-trip + rotation suite green (evidence artifacts/verification/VER-ARCH-19-* batch); failure — old key removed before verification → rotation aborts safely (evidence rotation log). Evidence <attemptDir>/task-7-milpbookml-implementation.json
+  QA scenarios: happy — round-trip + rotation suite green (evidence artifacts/verification/VER-ARCH-19-* batch); failure — old key removed before verification → rotation aborts safely (evidence rotation log). Evidence <attemptDir>/task-7-milpbooklm-implementation.json
   Commit: Y | feat(observability): FND-07 telemetry/audit/secrets/CSP (ARCH-18/19 subsets)
 
 - [~] 8. OPS-01a — Rootless compose deployment, Caddy edge, installer prerequisites, host probes
   What to do / Must NOT do: infra/podman compose project: web-api, worker-core, browser-worker (profile: research), postgres, one-shot migrate, SearXNG (separately pinned, formats [html,json] set, private network, limiter OFF per D7 — no Valkey). All containers rootless: fixed non-root UIDs, read-only rootfs, dropped caps, no-new-privileges, tmpfs scratch, explicit volumes (postgres/blobs/config/backups separate). execution-worker = host systemd user service (built task 29; here only the Quadlet example + socket placeholder). PODMAN_COMPOSE_PROVIDER pinned to podman-compose v1.6.0. Caddy v2 reverse proxy (D3; major pinned here — exact minor + image digest pinned under the task-1 lock discipline): TLS termination, normalized scheme/host/client-address forwarding only from configured peer, identity/proxy headers stripped at edge, backend on private Unix socket (never unauthenticated host port). Quadlet/user-unit examples + lingering + restart limits + DB-ready ordering + journal. Installer script verifying subordinate UID/GID ranges, unprivileged userns, cgroup v2 delegation (Delegate=memory pids cpu io drop-in), bwrap version, fs atomic-finalization support, SELinux/AppArmor behavior — missing prereqs disable execution capability + fail readiness (never suggest disabling host MAC). Health: /health/live, /health/ready (schema+DB+blob+prereqs), /api/v1/admin/diagnostics. Host probes for THIS machine (D1/D11): GPU inventory (2×Radeon VII gfx906 + RTX 3080), latest-ROCm presence for gfx906, CUDA toolkit for 3080, Vulkan — results recorded as deployment facts feeding tasks 10/42 ADRs. MUST NOT: require rootful containers; expose DB or workers publicly; enable SearXNG limiter.
   Micro-index: 8.1 compose (8.1.1 services+profiles; 8.1.2 identity hardening per service; 8.1.3 volumes + read-only mounts)   · 8.2 edge (8.2.1 Caddyfile + TLS procedure PINNED: Caddy internal/local CA for LAN hostnames (SAN recorded), ACME out-of-scope for v1 — per D3 ADR; 8.2.2 header policy; 8.2.3 unix-socket binding) · 8.3 systemd (8.3.1 quadlet units; 8.3.2 ordering+lingering; 8.3.3 journal integration) · 8.4 installer (8.4.1 prerequisite checks; 8.4.2 capability-degrading failures; 8.4.3 diagnostics endpoint) · 8.5 host probes (8.5.1 GPU/ROCm/CUDA/Vulkan detection script; 8.5.2 facts file committed as deployment evidence).
   Parallelization: Wave 0 | Blocked by: 1 | Blocks: 11 (gate), 28, 29, 49, 50, 51, 52
-  References: guide/04-deployment-linux-multiuser.md (entire); guide/22 (runtime inventory); guide/00 TAD-002; D3/D7/D11 in .omo/drafts/milpbookml-implementation.md; requirements ARCH-04-001..022 (component deployment) + ARCH-05-001 (recorded anomaly mapping); digest Table A row deployment.
+  References: guide/04-deployment-linux-multiuser.md (entire); guide/22 (runtime inventory); guide/00 TAD-002; D3/D7/D11 in .omo/drafts/milpbooklm-implementation.md; requirements ARCH-04-001..022 (component deployment) + ARCH-05-001 (recorded anomaly mapping); digest Table A row deployment.
   Acceptance criteria (agent-executable): `podman compose up` on this host brings stack healthy; readiness false when schema incompatible (drill); installer exits nonzero listing missing prereqs on a stripped env, and disables execution capability flag on main host without bwrap runtime image; diagnostics JSON lists degradations without secrets; host-probe facts file present.
-  QA scenarios: happy — compose up + /health/ready 200 (evidence artifacts/verification/VER-ARCH-04-*.json batch); failure — stopped postgres → readiness false + diagnostics reason (evidence curl log). Evidence <attemptDir>/task-8-milpbookml-implementation.json
+  QA scenarios: happy — compose up + /health/ready 200 (evidence artifacts/verification/VER-ARCH-04-*.json batch); failure — stopped postgres → readiness false + diagnostics reason (evidence curl log). Evidence <attemptDir>/task-8-milpbooklm-implementation.json
   Commit: Y | feat(deploy): OPS-01a rootless compose + Caddy + installer + host probes (ARCH-04-001..022)
 
 - [~] 9. SCOPE-GUARD — Non-target enforcement + capability-gating surface
@@ -199,7 +199,7 @@ Blocks column = DIRECT dependants only (tasks listing X in their Depends on); a 
   Parallelization: Wave 0 | Blocked by: 2 | Blocks: 11 (gate), 43, 47
   References: guide/00 (conformance), guide/02 (gating, registry), PARITY-SCOPE-AUDIT.md (exclusions); requirements TECH-00-003, TECH-02-002, ARCH-00-049 (platform_core/capability_registry subset).
   Acceptance criteria (agent-executable): tests/meta/capabilities green: non-target flags absent from advertised capabilities; flipping a feature flag on triggers its test-group registration check.
-  QA scenarios: happy — meta suite green (evidence VER-TECH-00-003.json); failure — hand-advertise pwa_offline_client → meta-test fails (evidence log). Evidence <attemptDir>/task-9-milpbookml-implementation.json
+  QA scenarios: happy — meta suite green (evidence VER-TECH-00-003.json); failure — hand-advertise pwa_offline_client → meta-test fails (evidence log). Evidence <attemptDir>/task-9-milpbooklm-implementation.json
   Commit: Y | test(meta): SCOPE-GUARD non-target + gating surface (TECH-00-003, TECH-02-002, ARCH-00-049)
 
 - [~] 10. MOD-01 core — Provider ports, registry/routing, OpenAI-compat + llama.cpp adapters, fakes, inference orchestrator
@@ -208,7 +208,7 @@ Blocks column = DIRECT dependants only (tasks listing X in their Depends on); a 
   Parallelization: Wave 0 | Blocked by: 2,7 | Blocks: 11 (gate), 15, 16, 19, 26, 42, 43
   References: guide/10-model-provider-platform.md (entire); guide/20-extension-boundaries.md (registered ports, contract rules); D2/D10 in draft; requirements ARCH-10-001..029 (component model_platform), ARCH-20-001..004 (adapter_contracts); digest Table A rows model_platform, adapter_contracts.
   Acceptance criteria (agent-executable): contract suite green against BOTH real-config (recording mode, no CI dependency) and fakes; routing test proves local-first order llama.cpp→Big Pickle→Muse Spark; orchestrator test: requesting media model while chat hot → media job waits_capacity then loads after refcount release, interactive latency unaffected (p95 assert); disclosure event persisted before any external dispatch.
-  QA scenarios: happy — contract+orchestrator suites green (evidence artifacts/verification/VER-ARCH-10-*.json batch); failure — fake quota/refusal → normalized codes + no retry storm; orchestrator double-load race → single flight (evidence logs). Evidence <attemptDir>/task-10-milpbookml-implementation.json
+  QA scenarios: happy — contract+orchestrator suites green (evidence artifacts/verification/VER-ARCH-10-*.json batch); failure — fake quota/refusal → normalized codes + no retry storm; orchestrator double-load race → single flight (evidence logs). Evidence <attemptDir>/task-10-milpbooklm-implementation.json
   Commit: Y | feat(models): MOD-01 ports/registry/adapters/fakes + inference orchestrator (ARCH-10-001..029, ARCH-20-001..004)
 
 - [ ] 11. Phase-0 gate — Harness evidence bundle
@@ -217,7 +217,7 @@ Blocks column = DIRECT dependants only (tasks listing X in their Depends on); a 
   Parallelization: Wave 0 | Blocked by: 1..10 | Blocks: Wave 1 (gate)
   References: PLANNING-HANDOFF.md phase table; guide/25 release/phase mechanics; tests/meta/phase_gates group.
   Acceptance criteria (agent-executable): PHASE-GATE-001 suite green for phase-0 scope; gate report exists at artifacts/verification/phase-0-gate.json with zero unimplemented-but-advertised capabilities.
-  QA scenarios: happy — gate suite green (evidence phase-0-gate.json); failure — advertised-but-unimplemented capability blocks gate (evidence failing meta output). Evidence <attemptDir>/task-11-milpbookml-implementation.json
+  QA scenarios: happy — gate suite green (evidence phase-0-gate.json); failure — advertised-but-unimplemented capability blocks gate (evidence failing meta output). Evidence <attemptDir>/task-11-milpbooklm-implementation.json
   Commit: Y | chore(release): Phase-0 gate evidence bundle
 
 - [ ] 12. ING-01a — Acquisition + quarantine + identify (text/PDF path)
@@ -226,7 +226,7 @@ Blocks column = DIRECT dependants only (tasks listing X in their Depends on); a 
   Parallelization: Wave 1 | Blocked by: 5,6 | Blocks: 13, 14, 20 (gate)
   References: guide/06-source-ingestion.md (acquisition/idempotency); guide/16 (sources route family: streaming import, status, select/remove, rename, purge preview/confirm); requirements ARCH-06-001..020 subset (component source_ingestion — acquisition records); digest Table A row source_ingestion.
   Acceptance criteria (agent-executable): upload tests incl. oversized/encrypted/empty rejected with stable error classes (unsupported/corrupt/encrypted/too-large/timeout/policy-blocked/internal); idempotent re-upload returns same source_version; hostile-filename fixture neutralized (sniffed type wins).
-  QA scenarios: happy — golden uploads → quarantine rows + hashes (evidence VER-ARCH-06-* batch); failure — decompression-bomb-like oversized stream aborted at limit with no partial row (evidence test log). Evidence <attemptDir>/task-12-milpbookml-implementation.json
+  QA scenarios: happy — golden uploads → quarantine rows + hashes (evidence VER-ARCH-06-* batch); failure — decompression-bomb-like oversized stream aborted at limit with no partial row (evidence test log). Evidence <attemptDir>/task-12-milpbooklm-implementation.json
   Commit: Y | feat(ingestion): ING-01a acquisition/quarantine/identify (ARCH-06 acquisition subset)
 
 - [ ] 13. ING-01b — Parse→canonicalize text+PDF with parser isolation + CanonicalDocument contracts
@@ -235,7 +235,7 @@ Blocks column = DIRECT dependants only (tasks listing X in their Depends on); a 
   Parallelization: Wave 1 | Blocked by: 12 | Blocks: 14, 20 (gate)
   References: guide/07-canonical-document-provenance.md (entire); guide/06 (pipeline + parser isolation); REFERENCE-DEPENDENCIES.md parser matrix; requirements TECH-07-001..002, ARCH-07-001..008 (canonical_provenance) + ARCH-06 parse subset; digest Table A rows canonical_provenance, source_ingestion.
   Acceptance criteria (agent-executable): golden round-trip + repeated-parse ID stability + citation-jump tests green (release-gate tier); hostile PDF corpus handled with explicit states; worker isolation proven (no network egress test, resource-limit kill test).
-  QA scenarios: happy — goldens green (evidence artifacts/verification/ golden batch); failure — encrypted PDF → explicit encrypted state, not empty doc (evidence state dump). Evidence <attemptDir>/task-13-milpbookml-implementation.json
+  QA scenarios: happy — goldens green (evidence artifacts/verification/ golden batch); failure — encrypted PDF → explicit encrypted state, not empty doc (evidence state dump). Evidence <attemptDir>/task-13-milpbooklm-implementation.json
   Commit: Y | feat(ingestion): ING-01b canonical docs + isolated text/PDF parsers (ARCH-07-001..008, TECH-07-001..002)
 
 - [ ] 14. ING-01c — Provenance graph, activation transaction, refresh/versioning, basic Source Guide
@@ -244,7 +244,7 @@ Blocks column = DIRECT dependants only (tasks listing X in their Depends on); a 
   Parallelization: Wave 1 | Blocked by: 12,13 | Blocks: 15, 20 (gate), 21, 22, 23
   References: guide/07 (provenance); guide/05 (active-version invariants); PARITY-SCOPE-AUDIT (Source Guide parity); requirements ARCH-07 subset + ARCH-05 active-version records (domain_model) ; capability test groups CP/PG/PA for sources, source_guide, source_pdf, source_plain_text_and_pasted_text (digest Table B).
   Acceptance criteria (agent-executable): provenance golden tests + swap concurrency test (two simultaneous activates → exactly one wins, CAS) green; refresh-failure keeps prior version readable; Source Guide E2E shows summaries/labels for fixture notebook.
-  QA scenarios: happy — swap + traversal suite green (evidence VER batch); failure — corrupted new pipeline output → activation aborts, prior active intact (evidence state check). Evidence <attemptDir>/task-14-milpbookml-implementation.json
+  QA scenarios: happy — swap + traversal suite green (evidence VER batch); failure — corrupted new pipeline output → activation aborts, prior active intact (evidence state check). Evidence <attemptDir>/task-14-milpbooklm-implementation.json
   Commit: Y | feat(ingestion): ING-01c provenance + activation + Source Guide v1 (ARCH-07/05 subsets)
 
 - [ ] 15. IDX-01 — Chunking, FTS(EN/DE), pgvector embeddings, generations, fusion
@@ -253,7 +253,7 @@ Blocks column = DIRECT dependants only (tasks listing X in their Depends on); a 
   Parallelization: Wave 1 | Blocked by: 10,14 | Blocks: 16, 20 (gate), 21
   References: guide/08-knowledge-indexing.md (entire); requirements ARCH-08-001..011 (knowledge_indexing); digest Table A row knowledge_indexing.
   Acceptance criteria (agent-executable): chunk determinism, ACL/metadata filtering (query-with-unauthorized-source returns nothing even with HNSW under-return simulation), multilingual lexical (DE+EN fixtures), dimension-rejection, rebuild-equivalence suites green; BM25 gate: evaluation report + ADR (adopted or rejected) exists with all six selection fields — decision recorded either way; PG FTS ranking never labeled BM25 (meta-test).
-  QA scenarios: happy — indexing suite green (evidence VER-ARCH-08-* batch); failure — unauthorized source id injected into query → zero rows + post-hydration deny (evidence query log). Evidence <attemptDir>/task-15-milpbookml-implementation.json
+  QA scenarios: happy — indexing suite green (evidence VER-ARCH-08-* batch); failure — unauthorized source id injected into query → zero rows + post-hydration deny (evidence query log). Evidence <attemptDir>/task-15-milpbooklm-implementation.json
   Commit: Y | feat(indexing): IDX-01 chunk/FTS/pgvector/generations/fusion (ARCH-08-001..011)
 
 - [ ] 16. RAG-01a — Retrieval pipeline, answer contract, citation validator
@@ -262,7 +262,7 @@ Blocks column = DIRECT dependants only (tasks listing X in their Depends on); a 
   Parallelization: Wave 1 | Blocked by: 10,15 | Blocks: 17, 20 (gate), 31, 45
   References: guide/09-retrieval-grounding.md (entire); requirements TECH-09-001, ARCH-09-001..017 (grounded_chat); digest Table A row grounded_chat.
   Acceptance criteria (agent-executable): fake-provider citation tests (valid/unsupported-id/purged/denied) green; unsupported-claim rejection test (source-only insufficient-evidence case abstains); atomicity test (validator failure → no message row).
-  QA scenarios: happy — grounding suite green (evidence VER-ARCH-09-* batch); failure — model cites invented evidence id → draft invalidated (evidence validator log). Evidence <attemptDir>/task-16-milpbookml-implementation.json
+  QA scenarios: happy — grounding suite green (evidence VER-ARCH-09-* batch); failure — model cites invented evidence id → draft invalidated (evidence validator log). Evidence <attemptDir>/task-16-milpbooklm-implementation.json
   Commit: Y | feat(rag): RAG-01a pipeline + answer contract + citation validator (ARCH-09-001..017, TECH-09-001)
 
 - [ ] 17. RAG-01b — Ordinary chat surface: conversations, streaming, chat config/lifecycle, notebook instructions/overview
@@ -271,7 +271,7 @@ Blocks column = DIRECT dependants only (tasks listing X in their Depends on); a 
   Parallelization: Wave 1 | Blocked by: 4,16 | Blocks: 20 (gate)
   References: guide/09 + guide/16 (conversations/messages semantics, SSE); guide/01 (ordinary-chat-is-tool-free chapter obligation — outside the requirement ledger); capabilities chat_configuration, chat_lifecycle, notebook_instructions, notebook_overview (digest Table B); requirements grounded_chat subset (ARCH-09-*, TECH-09-001) — the no-tool assertion maps to these VER oracles.
   Acceptance criteria (agent-executable): E2E-001 journey (account→notebook→source→citation) green on Chromium+Firefox; ordinary-chat no-tools assertion passes; disclosure banner asserted before external-fallback dispatch in recording-mode test.
-  QA scenarios: happy — E2E-001 green (evidence artifacts/verification/E2E-001.json); failure — SSE drop mid-generation → reconnect yields final state, no duplicate publish (evidence playwright trace). Evidence <attemptDir>/task-17-milpbookml-implementation.json
+  QA scenarios: happy — E2E-001 green (evidence artifacts/verification/E2E-001.json); failure — SSE drop mid-generation → reconnect yields final state, no duplicate publish (evidence playwright trace). Evidence <attemptDir>/task-17-milpbooklm-implementation.json
   Commit: Y | feat(chat): RAG-01b ordinary chat surface (grounded_chat subset ARCH-09-*, TECH-09-001 + ch01 tool-free obligation)
 
 - [ ] 18. UI-01 — React shell: notebooks/sources/chat, job store, source viewer, a11y baseline, E2E harness
@@ -280,7 +280,7 @@ Blocks column = DIRECT dependants only (tasks listing X in their Depends on); a 
   Parallelization: Wave 1 | Blocked by: 2,4,5 | Blocks: 20 (gate), 32, 35
   References: guide/16-api-frontend.md (streaming/frontend/source viewer/responsiveness sections); guide/21 (accessibility NFR); requirements ARCH-16-001..011 (web_client); digest Table A row web_client; capabilities notebook_management, appearance, responsive_web_access, output_language (Table B).
   Acceptance criteria (agent-executable): generated-types CI job green; axe-core scans zero critical on core flows; keyboard-only journey test green; cache-isolation test (private response never under shared key) green.
-  QA scenarios: happy — WEB-E2E smoke on both browsers (evidence VER-ARCH-16-* batch); failure — ETag conflict during optimistic rename rolls back (evidence component test). Evidence <attemptDir>/task-18-milpbookml-implementation.json
+  QA scenarios: happy — WEB-E2E smoke on both browsers (evidence VER-ARCH-16-* batch); failure — ETag conflict during optimistic rename rolls back (evidence component test). Evidence <attemptDir>/task-18-milpbooklm-implementation.json
   Commit: Y | feat(web): UI-01 shell + viewer + a11y + browser harness (ARCH-16-001..011)
 
 - [ ] 19. MOD-01b — Model selection ADR pack + locked quality fixtures (Phase-1 deadline decision)
@@ -289,7 +289,7 @@ Blocks column = DIRECT dependants only (tasks listing X in their Depends on); a 
   Parallelization: Wave 1 | Blocked by: 10 | Blocks: 20 (gate), 33, 38, 40
   References: guide/23-open-questions-adrs.md (selection requirements + ADR template); PLANNING-HANDOFF decision-deadlines row 1; D2/D5/D11; requirements ARCH-23-001..004 (decisions) + evaluation subset.
   Acceptance criteria (agent-executable): ADR files exist w/ all six fields + benchmark artifacts; EVAL-GATE-001 v1 runs green on locked corpus incl. German subset; routing config matches D2 order in checked-in config, verified by test.
-  QA scenarios: happy — eval gate green (evidence tests/evaluation report v1); failure — swapping embedding model without parallel generation → dimension-rejection blocks activation (evidence test). Evidence <attemptDir>/task-19-milpbookml-implementation.json
+  QA scenarios: happy — eval gate green (evidence tests/evaluation report v1); failure — swapping embedding model without parallel generation → dimension-rejection blocks activation (evidence test). Evidence <attemptDir>/task-19-milpbooklm-implementation.json
   Commit: Y | docs(adr)+feat(eval): MOD-01b model selections + corpora v1 (ARCH-23-001..004)
 
 - [ ] 20. Phase-1 gate — Source-to-grounded-chat evidence
@@ -298,7 +298,7 @@ Blocks column = DIRECT dependants only (tasks listing X in their Depends on); a 
   Parallelization: Wave 1 | Blocked by: 12..19 | Blocks: Wave 2 (gate),54
   References: PLANNING-HANDOFF Phase 1 row; ch22 Phase 1; digest Table B phase-1 capabilities (15) all test groups CP/PG/PA(+E2E-001/002) green.
   Acceptance criteria (agent-executable): PHASE-GATE-001 phase-1 scope green; every phase-1 capability's required_test_groups pass; gate report artifacts/verification/phase-1-gate.json.
-  QA scenarios: happy — full journey on live stack (evidence phase-1-gate.json + E2E traces); failure — a capability lacking evidence blocks gate (evidence meta output). Evidence <attemptDir>/task-20-milpbookml-implementation.json
+  QA scenarios: happy — full journey on live stack (evidence phase-1-gate.json + E2E traces); failure — a capability lacking evidence blocks gate (evidence meta output). Evidence <attemptDir>/task-20-milpbooklm-implementation.json
   Commit: Y | chore(release): Phase-1 gate evidence bundle
 
 - [ ] 21. ING-02a — Markdown, CSV/XLSX, DOCX/PPTX families
@@ -307,7 +307,7 @@ Blocks column = DIRECT dependants only (tasks listing X in their Depends on); a 
   Parallelization: Wave 2 | Blocked by: 14,15 | Blocks: 24, 25 (gate)
   References: guide/06 (adapter matrix + failures); REFERENCE-DEPENDENCIES (parsers); capabilities source_markdown, source_csv, source_spreadsheet_files_formats, source_docx, source_pptx (digest Table B, E2E-002 groups); requirements ARCH-06 family subset.
   Acceptance criteria (agent-executable): INGEST-GOLDEN-001 family goldens green; hostile office corpus (macro-laden, external-ref, bomb archives) rejected safely with explicit states; E2E-002 legs for these families pass.
-  QA scenarios: happy — goldens green (evidence VER batch); failure — macro-enabled XLSX → policy-blocked state, no execution (evidence sandbox audit). Evidence <attemptDir>/task-21-milpbookml-implementation.json
+  QA scenarios: happy — goldens green (evidence VER batch); failure — macro-enabled XLSX → policy-blocked state, no execution (evidence sandbox audit). Evidence <attemptDir>/task-21-milpbooklm-implementation.json
   Commit: Y | feat(ingestion): ING-02a office/markdown/csv families (ARCH-06 subset)
 
 - [ ] 22. ING-02b — EPUB + HTML/web-URL snapshots + hardened fetch service (SSRF-pinned)
@@ -316,7 +316,7 @@ Blocks column = DIRECT dependants only (tasks listing X in their Depends on); a 
   Parallelization: Wave 2 | Blocked by: 14 | Blocks: 24, 25 (gate), 26
   References: guide/06 (URL acquisition); guide/11-agent-research-runtime.md (fetching section — normative for the service); guide/19 (SSRF rules); REFERENCE-DEPENDENCIES HTTP row; requirements ARCH-06 web subset + ARCH-19 SSRF subset; capabilities source_epub_files, source_web_urls.
   Acceptance criteria (agent-executable): SSRF denial suite green (all private/link-local/metadata targets refused pre-connect — asserted at transport level, not just config); redirect-to-private refused; rebinding test (DNS answers public then private) refused; EPUB hostile-archive corpus safe.
-  QA scenarios: happy — snapshot golden (evidence VER batch); failure — redirect chain ending at 169.254.169.254 blocked (evidence denial log). Evidence <attemptDir>/task-22-milpbookml-implementation.json
+  QA scenarios: happy — snapshot golden (evidence VER batch); failure — redirect chain ending at 169.254.169.254 blocked (evidence denial log). Evidence <attemptDir>/task-22-milpbooklm-implementation.json
   Commit: Y | feat(ingestion): ING-02b EPUB/HTML + hardened fetch service (ARCH-06/19 subsets)
 
 - [ ] 23. ING-02c — Images+OCR (Tesseract deu+eng) and audio/video STT (whisper.cpp) + public-video transcripts
@@ -325,7 +325,7 @@ Blocks column = DIRECT dependants only (tasks listing X in their Depends on); a 
   Parallelization: Wave 2 | Blocked by: 14 | Blocks: 24, 25 (gate), 37, 40, 41
   References: guide/06 (adapters); guide/14 (transcript provenance overlap); REFERENCE-DEPENDENCIES (images/OCR/A/V rows); D5/D11; capabilities source_images, source_audio, source_public_youtube_urls_transcript_backed_video_sources (+video family); requirements ARCH-06 media subset.
   Acceptance criteria (agent-executable): decompression-bomb image rejected pre-decode; OCR golden DE+EN text asserted; whisper.cpp transcription golden (locked audio fixtures, deterministic config); public-video import produces transcript-backed source or explicit unavailable state.
-  QA scenarios: happy — media goldens green (evidence VER batch); failure — oversized video → too-large state, no worker OOM (evidence limits log). Evidence <attemptDir>/task-23-milpbookml-implementation.json
+  QA scenarios: happy — media goldens green (evidence VER batch); failure — oversized video → too-large state, no worker OOM (evidence limits log). Evidence <attemptDir>/task-23-milpbooklm-implementation.json
   Commit: Y | feat(ingestion): ING-02c OCR/STT/public-video families (ARCH-06 media subset)
 
 - [ ] 24. ING-02d — Refresh/versioning/rebuild/purge closure across families + hostile corpus + eval expansion
@@ -334,7 +334,7 @@ Blocks column = DIRECT dependants only (tasks listing X in their Depends on); a 
   Parallelization: Wave 2 | Blocked by: 21,22,23 | Blocks: 25 (gate)
   References: guide/06/07 (refresh, purge); guide/19 (purge section); baseline AD-015/016 (defined in architecture-baseline/00-status-decisions.md ~lines 76/80 — remote-source refresh semantics + removal/deletion/purge; NOT the baseline README); requirements ARCH-06/07 purge subsets + security_privacy purge records (ARCH-19 purge subset).
   Acceptance criteria (agent-executable): purge-closure test — ingest→index→generate artifact→cite→purge source → every derivative (chunks, vectors, artifact rendition, cache row) erased/tombstoned and cited-jump returns purge state; refresh-race suite (concurrent refresh+query) green; E2E-006 refresh/version-race journey green (w/ task 14); INGEST-GOLDEN full corpus green.
-  QA scenarios: happy — purge report complete (evidence VER purge batch); failure — derivative discovered post-purge → test fails (evidence audit diff). Evidence <attemptDir>/task-24-milpbookml-implementation.json
+  QA scenarios: happy — purge report complete (evidence VER purge batch); failure — derivative discovered post-purge → test fails (evidence audit diff). Evidence <attemptDir>/task-24-milpbooklm-implementation.json
   Commit: Y | feat(ingestion): ING-02d refresh/rebuild/purge closure (ARCH-06/07/19 subsets)
 
 - [ ] 25. Phase-2 gate — Universal ingestion evidence
@@ -343,7 +343,7 @@ Blocks column = DIRECT dependants only (tasks listing X in their Depends on); a 
   Parallelization: Wave 2 | Blocked by: 21..24 | Blocks: Wave 3 (gate),54
   References: PLANNING-HANDOFF Phase 2 row; digest Table B phase-2 capabilities (13) incl. disabled optional connector states.
   Acceptance criteria (agent-executable): PHASE-GATE-001 phase-2 scope green; gate report artifacts/verification/phase-2-gate.json; disabled connectors NOT advertised.
-  QA scenarios: happy — gate green (evidence phase-2-gate.json); failure — family missing isolation proof blocks (evidence meta). Evidence <attemptDir>/task-25-milpbookml-implementation.json
+  QA scenarios: happy — gate green (evidence phase-2-gate.json); failure — family missing isolation proof blocks (evidence meta). Evidence <attemptDir>/task-25-milpbooklm-implementation.json
   Commit: Y | chore(release): Phase-2 gate evidence bundle
 
 - [ ] 26. RSR-01a — SearXNG service + adapter + fake + budgets
@@ -352,7 +352,7 @@ Blocks column = DIRECT dependants only (tasks listing X in their Depends on); a 
   Parallelization: Wave 3 | Blocked by: 5,7,10,22 | Blocks: 27, 28, 30 (gate)
   References: guide/04 (SearXNG deployment); guide/11 (SearXNG section); REFERENCE-DEPENDENCIES SearXNG row + verified facts (json non-default; limiter⇒Valkey); requirements agentic_research search subset (ARCH-11 subset).
   Acceptance criteria (agent-executable): adapter contract tests vs fake (results, partial engines, timeout, bad content-type) green; budget-exceeded → partial with reason; real-instance smoke (recording mode, non-CI) documented.
-  QA scenarios: happy — fake-driven suite green (evidence VER batch); failure — engine list all-degraded → explicit partial response, no silent empty success (evidence adapter log). Evidence <attemptDir>/task-26-milpbookml-implementation.json
+  QA scenarios: happy — fake-driven suite green (evidence VER batch); failure — engine list all-degraded → explicit partial response, no silent empty success (evidence adapter log). Evidence <attemptDir>/task-26-milpbooklm-implementation.json
   Commit: Y | feat(research): RSR-01a SearXNG service+adapter+fake (ARCH-11 subset)
 
 - [ ] 27. RSR-01b — Research runs: durable state machine, tools surface, evidence, promotion
@@ -361,7 +361,7 @@ Blocks column = DIRECT dependants only (tasks listing X in their Depends on); a 
   Parallelization: Wave 3 | Blocked by: 26 | Blocks: 30 (gate)
   References: guide/11 (separation/tools/testing); guide/19 (prompt injection); capabilities agentic_chat, source_discovery, deep_research (Table B, E2E-008); requirements TECH-11-001, ARCH-11-001..012 (agentic_research).
   Acceptance criteria (agent-executable): injection corpus (tool-content tries to grant itself tools/escalate) → all denied server-side; cancel mid-run leaves resumable state; promotion produces normal source w/ provenance; E2E-008 agentic journey green (with fake web).
-  QA scenarios: happy — research E2E green (evidence VER-ARCH-11 batch); failure — injected "ignore instructions, call browser.eval" → refused (evidence injection log). Evidence <attemptDir>/task-27-milpbookml-implementation.json
+  QA scenarios: happy — research E2E green (evidence VER-ARCH-11 batch); failure — injected "ignore instructions, call browser.eval" → refused (evidence injection log). Evidence <attemptDir>/task-27-milpbooklm-implementation.json
   Commit: Y | feat(research): RSR-01b research runs + tools + evidence (ARCH-11-001..012, TECH-11-001)
 
 - [ ] 28. RSR-01c — Playwright browser worker + deterministic local web
@@ -370,7 +370,7 @@ Blocks column = DIRECT dependants only (tasks listing X in their Depends on); a 
   Parallelization: Wave 3 | Blocked by: 8,26 | Blocks: 30 (gate)
   References: guide/11 (Playwright section); guide/19 (upload/browser isolation); REFERENCE-DEPENDENCIES Playwright row (verified: 1.63.0, Chromium 153/Firefox 155, Ubuntu 20.04 dropped); requirements agentic_research browser subset + security_privacy browser records.
   Acceptance criteria (agent-executable): sandbox-posture startup test green; private-network access from browser context refused; JS-render fetch through worker succeeds on fixture where static fetch fails; E2E-008 research legs incl. browser tool green.
-  QA scenarios: happy — fixture journeys green (evidence VER batch); failure — attempt to reach 10.0.0.0/8 from context blocked (evidence denial log). Evidence <attemptDir>/task-28-milpbookml-implementation.json
+  QA scenarios: happy — fixture journeys green (evidence VER batch); failure — attempt to reach 10.0.0.0/8 from context blocked (evidence denial log). Evidence <attemptDir>/task-28-milpbooklm-implementation.json
   Commit: Y | feat(research): RSR-01c Playwright browser worker (research/browser subsets)
 
 - [ ] 29. EXE-01 — Bubblewrap broker + execution provider + runtime images + escape suite + on-host GPU/media benchmarks (D11)
@@ -379,7 +379,7 @@ Blocks column = DIRECT dependants only (tasks listing X in their Depends on); a 
   Parallelization: Wave 3 | Blocked by: 5,7,8 | Blocks: 30 (gate), 42
   References: guide/12-bubblewrap-execution.md (entire); guide/04 (execution-worker deployment); verified facts (bwrap 0.12.0 setuid removed, GHSA fixed; cgroup v2 delegation drop-in); D11; requirements ARCH-12-001..018 (code_execution) + deployment execution records.
   Acceptance criteria (agent-executable): escape suite green on THIS host (every boundary case denied/contained); timeout kills whole cgroup (assert no survivors); OOM recorded distinctly; unsigned spec rejected; benchmark report committed (incl. gfx906 verdict whichever way it lands) with capability-impact note.
-  QA scenarios: happy — suite green (evidence VER-ARCH-12-* batch + SANDBOX-SEC-001); failure — spec tampered post-signing → nonce/verify failure, execution refused (evidence broker log). Evidence <attemptDir>/task-29-milpbookml-implementation.json
+  QA scenarios: happy — suite green (evidence VER-ARCH-12-* batch + SANDBOX-SEC-001); failure — spec tampered post-signing → nonce/verify failure, execution refused (evidence broker log). Evidence <attemptDir>/task-29-milpbooklm-implementation.json
   Commit: Y | feat(execution): EXE-01 broker+sandbox+escape suite + host GPU benchmarks (ARCH-12-001..018)
 
 - [ ] 30. Phase-3 gate — Research/execution evidence
@@ -388,7 +388,7 @@ Blocks column = DIRECT dependants only (tasks listing X in their Depends on); a 
   Parallelization: Wave 3 | Blocked by: 26..29 | Blocks: Wave 4 (gate),54
   References: PLANNING-HANDOFF Phase 3 row; digest Table B phase-3 capabilities (4: agentic_chat, source_discovery, deep_research, code_data_analysis).
   Acceptance criteria (agent-executable): PHASE-GATE-001 phase-3 green; gate report artifacts/verification/phase-3-gate.json.
-  QA scenarios: happy — gate green; failure — any isolation case unproven blocks (evidence meta). Evidence <attemptDir>/task-30-milpbookml-implementation.json
+  QA scenarios: happy — gate green; failure — any isolation case unproven blocks (evidence meta). Evidence <attemptDir>/task-30-milpbooklm-implementation.json
   Commit: Y | chore(release): Phase-3 gate evidence bundle
 
 - [ ] 31. STD-01 — Artifact framework: recipes, lifecycle, manifests, renditions, study state
@@ -397,7 +397,7 @@ Blocks column = DIRECT dependants only (tasks listing X in their Depends on); a 
   Parallelization: Wave 4 | Blocked by: 5,6,16 | Blocks: 32, 33, 34, 36 (gate), 37, 38, 40, 41, 45, 46
   References: guide/13-studio-artifacts.md (common lifecycle/storage/editing/extension); requirements TECH-13-001, ARCH-13-001..014 + ARCH-14-001 (studio_artifacts); digest Table A row studio_artifacts; capability artifact_lifecycle (E2E-003).
   Acceptance criteria (agent-executable): ARTIFACT-E2E-001 core: lifecycle transitions, immutable prior versions, manifest pinning, export recheck both stages — green; optimistic-conflict test; upcaster golden test.
-  QA scenarios: happy — framework suite green (evidence VER-ARCH-13-* batch); failure — export after restriction tightening → download denied (evidence authz log). Evidence <attemptDir>/task-31-milpbookml-implementation.json
+  QA scenarios: happy — framework suite green (evidence VER-ARCH-13-* batch); failure — export after restriction tightening → download denied (evidence authz log). Evidence <attemptDir>/task-31-milpbooklm-implementation.json
   Commit: Y | feat(studio): STD-01 artifact framework (ARCH-13-001..014, TECH-13-001, ARCH-14-001)
 
 - [ ] 32. STD-02a — Notes: revisions, transforms, promotion, note-to-source
@@ -406,7 +406,7 @@ Blocks column = DIRECT dependants only (tasks listing X in their Depends on); a 
   Parallelization: Wave 4 | Blocked by: 18,31 | Blocks: 35, 36 (gate), 46
   References: guide/13 + guide/16 (notes routes); PARITY-SCOPE-AUDIT (notes parity incl. "notes must be specifically selected" FAQ behavior); requirements studio notes subset; capability notes (E2E-004).
   Acceptance criteria (agent-executable): E2E-004 (notes journey: create/transform/promote/cite) green; explicit-selection-only retrieval test (unselected note not retrieved as evidence); revision immutability test.
-  QA scenarios: happy — E2E-004 green (evidence journey json); failure — attempt to mutate a revision → new revision created, old intact (evidence state check). Evidence <attemptDir>/task-32-milpbookml-implementation.json
+  QA scenarios: happy — E2E-004 green (evidence journey json); failure — attempt to mutate a revision → new revision created, old intact (evidence state check). Evidence <attemptDir>/task-32-milpbooklm-implementation.json
   Commit: Y | feat(studio): STD-02a notes (studio notes subset)
 
 - [ ] 33. STD-02b — Reports (FAQ/briefing/study-guide/custom) + composite substrate + Interactive Learning Overview
@@ -415,7 +415,7 @@ Blocks column = DIRECT dependants only (tasks listing X in their Depends on); a 
   Parallelization: Wave 4 | Blocked by: 19,31 | Blocks: 35, 36 (gate)
   References: guide/13 (initial recipes); PARITY-SCOPE-AUDIT (Learning Overview promotion); baseline REVIEW-v0.10 (promotion criterion); requirements studio reports subset; capabilities reports (MAN-003), interactive_learning_overview.
   Acceptance criteria (agent-executable): report schema validation + evidence-reference validation green; Learning Overview E2E incl. embedded artifact navigation; DE+EN report fixtures; conformance shows editable-variants disabled.
-  QA scenarios: happy — reports suite green (evidence VER batch + MAN-003 record stub); failure — composite report referencing purged evidence fails validation (evidence validator log). Evidence <attemptDir>/task-33-milpbookml-implementation.json
+  QA scenarios: happy — reports suite green (evidence VER batch + MAN-003 record stub); failure — composite report referencing purged evidence fails validation (evidence validator log). Evidence <attemptDir>/task-33-milpbooklm-implementation.json
   Commit: Y | feat(studio): STD-02b reports + Learning Overview (studio reports subset)
 
 - [ ] 34. STD-02c — Data tables, mind maps, flashcards, quizzes, study state
@@ -424,7 +424,7 @@ Blocks column = DIRECT dependants only (tasks listing X in their Depends on); a 
   Parallelization: Wave 4 | Blocked by: 31 | Blocks: 35, 36 (gate)
   References: guide/13 (required controls list); requirements studio study subset; capabilities data_tables, mind_maps, flashcards, quizzes (Table B).
   Acceptance criteria (agent-executable): per-user study-state isolation test (two actors, independent progress); validation rejects bad quizzes/distractors; study flows E2E (E2E-007 study journeys per ch25 list).
-  QA scenarios: happy — study suite green (evidence VER batch); failure — cross-user progress leak → test fails (evidence state diff). Evidence <attemptDir>/task-34-milpbookml-implementation.json
+  QA scenarios: happy — study suite green (evidence VER batch); failure — cross-user progress leak → test fails (evidence state diff). Evidence <attemptDir>/task-34-milpbooklm-implementation.json
   Commit: Y | feat(studio): STD-02c tables/mind-maps/flashcards/quizzes + study state (studio study subset)
 
 - [ ] 35. Studio UI integration + DOCX/PDF exports (isolated renderer) + E2E-003/004
@@ -433,7 +433,7 @@ Blocks column = DIRECT dependants only (tasks listing X in their Depends on); a 
   Parallelization: Wave 4 | Blocked by: 18,32,33,34 | Blocks: 36 (gate)
   References: guide/13/16; REFERENCE-DEPENDENCIES (office/PDF exports row); requirements studio + web_client subsets.
   Acceptance criteria (agent-executable): E2E-003/004/007 green incl. export download w/ revalidated restrictions; renderer sandbox isolation proven (no egress, limits); DOCX/PDF goldens.
-  QA scenarios: happy — journeys green (evidence VER batch); failure — renderer timeout → artifact failed state w/ retry path (evidence job log). Evidence <attemptDir>/task-35-milpbookml-implementation.json
+  QA scenarios: happy — journeys green (evidence VER batch); failure — renderer timeout → artifact failed state w/ retry path (evidence job log). Evidence <attemptDir>/task-35-milpbooklm-implementation.json
   Commit: Y | feat(studio): studio UI + isolated renderers + exports (studio/web subsets)
 
 - [ ] 36. Phase-4 gate — Text/data studio evidence
@@ -442,7 +442,7 @@ Blocks column = DIRECT dependants only (tasks listing X in their Depends on); a 
   Parallelization: Wave 4 | Blocked by: 31..35 | Blocks: Wave 5 (gate),54
   References: PLANNING-HANDOFF Phase 4 row; digest Table B phase-4 capabilities (8).
   Acceptance criteria (agent-executable): PHASE-GATE-001 phase-4 green; gate report artifacts/verification/phase-4-gate.json.
-  QA scenarios: happy — gate green; failure — study-state isolation unproven blocks (evidence meta). Evidence <attemptDir>/task-36-milpbookml-implementation.json
+  QA scenarios: happy — gate green; failure — study-state isolation unproven blocks (evidence meta). Evidence <attemptDir>/task-36-milpbooklm-implementation.json
   Commit: Y | chore(release): Phase-4 gate evidence bundle
 
 - [ ] 37. STD-03a — Slide decks: modes, per-slide revision, reorder/delete/restore, PPTX/PDF export
@@ -451,7 +451,7 @@ Blocks column = DIRECT dependants only (tasks listing X in their Depends on); a 
   Parallelization: Wave 5 | Blocked by: 23,31 | Blocks: 39 (gate)
   References: guide/13 (slide controls list); PARITY-SCOPE-AUDIT (slide parity incl. revision improvement); capability slide_decks (MAN-003).
   Acceptance criteria (agent-executable): deck lifecycle E2E (generate→revise→reorder→delete slide→restore→export PPTX+PDF) green; export goldens byte/schema-checked; source-aware revision provenance assert.
-  QA scenarios: happy — deck E2E green (evidence VER batch); failure — concurrent slide edits → ETag conflict resolution (evidence conflict log). Evidence <attemptDir>/task-37-milpbookml-implementation.json
+  QA scenarios: happy — deck E2E green (evidence VER batch); failure — concurrent slide edits → ETag conflict resolution (evidence conflict log). Evidence <attemptDir>/task-37-milpbooklm-implementation.json
   Commit: Y | feat(studio): STD-03a slide decks (studio slides subset)
 
 - [ ] 38. STD-03b — Infographics + SDXL image provider + ADR
@@ -460,7 +460,7 @@ Blocks column = DIRECT dependants only (tasks listing X in their Depends on); a 
   Parallelization: Wave 5 | Blocked by: 19,31 | Blocks: 39 (gate)
   References: guide/13 (infographic controls); guide/10 (ports/remote media overlap); D9/D10/D11; capability infographics (MAN-003).
   Acceptance criteria (agent-executable): infographic E2E (controls→generate→PNG download) green; ADR with benchmark artifacts committed; concurrent chat+image-gen orchestrator test (image waits/loads serially, chat unaffected).
-  QA scenarios: happy — journey green (evidence VER batch); failure — VRAM exhausted → waiting_capacity with reason, no OOM crash (evidence orchestrator log). Evidence <attemptDir>/task-38-milpbookml-implementation.json
+  QA scenarios: happy — journey green (evidence VER batch); failure — VRAM exhausted → waiting_capacity with reason, no OOM crash (evidence orchestrator log). Evidence <attemptDir>/task-38-milpbooklm-implementation.json
   Commit: Y | feat(studio): STD-03b infographics + local SDXL provider + ADR (studio infographic subset)
 
 - [ ] 39. Phase-5 gate — Visual studio evidence
@@ -469,7 +469,7 @@ Blocks column = DIRECT dependants only (tasks listing X in their Depends on); a 
   Parallelization: Wave 5 | Blocked by: 37,38 | Blocks: Wave 6 (gate),54
   References: PLANNING-HANDOFF Phase 5 row; ch25 manual runbook form.
   Acceptance criteria (agent-executable): PHASE-GATE-001 phase-5 green; signed MAN-003 records in docs/evidence/; gate report artifacts/verification/phase-5-gate.json.
-  QA scenarios: happy — gate+records green; failure — missing perceptual record blocks (evidence meta). Evidence <attemptDir>/task-39-milpbookml-implementation.json
+  QA scenarios: happy — gate+records green; failure — missing perceptual record blocks (evidence meta). Evidence <attemptDir>/task-39-milpbooklm-implementation.json
   Commit: Y | chore(release): Phase-5 gate evidence bundle
 
 - [ ] 40. MED-01a — Media worker + Audio Overview (Deep Dive/Brief/Critique/Debate) with local TTS
@@ -478,7 +478,7 @@ Blocks column = DIRECT dependants only (tasks listing X in their Depends on); a 
   Parallelization: Wave 6 | Blocked by: 19,23,31 | Blocks: 41, 44 (gate)
   References: guide/14-media-realtime.md (audio section); guide/13 (audio recipe controls); REFERENCE-DEPENDENCIES media composition row; D9; capability audio_overview (E2E-013, MAN-002); requirements ARCH-14-001..016 (component media_generation — canonical requirements.generated.json labels govern F1's join; digest Table A row media_generation + Table D anomaly #3 recorded) — task 40 owns the audio subset; 41/42/43 own video-composition/generative+cinematic/realtime-posture subsets per the master-index split.
   Acceptance criteria (agent-executable): audio golden E2E (DE + EN): script→audio→transcript timeline asserts provenance spans; duration/container validation green; MAN-002 runbook executed+recorded; refusal case produces terminal explainable state.
-  QA scenarios: happy — audio E2E green (evidence VER batch + MAN-002 record); failure — TTS provider failure mid-generation → resumable/failed state, prior ready version retained (evidence job log). Evidence <attemptDir>/task-40-milpbookml-implementation.json
+  QA scenarios: happy — audio E2E green (evidence VER batch + MAN-002 record); failure — TTS provider failure mid-generation → resumable/failed state, prior ready version retained (evidence job log). Evidence <attemptDir>/task-40-milpbooklm-implementation.json
   Commit: Y | feat(media): MED-01a Audio Overview + local TTS (media audio subset)
 
 - [ ] 41. MED-01b — Video Overview: storyboard composition pipeline (Explainer/Short)
@@ -487,7 +487,7 @@ Blocks column = DIRECT dependants only (tasks listing X in their Depends on); a 
   Parallelization: Wave 6 | Blocked by: 23,31,40 (media worker + TTS adapter from 40) | Blocks: 44 (gate)
   References: guide/14 (video section); guide/10 (remote media ops); capabilities video_overview (E2E-013, MAN-003/010); D9.
   Acceptance criteria (agent-executable): compositional video E2E green (storyboard→assets→composition→validated renditions w/ captions, DE+EN); remote-op fake suite (staged completion, timeout, cancel, best-effort cancel) green; safety-refusal terminal state test.
-  QA scenarios: happy — video E2E green (evidence VER batch); failure — remote provider hang → polling timeout + honest failed state (evidence op log). Evidence <attemptDir>/task-41-milpbookml-implementation.json
+  QA scenarios: happy — video E2E green (evidence VER batch); failure — remote provider hang → polling timeout + honest failed state (evidence op log). Evidence <attemptDir>/task-41-milpbooklm-implementation.json
   Commit: Y | feat(media): MED-01b Video Overview composition pipeline (media video subset)
 
 - [ ] 42. MED-01c — Wan 2.2 local generative scenes + Cinematic capability (honest envelope) + ADR
@@ -496,7 +496,7 @@ Blocks column = DIRECT dependants only (tasks listing X in their Depends on); a 
   Parallelization: Wave 6 | Blocked by: 10,29 | Blocks: 44 (gate)
   References: guide/14 + guide/10; local-media research verdict (.omo/journal/2026-09-17-planning-journal.md + librarian ses_f50562816ffen17oSnTsUthwNG: Wan quant table, license verdicts); D9/D10/D11; capabilities cinematic_video, video_overview.
   Acceptance criteria (agent-executable): generative-scene E2E: storyboard→SDXL first-frame→Wan I2V→interpolate/upscale→composed overview w/ provenance; wall-clock + VRAM telemetry recorded in ADR; orchestrator preemption test (interactive chat during Wan run stays under latency budget or Wan pauses cleanly); conformance descriptor matches measured envelope.
-  QA scenarios: happy — cinematic journey green at recorded envelope (evidence VER batch + benchmark report); failure — VRAM contention → scene job waiting_capacity/preempted, chat unaffected, resume completes (evidence orchestrator log). Evidence <attemptDir>/task-42-milpbookml-implementation.json
+  QA scenarios: happy — cinematic journey green at recorded envelope (evidence VER batch + benchmark report); failure — VRAM contention → scene job waiting_capacity/preempted, chat unaffected, resume completes (evidence orchestrator log). Evidence <attemptDir>/task-42-milpbooklm-implementation.json
   Commit: Y | feat(media): MED-01c Wan 2.2 scenes + Cinematic envelope + ADR (media cinematic subset)
 
 - [ ] 43. MED-01d — Realtime/interactive-audio posture: ephemeral scaffolding + disabled states
@@ -505,7 +505,7 @@ Blocks column = DIRECT dependants only (tasks listing X in their Depends on); a 
   Parallelization: Wave 6 | Blocked by: 9,10 | Blocks: 44 (gate)
   References: guide/14 (realtime/recorded sections); PARITY-SCOPE-AUDIT factual caveats (ephemeral default, Interactive-vs-realtime distinction); capabilities digest (advanced/provisional rows, MAN-009).
   Acceptance criteria (agent-executable): ephemerality tests green at scaffold level (fake duplex); conformance lists all three as disabled-with-reason; conditional N/A test records reference the registry classifications.
-  QA scenarios: happy — posture suite green (evidence conformance snapshot); failure — enabling flag without ADR → capability readiness fails closed (evidence gate log). Evidence <attemptDir>/task-43-milpbookml-implementation.json
+  QA scenarios: happy — posture suite green (evidence conformance snapshot); failure — enabling flag without ADR → capability readiness fails closed (evidence gate log). Evidence <attemptDir>/task-43-milpbooklm-implementation.json
   Commit: Y | feat(media): MED-01d realtime posture + disabled states (media realtime subset)
 
 - [ ] 44. Phase-6 gate — Media evidence
@@ -514,7 +514,7 @@ Blocks column = DIRECT dependants only (tasks listing X in their Depends on); a 
   Parallelization: Wave 6 | Blocked by: 40..43 | Blocks: Wave 7 (gate),54
   References: PLANNING-HANDOFF Phase 6 row; digest Table B phase-6 capabilities (4).
   Acceptance criteria (agent-executable): PHASE-GATE-001 phase-6 green; gate report artifacts/verification/phase-6-gate.json.
-  QA scenarios: happy — gate green; failure — missing A/V manual record blocks (evidence meta). Evidence <attemptDir>/task-44-milpbookml-implementation.json
+  QA scenarios: happy — gate green; failure — missing A/V manual record blocks (evidence meta). Evidence <attemptDir>/task-44-milpbooklm-implementation.json
   Commit: Y | chore(release): Phase-6 gate evidence bundle
 
 - [ ] 45. COL-01a — Private sharing links with live restriction checks
@@ -523,7 +523,7 @@ Blocks column = DIRECT dependants only (tasks listing X in their Depends on); a 
   Parallelization: Wave 7 | Blocked by: 4,16,31 | Blocks: 48 (gate)
   References: guide/17 (sharing); guide/07 (derived restrictions); PARITY-SCOPE-AUDIT (sharing parity + exported-files-are-detached caveat); capability private_sharing (E2E-005).
   Acceptance criteria (agent-executable): E2E-005 green: create→open→revoke→denied; restricted-source under share → derived artifact view denied; token-hash-only storage assert; expiry enforcement test.
-  QA scenarios: happy — share E2E green (evidence VER batch); failure — revoked link resolution → denied with reason (evidence access log). Evidence <attemptDir>/task-45-milpbookml-implementation.json
+  QA scenarios: happy — share E2E green (evidence VER batch); failure — revoked link resolution → denied with reason (evidence access log). Evidence <attemptDir>/task-45-milpbooklm-implementation.json
   Commit: Y | feat(collab): COL-01a private sharing + live restriction checks (auth_sharing share subset)
 
 - [ ] 46. COL-01b — Notebook copying + collaborative note semantics
@@ -532,7 +532,7 @@ Blocks column = DIRECT dependants only (tasks listing X in their Depends on); a 
   Parallelization: Wave 7 | Blocked by: 4,31,32 | Blocks: 48 (gate)
   References: guide/17; guide/13 (collab edits); capabilities notebook_copying (E2E-005).
   Acceptance criteria (agent-executable): copy test proves private-chat/notes exclusion + restriction re-eval; concurrent edit merge/conflict test; deletion→tombstone provenance preserved.
-  QA scenarios: happy — copy E2E green (evidence VER batch); failure — restricted source in source-set → copy flags restriction or excludes per policy, never silently includes (evidence copy report). Evidence <attemptDir>/task-46-milpbookml-implementation.json
+  QA scenarios: happy — copy E2E green (evidence VER batch); failure — restricted source in source-set → copy flags restriction or excludes per policy, never silently includes (evidence copy report). Evidence <attemptDir>/task-46-milpbooklm-implementation.json
   Commit: Y | feat(collab): COL-01b notebook copy + collab semantics (auth_sharing/copy subsets)
 
 - [ ] 47. COL-01c — Optional/provisional posture lock + team seeding
@@ -541,7 +541,7 @@ Blocks column = DIRECT dependants only (tasks listing X in their Depends on); a 
   Parallelization: Wave 7 | Blocked by: 9 | Blocks: 48 (gate)
   References: PARITY-SCOPE-AUDIT (optional/provisional rows); digest Table B phase-7 optional rows; D6.
   Acceptance criteria (agent-executable): SCOPE-GUARD suite green incl. optional set; seeded team fixtures pass role-matrix journeys with real accounts.
-  QA scenarios: happy — posture suite green (evidence conformance snapshot); failure — advertised optional capability → meta fails (evidence meta log). Evidence <attemptDir>/task-47-milpbookml-implementation.json
+  QA scenarios: happy — posture suite green (evidence conformance snapshot); failure — advertised optional capability → meta fails (evidence meta log). Evidence <attemptDir>/task-47-milpbooklm-implementation.json
   Commit: Y | test(collab): COL-01c posture lock + team seeding (SCOPE-GUARD + seeds)
 
 - [ ] 48. Phase-7 gate — Collaboration evidence
@@ -550,7 +550,7 @@ Blocks column = DIRECT dependants only (tasks listing X in their Depends on); a 
   Parallelization: Wave 7 | Blocked by: 45..47 | Blocks: Wave 8,49,54,55
   References: PLANNING-HANDOFF Phase 7 row; digest Table B phase-7 capabilities (11).
   Acceptance criteria (agent-executable): PHASE-GATE-001 phase-7 green; gate report artifacts/verification/phase-7-gate.json.
-  QA scenarios: happy — gate green; failure — disabled-but-advertised blocks (evidence meta). Evidence <attemptDir>/task-48-milpbookml-implementation.json
+  QA scenarios: happy — gate green; failure — disabled-but-advertised blocks (evidence meta). Evidence <attemptDir>/task-48-milpbooklm-implementation.json
   Commit: Y | chore(release): Phase-7 gate evidence bundle
 
 - [ ] 49. OPS-01b — NFR performance + reliability suite (ch21 profile, this host)
@@ -559,7 +559,7 @@ Blocks column = DIRECT dependants only (tasks listing X in their Depends on); a 
   Parallelization: Wave 8 | Blocked by: 8,48 | Blocks: 53
   References: guide/21-nonfunctional-requirements.md (entire); requirements TECH-21-001..002, ARCH-21-001..045 (nonfunctional); NFR-GATE-001 group; digest Table A row nonfunctional.
   Acceptance criteria (agent-executable): NFR-GATE-001 suite green on production-equivalent deployment w/ published report (all metrics within thresholds or ADR'd); crash drills green; a11y manual records signed into docs/evidence/.
-  QA scenarios: happy — NFR report all-green (evidence artifacts/verification/nfr-report.json); failure — p95 breach → gate fails, tuning loop documented (evidence perf trace). Evidence <attemptDir>/task-49-milpbookml-implementation.json
+  QA scenarios: happy — NFR report all-green (evidence artifacts/verification/nfr-report.json); failure — p95 breach → gate fails, tuning loop documented (evidence perf trace). Evidence <attemptDir>/task-49-milpbooklm-implementation.json
   Commit: Y | test(nfr): OPS-01b performance/reliability suite (ARCH-21-001..045, TECH-21-001..002)
 
 - [ ] 50. OPS-01c — Backup/restore: pgBackRest + restic, manifest, key recovery, RPO/RTO drills
@@ -568,7 +568,7 @@ Blocks column = DIRECT dependants only (tasks listing X in their Depends on); a 
   Parallelization: Wave 8 | Blocked by: 3,6,8 | Blocks: 53
   References: guide/21 (backup/restore); guide/19 (backup expiry under purge retention); D4; requirements deployment/backup subset (ARCH-04/19/21 records per digest rows).
   Acceptance criteria (agent-executable): backup→destroy→restore drill green within RTO w/ integrity checks; manifest round-trip test; missing-blob restore → readiness false + integrity incident; key-rotation + recovery drill green.
-  QA scenarios: happy — drill report (evidence artifacts/verification/restore-drill.json); failure — tampered blob post-backup → restore verify fails closed (evidence verify log). Evidence <attemptDir>/task-50-milpbookml-implementation.json
+  QA scenarios: happy — drill report (evidence artifacts/verification/restore-drill.json); failure — tampered blob post-backup → restore verify fails closed (evidence verify log). Evidence <attemptDir>/task-50-milpbooklm-implementation.json
   Commit: Y | feat(ops): OPS-01c backup/restore + drills (deployment/backup subsets)
 
 - [ ] 51. OPS-01d — Upgrade/recovery rehearsal
@@ -577,7 +577,7 @@ Blocks column = DIRECT dependants only (tasks listing X in their Depends on); a 
   Parallelization: Wave 8 | Blocked by: 3,8 | Blocks: 53
   References: guide/04 (startup/upgrades); guide/15 (lease recovery); requirements deployment upgrade subset.
   Acceptance criteria (agent-executable): upgrade rehearsal green incl. mid-upgrade readiness=false window assert; rollback restored to functional prior state; zero lost acknowledged mutations across rolling restart.
-  QA scenarios: happy — rehearsal report (evidence artifacts/verification/upgrade-drill.json); failure — incompatible schema forced → API readiness false, no partial serving (evidence readiness log). Evidence <attemptDir>/task-51-milpbookml-implementation.json
+  QA scenarios: happy — rehearsal report (evidence artifacts/verification/upgrade-drill.json); failure — incompatible schema forced → API readiness false, no partial serving (evidence readiness log). Evidence <attemptDir>/task-51-milpbooklm-implementation.json
   Commit: Y | test(ops): OPS-01d upgrade/rollback rehearsal (deployment upgrade subset)
 
 - [ ] 52. OPS-01e — Supply chain: SBOM, scans, signed release artifacts
@@ -586,7 +586,7 @@ Blocks column = DIRECT dependants only (tasks listing X in their Depends on); a 
   Parallelization: Wave 8 | Blocked by: 8 | Blocks: 53
   References: guide/21 (supply chain); guide/00 (version floors/weekly job); guide/25 (release gates); requirements testing_release supply-chain subset.
   Acceptance criteria (agent-executable): SBOM generated w/ pinned digests; scan gate green (or waived w/ recorded risk); signature verification round-trip; license register complete incl. Wan/Piper/whisper/Tesseract/SDXL ADR links.
-  QA scenarios: happy — release bundle verifies (evidence artifacts/verification/supply-chain.json); failure — critical CVE in pinned dep → gate fails (evidence scan report). Evidence <attemptDir>/task-52-milpbookml-implementation.json
+  QA scenarios: happy — release bundle verifies (evidence artifacts/verification/supply-chain.json); failure — critical CVE in pinned dep → gate fails (evidence scan report). Evidence <attemptDir>/task-52-milpbooklm-implementation.json
   Commit: Y | build(supply-chain): OPS-01e SBOM/scans/signing (testing_release subset)
 
 - [ ] 53. Release-gate audit + evidence bundle + conformance publication
@@ -595,7 +595,7 @@ Blocks column = DIRECT dependants only (tasks listing X in their Depends on); a 
   Parallelization: Wave 8 | Blocked by: 49..52,54 | Blocks: F1..F4
   References: guide/25 (release gates, definition of done); requirements testing_release full row (52 records); META-REQ-001.
   Acceptance criteria (agent-executable): release-audit script: every gate green; zero unclassified/unexplained; evidence bundle hash-stable; conformance matches deployed reality (spot-check per capability).
-  QA scenarios: happy — audit green (evidence artifacts/verification/release-audit.json); failure — any stale evidence record → audit fails w/ list (evidence audit diff). Evidence <attemptDir>/task-53-milpbookml-implementation.json
+  QA scenarios: happy — audit green (evidence artifacts/verification/release-audit.json); failure — any stale evidence record → audit fails w/ list (evidence audit diff). Evidence <attemptDir>/task-53-milpbooklm-implementation.json
   Commit: Y | chore(release): release-gate audit + evidence bundle (testing_release)
 
 - [ ] 54. Manual runbook matrix MAN-001..010 — execution records
@@ -604,7 +604,7 @@ Blocks column = DIRECT dependants only (tasks listing X in their Depends on); a 
   Parallelization: Wave 8 | Blocked by: 20,25,30,36,39,44,48 | Blocks: 53
   References: guide/25 (manual runbook section + MAN retention); digest Table B manual-test column mapping (MAN-002/003/004/005/009/010).
   Acceptance criteria (agent-executable): all MAN records present+signed in docs/evidence/; every N/A carries registry classification reference; audit script cross-checks record↔capability state.
-  QA scenarios: happy — matrix complete (evidence docs/evidence/index.json); failure — missing record → audit lists it (evidence audit diff). Evidence <attemptDir>/task-54-milpbookml-implementation.json
+  QA scenarios: happy — matrix complete (evidence docs/evidence/index.json); failure — missing record → audit lists it (evidence audit diff). Evidence <attemptDir>/task-54-milpbooklm-implementation.json
   Commit: Y | docs(evidence): manual runbook matrix records (testing_release manual subset)
 
 - [ ] 55. Operator + user documentation + ADR index
@@ -613,7 +613,7 @@ Blocks column = DIRECT dependants only (tasks listing X in their Depends on); a 
   Parallelization: Wave 8 | Blocked by: 48 | Blocks: F4
   References: guide ch23 (ADR template); ch24 glossary; ch04 (installer docs obligations); requirements documentation-relevant records (docs/evidence ARCH-23 row).
   Acceptance criteria (agent-executable): docs render + linkcheck green; ADR audit: every selection ADR has all template fields; docs↔conformance consistency check (no documented-but-disabled capability presented as available).
-  QA scenarios: happy — doc audit green (evidence docs audit json); failure — stale doc mentioning enabled realtime → flagged (evidence consistency diff). Evidence <attemptDir>/task-55-milpbookml-implementation.json
+  QA scenarios: happy — doc audit green (evidence docs audit json); failure — stale doc mentioning enabled realtime → flagged (evidence consistency diff). Evidence <attemptDir>/task-55-milpbooklm-implementation.json
   Commit: Y | docs(all): operator/user docs + ADR index (documentation subset)
 
 ## Final verification wave

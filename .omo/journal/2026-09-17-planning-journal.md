@@ -28,7 +28,7 @@ Session: 2026-09-17, Prometheus (ulw-plan), intent=CLEAR (user asked to be inter
 - [x] Loaded ulw-plan skill + intent-clear + full-workflow references.
 - [x] Read meta docs: README, PLANNING-HANDOFF, 00-status-decisions, PARITY-SCOPE-AUDIT, REFERENCE-DEPENDENCIES, CHANGELOG, REVIEW-FINAL, AUDIT-v1.0.
 - [x] git init -b main; initial commit ba9f31b (guide as received, 71 files).
-- [x] Scaffolded draft .omo/drafts/milpbookml-implementation.md (--clear --draft-only --review-required).
+- [x] Scaffolded draft .omo/drafts/milpbooklm-implementation.md (--clear --draft-only --review-required).
 - [~] Delegated (2 concurrent, background): explore ch.01-09 (bg_f13d2ad1 / ses_f53522334ffero0lOqCm3DZk4a), explore ch.10-17 (bg_c1277c2f). First dispatch attempt died (env issue), relaunched on user go-ahead.
 - [ ] Self-read of fork-deciding chapters (01, 02, 22, 23) — in progress next.
 - [ ] Wave 2 delegates: ch.18-25 + registries/baseline/schemas; librarian external fact-checks.
@@ -85,7 +85,7 @@ Session: 2026-09-17, Prometheus (ulw-plan), intent=CLEAR (user asked to be inter
 ## Process log (cont. 2)
 
 - [x] APPROVAL GRANTED 2026-09-17 ("go on then, looks good from here").
-- [x] Plan scaffolded (.omo/plans/milpbookml-implementation.md) + Metis round-1 dispatched (bg_cc931a68, ses_f4fe78083ffeA88KmsDKssbRGy, 40m).
+- [x] Plan scaffolded (.omo/plans/milpbooklm-implementation.md) + Metis round-1 dispatched (bg_cc931a68, ses_f4fe78083ffeA88KmsDKssbRGy, 40m).
 - [x] Plan CONTENT complete: 55 tasks in 9 waves + F1-F4 + master index + E2E-001..013/MAN-001..010 maps + dependency matrix + TL;DR. 640 lines.
 - [x] Metis round-1 verdict: 29 findings (8 HIGH, 12 MEDIUM, 9 LOW) — extracted verbatim via explore (ses_f4fc1bb8affes4zXhiRyJQzOWE); full text in /home/srcds/.local/share/opencode/tool-output/tool_0b03dd9cf00169nmpIAwtzIHK6 lines 579-749.
 - [x] ALL 29 findings folded: already-satisfied ones verified (per-phase gates, UI-01/MOD-01 placement, conformance emitter, cinematic obligations, host probes); deltas applied (Scope OUT explicit cap list incl. interactive-audio declaration + cinematic full-obligations + privacy-class guardrails; E2E/MAN maps; NFR 16GiB cgroup pinning + D1 correction; BM25 gate 15.7; orchestrator ADR 10.6 w/ ch15-only preemption; Caddy cert pinned 8.2.1; task-19 live probes + Big Pickle lapse rule + full PH:91 ADR fields; task-42.0 prereq benchmark + provider-port registration; whisper device benchmark 23.3.0; restic target 50.1.0; D6 rephrased scripted-multi-account+one-operator-drill; Node pins in 1.1.2; master-index orphan-component + ARCH-19 51-record coverage; draft hygiene: D4 dedup, D2 embedding/reranker+lapse+fields, D6/D7/D8/D9 Q-numbers recited, D1 meets-or-exceeds).
@@ -127,7 +127,7 @@ Session: 2026-09-17, Prometheus (ulw-plan), intent=CLEAR (user asked to be inter
 - [x] Disposition: NO cosmetic edit (would validate a false premise AND invalidate momus's valid approval of the digest). Oracle lane CONTINUED IN-SESSION (same session/launch/round, artifact frozen+re-verified) with the byte evidence; oracle re-ran fixed-string counts itself, RETRACTED the defect in full ("the planner is correct; I misquoted" — transposition of adjacent token), and RESTATED: VERDICT-APPROVED, unconditional, with receipt (commit 4da7ff8 records the challenge state).
 - [x] FINAL VALIDATION (post-verdict): live sha256 == 5ba76bc0d8ed656ad0fcb15afba45429a874c714e6e9dcabaafeb0e8340612e5 ✓; counted rows: 55 `- [ ] N.` implementation + 4 `- [ ] F<n>.` final ✓; 638 lines ✓). Completion CAS satisfied for rr-milpbooklm-20260917-05: both lanes APPROVED on the SAME digest.
 - [x] REVIEW LOOP COMPLETE: rr-01 inconclusive (infra) → rr-02 both CHANGES (11 defects fixed) → rr-03 both CHANGES (union fixed incl. scripted Blocks regeneration) → rr-04 momus APPROVED + oracle 1 citation fix → rr-05 BOTH APPROVED. Metis SATISFIED before the loop. Plan APPROVED FOR HANDOFF.
-- NEXT: Phase-4 handoff presented (plan summary w/ counted rows, review receipts, execution options $start-work milpbookml-implementation [--worktree <path>|--make-pr|--ship]); planner STOPS — never executes.
+- NEXT: Phase-4 handoff presented (plan summary w/ counted rows, review receipts, execution options $start-work milpbooklm-implementation [--worktree <path>|--make-pr|--ship]); planner STOPS — never executes.
 
 
 

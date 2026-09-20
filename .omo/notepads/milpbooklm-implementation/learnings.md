@@ -1,4 +1,4 @@
-# Learnings — milpbookml-implementation
+# Learnings — milpbooklm-implementation
 
 Conventions, patterns, and successful approaches discovered during work on this plan.
 
@@ -46,7 +46,7 @@ _Auto-scaffolded by /start-work. Append new entries below - never overwrite._
 
 3. **/run/user is tmpfs — a host reboot silently wipes the whole direct-binary PG setup** (rootfs, hostlibs, pgdata, all of it) while the repo on disk survives. Rebuild recipe (all in /tmp/opencode/fnd03-scratch/): `rebuild-scratch.sh` (pull the 15 OCI layers of digest sha256:1d50c689… via auth.docker.io token API, extract usr/lib/postgresql* + usr/share/postgresql*), `fetch-deb-libs.sh` (bookworm .debs for libicu72/libldap-2.5-0/liburing2 — liblber-2.5.so.0 ships INSIDE libldap-2.5-0, there is no standalone bookworm liblber package), `bringup2.sh` (initdb + pg_ctl on 29517). Also: the rootfs `psql` does NOT work (needs the image's libpq.so.5, which we don't ship in LD_LIBRARY_PATH) — use the host psql (a PG17 client talks to a PG18 server fine) for ad-hoc SQL.
 
-4. **One-time state transitions interact with FK-nulling cleanup**: the fixed `milpbooklm_evidence_snapshot_guard` (one-time promotion: once `promoted_source_version_id IS NOT NULL`, any change RAISEs) correctly blocks a cleanup that tries to `SET promoted_source_version_id = NULL` before deleting the referenced source version. Design rule for such guards: they make the promoted row unlinkable except via DELETE of the row itself — the table must stay deletable (no immutability trigger) or cleanup must go through the privileged path. Probe evidence: .omo/evidence/task-3-migration-smoke.log + the 7/13 probe split in .omo/evidence/task-3-milpbookml-implementation.json.
+4. **One-time state transitions interact with FK-nulling cleanup**: the fixed `milpbooklm_evidence_snapshot_guard` (one-time promotion: once `promoted_source_version_id IS NOT NULL`, any change RAISEs) correctly blocks a cleanup that tries to `SET promoted_source_version_id = NULL` before deleting the referenced source version. Design rule for such guards: they make the promoted row unlinkable except via DELETE of the row itself — the table must stay deletable (no immutability trigger) or cleanup must go through the privileged path. Probe evidence: .omo/evidence/task-3-migration-smoke.log + the 7/13 probe split in .omo/evidence/task-3-milpbooklm-implementation.json.
 
 ---
 
@@ -129,3 +129,15 @@ _Auto-scaffolded by /start-work. Append new entries below - never overwrite._
 4. **`ALLOWED_ADAPTER_IMPORTS` in tests/architecture/composition/ver-arch-03-001.py is policy data**: adding an authorized dependency (httpx/pydantic/anyio for MOD-01) requires extending that set in the same change (FND-07 nacl precedent) or the architecture suite fails on the import scan even though REFERENCE-DEPENDENCIES.md authorizes the dep.
 5. **Preemption needs the adapter's transition() to release the lease on re-enqueue**: moving a leased/running job to `waiting_capacity` (or `queued`) while keeping `lease_owner` set violates `ck_jobs_lease_consistency`; `PgJobRepository.transition` now NULLs lease fields exactly when the target is a pending state or queued. `InteractivePreemptor` = checkpoint via `record_progress` + `transition(WAITING_CAPACITY, lease_owner=None, lease_expires_at=None)` — ch15 state machine only, no new states, `waiting_reason=capacity` persists the reason.
 6. **A smoke driver that forgets `await` on an async section no-ops silently** (`RuntimeWarning: coroutine was never awaited`) and the remaining checks still "pass" — the live-llama.cpp section ran 13s shorter on the first pass for exactly this reason. Assert the section's side effects, not just its exit.
+
+## Process (2026-09-20)
+
+1. **TWO spellings of the project name EXISTED in paths and transposing them cost hours** (trap eliminated 2026-09-20): the repo directory is `milpbookLM` (…LM), but the plan file, notepad dir, and evidence filenames were `milpbookml` (…ml): `.omo/plans/milpbookml-implementation.md`, `.omo/notepads/milpbookml-implementation/`, `.omo/evidence/task-N-milpbookml-implementation.json`. A transposed `milpbooklm` path failed with ENOENT on every open (ls of the parent still showed the right name and could read it — the wrong bytes were in YOUR command, not the filesystem). All in-repo artifact paths (plan, drafts, notepad dir, evidence) were unified to the canonical `milpbooklm` spelling on 2026-09-20; the repo directory stays `milpbookLM` and the guide dir stays `milpbookml-implementation-guide/`. Lesson kept: when a file "mysteriously" cannot be opened, glob-expand the parent (`cat .omo/plans/milp*`) and diff the bytes before suspecting the FS.
+
+---
+
+## Spelling-unification (2026-09-20)
+
+- Renamed `.omo/plans/`, `.omo/drafts/`, `.omo/notepads/`, and `.omo/evidence/task-*-…` from `milpbookml-implementation` to `milpbooklm-implementation`; live references updated in the plan text, journal, ledger, boulder.json (unstaged runtime state), and the notepad headers.
+- Deliberately untouched: repo dir `milpbookLM`, guide dir `milpbookml-implementation-guide/`, and historical quotes (review round ids, evidence logs, the Process entry above).
+- Case-sensitive sweep confirms: every remaining `milpbookml` hit in `.omo/` is a deliberate historical quote — zero live path references.
