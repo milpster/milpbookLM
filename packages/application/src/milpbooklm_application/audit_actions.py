@@ -26,12 +26,13 @@ class AuditAction(StrEnum):
     CUSTODY_TRANSFERRED = "custody.transferred"
     CUSTODY_SCHEDULED_DELETION = "custody.scheduled_deletion"
 
-    # Seams for later features (named, not yet emitted by any code path):
-    # membership/shared-link changes, provider/credential lifecycle, purge,
-    # export, and consequential tool actions.
-    MEMBERSHIP_CHANGED = "membership.changed"
+    # Provider credential lifecycle (implemented by the worker maintenance CLI).
     CREDENTIAL_STORED = "credential.stored"
     CREDENTIAL_ROTATED = "credential.rotated"
+
+    # Seams for later features (named, not yet emitted by any code path):
+    # membership/shared-link changes, purge, export, and consequential tool actions.
+    MEMBERSHIP_CHANGED = "membership.changed"
     PURGE_INITIATED = "purge.initiated"
     EXPORT_INITIATED = "export.initiated"
     TOOL_INVOKED = "tool.invoked"

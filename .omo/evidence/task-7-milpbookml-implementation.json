@@ -47,8 +47,25 @@
     "provider-call metrics points (latency/counters at provider boundaries)",
     "CORS allowlist configuration (CORS stays OFF; no allowlist surface)",
     "master-keyring authoring CLI (key bytes can be minted via new_key_bytes(); no keyring file management command)",
-    "audit action adoption by future seams (only login success/failure emit audit events this task; the AuditAction vocabulary + append-only record path are ready)",
+    "audit action adoption by future seams beyond implemented login and provider-credential store/update/rotation events",
     "real CSP asset allowlists (the policy is the app-origin 'self' baseline; UI asset origins are a deployment concern)"
   ],
+  "correction_follow_up": {
+    "base_commit": "f063331",
+    "result": "PASS",
+    "manual_smoke": "Repeated non-zero W3C IDs accepted while all-zero rejected; messages/extras/tracebacks redacted without duplicate handler output; broad POSIX keyring mode rejected without path disclosure; unhandled 500 retained correlation plus security headers; live store, update, and completed rotation emitted content-free append-only audits.",
+    "audit_rows": {
+      "credential.stored": 2,
+      "credential.rotated": 1,
+      "prohibited_secret_fields_present": false
+    },
+    "gates": [
+      { "name": "ruff check", "exit": 0, "result": "All checks passed" },
+      { "name": "mypy strict", "exit": 0, "result": "No issues found in 95 source files" },
+      { "name": "import-linter", "exit": 0, "result": "Contracts: 4 kept, 0 broken (130 files, 570 dependencies)" },
+      { "name": "pytest meta+architecture+unit", "exit": 0, "result": "127 passed, 2 dependency deprecation warnings" }
+    ],
+    "teardown": "Scratch PostgreSQL stopped; all temporary database, keyring, and secret fixtures removed."
+  },
   "teardown": "pg_ctl -D /tmp/opencode/fnd07-scratch/pgdata stop -m fast -> server stopped; pg_isready -p 29521 down; pgrep: no process matching milpbooklm; /tmp/opencode/fnd07-scratch removed (keyrings + secrets deleted)"
 }

@@ -49,7 +49,11 @@ from .config_loader import load_config
 from .deps import ApiDeps
 from .job_routes import build_job_router
 from .notebook_routes import build_notebook_router
-from .observability import CorrelationMiddleware, SecurityHeadersMiddleware
+from .observability import (
+    CorrelationMiddleware,
+    SecurityHeadersMiddleware,
+    UnhandledErrorMiddleware,
+)
 from .security import (
     CsrfOriginMiddleware,
     Principal,
@@ -86,9 +90,11 @@ def build_app(
         users=users,
         clock=clock,
     )
-    # Last added runs outermost: correlation wraps headers, headers wrap CSRF.
+    # Last added runs outermost: the 500 catch-all wraps correlation, which
+    # wraps headers, which wrap CSRF.
     app.add_middleware(SecurityHeadersMiddleware)
     app.add_middleware(CorrelationMiddleware)
+    app.add_middleware(UnhandledErrorMiddleware)
     deps = ApiDeps(
         users=users,
         sessions=sessions,

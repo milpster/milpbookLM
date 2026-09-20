@@ -16,6 +16,8 @@ logged.
 from __future__ import annotations
 
 import json
+import os
+import stat
 from pathlib import Path
 from typing import Any
 
@@ -78,13 +80,23 @@ def load_master_keyring(path: Path) -> MasterKeyring:
     Parse the protected keyring file into a typed, fail-closed keyring.
 
     The file is a JSON document (``{"active_key_id": ..., "keys": {...}}``).
-    Any read/parse/validation failure raises :class:`KeyringError`; the key
-    bytes never appear in the exception message.
+    On POSIX the opened file must be owner-only: group/other permission bits
+    are rejected BEFORE any content is read. Any read/parse/validation failure
+    raises :class:`KeyringError`; neither key bytes nor the file path appear in
+    the error message.
     """
     try:
-        raw: Any = json.loads(path.read_text(encoding="utf-8"))
-    except (OSError, json.JSONDecodeError) as exc:
-        raise KeyringError(f"master keyring file {path} is unreadable") from exc
+        with path.open(encoding="utf-8") as keyring_file:
+            if os.name == "posix":
+                mode = stat.S_IMODE(os.fstat(keyring_file.fileno()).st_mode)
+                if mode & 0o077:
+                    raise KeyringError(
+                        "master keyring permissions are too broad; "
+                        "restrict the file to owner-only (chmod 600)"
+                    )
+            raw: Any = json.load(keyring_file)
+    except (OSError, UnicodeError, json.JSONDecodeError) as exc:
+        raise KeyringError("master keyring file is unreadable") from exc
     if not isinstance(raw, dict):
         raise KeyringError("master keyring must be a JSON object")
     return parse_keyring(raw)

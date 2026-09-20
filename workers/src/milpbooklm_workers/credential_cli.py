@@ -7,7 +7,9 @@ shape as FND-06's blob commands). Plaintext only ever enters through
 SHA-256) - dispatch output is never the secret itself. The keyring file is a
 protected configuration source; a missing/unreadable keyring, a record whose
 key id is absent, or any AEAD failure exits non-zero with a named error
-(fail closed; the ciphertext is left untouched).
+(fail closed; the ciphertext is left untouched). Completed credential
+mutations are appended to the immutable audit trail with content-free
+details (no plaintext, ciphertext, nonce, key bytes, or secret-file paths).
 """
 
 from __future__ import annotations
@@ -25,12 +27,16 @@ from milpbooklm_adapters.security.credential_crypto import (
     load_master_keyring,
 )
 from milpbooklm_adapters.security.pg_credentials import PgCredentialStore
+from milpbooklm_adapters.security.pg_identity import PgAuditLog
+from milpbooklm_application.audit_actions import AuditAction
 from milpbooklm_application.credentials import (
     CredentialDecryptionError,
     CredentialKeyMissingError,
     CredentialRef,
     KeyringError,
 )
+from milpbooklm_domain.telemetry import new_request_id
+from sqlalchemy.engine import Engine
 
 logger = logging.getLogger(__name__)
 
@@ -55,22 +61,35 @@ def _uuid_arg(value: str | None, name: str) -> uuid.UUID:
         raise SystemExit(f"error: --{name} is not a valid uuid: {value}") from exc
 
 
-def _load_store(args: argparse.Namespace) -> PgCredentialStore:
+def _load_store(args: argparse.Namespace) -> tuple[Engine, PgCredentialStore]:
     """Wire engine + fail-closed keyring + cipher + PG store (raises KeyringError)."""
     _require(args, "dsn", "keyring")
+    engine = make_engine(str(args.dsn))
     keyring = load_master_keyring(Path(str(args.keyring)))
-    return PgCredentialStore(make_engine(str(args.dsn)), SodiumCredentialCipher(keyring))
+    return engine, PgCredentialStore(engine, SodiumCredentialCipher(keyring))
 
 
 def _store(args: argparse.Namespace) -> int:
-    """Encrypt the secret-file bytes under the active key and upsert the record."""
+    """Encrypt the secret-file bytes under the active key, upsert, and audit it."""
     _require(args, "provider_config", "credential_kind", "secret_file")
-    store = _load_store(args)
+    engine, store = _load_store(args)
     ref = store.store(
         provider_config_id=_uuid_arg(str(args.provider_config), "provider-config"),
         owner_user_id=_uuid_arg(str(args.owner), "owner") if args.owner else None,
         credential_kind=str(args.credential_kind),
         plaintext=Path(str(args.secret_file)).read_bytes(),
+    )
+    PgAuditLog(engine).record(
+        actor_id=None,
+        action=AuditAction.CREDENTIAL_STORED,
+        subject_kind="provider_credential",
+        subject_id=ref.id,
+        details={
+            "provider_config_id": str(ref.provider_config_id),
+            "credential_kind": ref.credential_kind,
+            "key_id": ref.key_id,
+        },
+        request_id=new_request_id(),
     )
     print(json.dumps(
         {
@@ -88,7 +107,7 @@ def _store(args: argparse.Namespace) -> int:
 def _dispatch(args: argparse.Namespace) -> int:
     """Decrypt one record and print metadata only (never the plaintext)."""
     _require(args, "credential_id")
-    store = _load_store(args)
+    _, store = _load_store(args)
     # dispatch resolves by id (the AAD comes from the stored row fields).
     ref = CredentialRef(
         id=_uuid_arg(str(args.credential_id), "credential-id"),
@@ -107,8 +126,21 @@ def _dispatch(args: argparse.Namespace) -> int:
 
 def _rotate(args: argparse.Namespace) -> int:
     """Run one bounded, resumable rotation pass; print the report (no secrets)."""
-    store = _load_store(args)
+    engine, store = _load_store(args)
     report = store.rotate_to_active(batch_size=int(args.batch_size))
+    if report.rotated > 0 and report.old_key_retirement_safe:
+        # Audit only a completed, verified rotation (a no-op pass mutated nothing).
+        PgAuditLog(engine).record(
+            actor_id=None,
+            action=AuditAction.CREDENTIAL_ROTATED,
+            subject_kind="provider_credential",
+            details={
+                "rotated": str(report.rotated),
+                "remaining": str(report.remaining),
+                "old_key_ids": ",".join(report.old_key_ids),
+            },
+            request_id=new_request_id(),
+        )
     print(json.dumps(
         {
             "rotated": report.rotated,

@@ -144,3 +144,15 @@ Operational notes:
   demonstrated the fail-closed decryption path on corrupted-in-format data.
 - Engine DSNs must be postgresql+psycopg:// (make_engine maps plain
   postgresql:// to psycopg2, which is not installed) - FND-04/06 learning re-confirmed.
+
+## Follow-up correction smoke (2026-09-20)
+
+- W3C validation: repeated non-zero trace/span IDs were accepted and echoed; an all-zero trace ID was rejected.
+- Structured logging: message, nested extras, and exception traceback text were scrubbed. Pre-installed package and descendant handlers produced no duplicate output after configuration; the root host handler remained untouched and received no application record.
+- Keyring boundary: a POSIX keyring with group-read permission exited non-zero before parsing with an actionable owner-only-permissions message that did not disclose its path; mode 0600 succeeded.
+- Error baseline: a real TestClient request to a raising endpoint returned uniform JSON 500 with the effective request ID, valid traceparent, CSP, nosniff, referrer, and permissions headers. Exception detail was absent from response and logs.
+- Credential audit: against a fresh migrated PostgreSQL 17 scratch database, initial store plus same-scope update produced two `credential.stored` rows; one completed k1-to-k2 rotation produced one `credential.rotated` row. The credential ended on k2, and audit JSON contained none of the prohibited secret-content keys.
+- Gates: Ruff passed; strict mypy passed (95 files); import-linter kept 4/4 contracts (130 files, 570 dependencies); existing meta/architecture/unit suite passed (127 tests, 2 dependency deprecation warnings).
+- Teardown: scratch PostgreSQL stopped and all temporary keyring/secret/database files removed.
+
+CORRECTION_SMOKE_RESULT: PASS

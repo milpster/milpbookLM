@@ -32,8 +32,9 @@ _HEX_PAIR_LEN = 2
 
 
 def _is_hex(value: str, length: int) -> bool:
-    """Return True when ``value`` is exactly ``length`` lowercase hex chars, non-zero."""
-    return len(value) == length and all(c in _HEX for c in value) and set(value) != {value[0]}
+    """Return True when ``value`` is exactly ``length`` lowercase hex chars, not all-zero."""
+    # W3C forbids only the all-zero id; a repeated non-zero char (e.g. 'f' * 32) is valid.
+    return len(value) == length and all(c in _HEX for c in value) and value != "0" * length
 
 
 @dataclass(frozen=True, slots=True)
