@@ -1,0 +1,11 @@
+[Unit]
+Description=MilpBook LM execution broker socket placeholder (task 29)
+
+[Socket]
+ListenStream=%t/milpbooklm/execution.sock
+SocketMode=0660
+DirectoryMode=0700
+RemoveOnStop=true
+
+[Install]
+WantedBy=sockets.target

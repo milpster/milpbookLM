@@ -1,0 +1,18 @@
+[Unit]
+Description=MilpBook LM execution broker placeholder (implementation lands task 29)
+ConditionFileIsExecutable=%h/.local/libexec/milpbooklm-execution-worker
+StartLimitIntervalSec=120
+StartLimitBurst=3
+
+[Service]
+Type=simple
+ExecStart=%h/.local/libexec/milpbooklm-execution-worker
+Restart=on-failure
+RestartSec=5
+NoNewPrivileges=true
+PrivateTmp=true
+ProtectSystem=strict
+ProtectHome=read-only
+RestrictAddressFamilies=AF_UNIX
+StandardOutput=journal
+StandardError=journal
