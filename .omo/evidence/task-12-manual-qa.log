@@ -1,0 +1,14 @@
+/home/srcds/dev/milpbookLM/.venv/lib/python3.13/site-packages/fastapi/testclient.py:1: StarletteDeprecationWarning: Using `httpx` with `starlette.testclient` is deprecated; install `httpx2` instead.
+  from starlette.testclient import TestClient as TestClient  # noqa
+{"ts": "2026-09-20T23:38:34+0200", "level": "INFO", "logger": "milpbooklm_api.auth_routes", "message": "login succeeded", "request_id": "6a799c202bb842c3bf0f1a845b01402b", "trace_id": "5cc3fc07fd7d70716979f0761093866d", "span_id": "24ed6e8976593dc1", "fields": {"user_id": "01a0c0c1-af9e-7908-8c63-ce4c5f847085"}}
+{"ts": "2026-09-20T23:38:34+0200", "level": "INFO", "logger": "milpbooklm_api.auth_routes", "message": "login succeeded", "request_id": "d4e3832858a742728577798e42d8a58c", "trace_id": "9d06ff0e88f042a89469d0ab10ec4561", "span_id": "95febcebf72dca05", "fields": {"user_id": "01a0c0c1-b0b1-7467-951f-f516db155683"}}
+{"check": "register_login", "notebook_id": "01a0c0c1-afa4-7e95-8602-fc88cef8f04e", "status": 201}
+{"check": "paste_text", "job_id": "01a0c0c1-aff5-7807-a27c-6b19fe5a7185", "source_type": "plain_text", "status": 201}
+{"check": "pdf_magic_wins", "source_type": "pdf", "source_version_id": "6d15c224-0f57-4539-a8e9-bd4d75a5a2b2", "status": 201}
+{"check": "idempotent_duplicate", "same_job": true, "same_version": true, "status": 200}
+{"check": "hostile_filename_ignored", "source_type": "plain_text", "status": 201}
+{"check": "oversize_abort", "code": "too_large", "quarantine_files": 0, "rows_unchanged": true, "status": 422}
+{"check": "stable_rejection_classes", "codes": "corrupt,unsupported,policy_blocked", "rows_unchanged": true}
+{"check": "lifecycle_and_job", "job_state": "succeeded", "purge_code": "not_implemented_until_ing_02d", "purge_status": 501, "removed": "deleted_tombstoned", "renamed": "Renamed source", "selected": "active"}
+{"check": "cross_owner_blob_only_dedup", "separate_source_rows": 2, "shared_blob_rows": 1, "unrestricted_restriction_rows": 0}
+{"check": "audit_events", "count": 12}

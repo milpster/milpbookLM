@@ -284,17 +284,26 @@ class PgJobRepository:
                     """
                     UPDATE jobs
                     SET status = :status, payload = CAST(:payload AS jsonb),
-                        lease_owner = CASE WHEN :release_lease THEN NULL ELSE lease_owner END,
-                        lease_expires_at = CASE
-                            WHEN :release_lease THEN NULL ELSE lease_expires_at
-                        END,
+                        lease_owner = :lease_owner,
+                        lease_expires_at = :lease_expires_at,
+                        started_at = COALESCE(:started_at, started_at),
                         revision = revision + 1, etag = (revision + 1)::text, updated_at = now()
                     WHERE id = :id AND status = :expected AND revision = :rev
                     """
                 ),
                 {
                     "status": physical_status(new_state),
-                    "release_lease": new_state in PENDING_STATES or new_state is JobState.QUEUED,
+                    "lease_owner": (
+                        None
+                        if new_state in PENDING_STATES or new_state is JobState.QUEUED
+                        else updated.lease_owner
+                    ),
+                    "lease_expires_at": (
+                        None
+                        if new_state in PENDING_STATES or new_state is JobState.QUEUED
+                        else updated.lease_expires_at
+                    ),
+                    "started_at": updated.started_at,
                     "payload": _json(pack_payload(updated)),
                     "id": job.id,
                     "expected": physical_status(job.state),

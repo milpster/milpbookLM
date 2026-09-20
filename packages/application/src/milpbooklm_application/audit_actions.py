@@ -36,3 +36,9 @@ class AuditAction(StrEnum):
     PURGE_INITIATED = "purge.initiated"
     EXPORT_INITIATED = "export.initiated"
     TOOL_INVOKED = "tool.invoked"
+
+    ACQUISITION_SUCCEEDED = "source.acquisition.succeeded"
+    ACQUISITION_REJECTED = "source.acquisition.rejected"
+    SOURCE_SELECTED = "source.selected"
+    SOURCE_REMOVED = "source.removed"
+    SOURCE_RENAMED = "source.renamed"

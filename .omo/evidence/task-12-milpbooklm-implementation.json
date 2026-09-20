@@ -1,0 +1,61 @@
+{
+  "task": "12. ING-01a - Acquisition + quarantine + identify (text/PDF path)",
+  "scope": "prototype-first wave 1, D12/D13 light QA",
+  "status": "prototype_complete_wave_2_tests_deferred",
+  "requirements": [
+    "ARCH-06 acquisition subset",
+    "guide/06 acquisition and idempotency",
+    "guide/16 source route subset"
+  ],
+  "implemented": [
+    "Write-free single-file multipart parser over Request.stream; filename, extension, and client MIME are ignored",
+    "Adapter-owned blob_root/quarantine stream with SHA-256 and byte-limit abort during chunk ingestion",
+    "Byte identification: %PDF- prefix -> PDF; otherwise strict UTF-8 -> text; empty, binary, encrypted PDF, and over-limit inputs use stable corrupt/unsupported/policy_blocked/too_large codes",
+    "FND-06 FilesystemBlobStore finalization only after quarantine identification; quarantine files are durably removed",
+    "Notebook-local sources/source_versions plus source-version blob references; per-notebook advisory lock makes immutable upload/paste acquisition idempotent",
+    "Global content-addressed blob sharing across owners while source ownership and notebook membership rows remain separate",
+    "FND-05 acquisition job keyed by source + content hash + importer version and completed at quarantined+identified with next_stage=parse payload",
+    "Authenticated source status, reversible select/remove, ETag metadata-only rename, and explicit task-24 purge deferral routes",
+    "FND-07 audit events for acquisition success/rejection and source selection/removal/rename"
+  ],
+  "schema_notes": [
+    "source_versions remain status=activating and sources.current_version_id remains NULL until T14 activation",
+    "unrestricted local text/PDF correctly creates no source_restrictions deny rows; the table is used only when real restrictions exist",
+    "removal uses the existing deleted_tombstoned availability state and never purges bytes"
+  ],
+  "verification": [
+    {
+      "command": "rtk uv run ruff check .",
+      "exit": 0,
+      "result": "All checks passed"
+    },
+    {
+      "command": "rtk uv run mypy",
+      "exit": 0,
+      "result": "122 source files clean"
+    },
+    {
+      "command": "rtk uv run import-linter lint",
+      "exit": 0,
+      "result": "4 contracts kept, 0 broken"
+    },
+    {
+      "command": "rtk uv run pytest tests/meta tests/architecture tests/unit -q",
+      "exit": 0,
+      "result": "127 passed, 2 dependency deprecation warnings"
+    },
+    {
+      "command": "rtk uv run python /tmp/opencode/t12-qa/smoke_task12.py against scratch PostgreSQL 17",
+      "exit": 0,
+      "result": "see task-12-manual-qa.log: paste and PDF accepted; hostile metadata ignored; duplicate returns same source_version and job; too-large abort leaves rows unchanged and quarantine empty; empty/binary/encrypted reject as corrupt/unsupported/policy_blocked; lifecycle routes and succeeded job observed; one shared blob with two separate owner source rows; 12 source audit events"
+    }
+  ],
+  "manual_qa_artifact": ".omo/evidence/task-12-manual-qa.log",
+  "dependencies_added": [],
+  "lsp": "Unavailable: local LSP daemon socket never became reachable; strict mypy is the requested authority and passed",
+  "deferred_wave_2": [
+    "New unit/integration/golden test files and hostile corpus batteries (explicitly prohibited in prototype wave 1)",
+    "Parse/canonicalize and source-version activation (T13/T14)",
+    "Refresh/versioning and purge closure (T24)"
+  ]
+}

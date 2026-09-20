@@ -39,6 +39,7 @@ from milpbooklm_application.job_ports import (
 )
 
 ENQUEUE_PAYLOAD_SCHEMA_VERSION = 1
+type JobPayload = dict[str, object]
 
 
 @dataclass(frozen=True, slots=True)

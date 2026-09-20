@@ -12,6 +12,7 @@ import os
 
 import sqlalchemy as sa
 from fastapi import FastAPI, HTTPException, Request
+from milpbooklm_adapters.blobs import FilesystemBlobStore, PgBlobRepository
 from milpbooklm_adapters.db.connections import make_engine
 from milpbooklm_adapters.jobs import PgJobRepository, PgOutboxDispatcher, PolicyAuthzRevalidator
 from milpbooklm_adapters.notebook_repository import InMemoryNotebookRepository
@@ -21,6 +22,7 @@ from milpbooklm_adapters.security.custody_store import PgNotebookCustodyStore
 from milpbooklm_adapters.security.notebook_reader import PgNotebookReader
 from milpbooklm_adapters.security.pg_identity import PgAuditLog, PgUserRepository
 from milpbooklm_adapters.security.session_store import PgSessionTokenStore
+from milpbooklm_adapters.sources import FilesystemQuarantineStore, PgSourceCatalog
 from milpbooklm_application.authn import LoginUser, LogoutUser, RegisterUser, RotateSession
 from milpbooklm_application.capabilities import CapabilityRuntime
 from milpbooklm_application.create_notebook import CreateNotebook
@@ -42,6 +44,7 @@ from milpbooklm_application.ports import (
     SessionTokenStore,
     UserRepository,
 )
+from milpbooklm_application.source_acquisition import AcquireSource, SourceCatalog
 from milpbooklm_application.structured_logging import configure_structured_logging
 from milpbooklm_domain.capabilities import CapabilityDefinition, DependencyId, FeatureFlag
 from starlette import status
@@ -66,6 +69,9 @@ from .security import (
     SlidingWindowLimiter,
     principal_from_request,
 )
+from .source_routes import build_source_router
+
+MAX_ACQUISITION_BYTES = 10 * 1024 * 1024
 
 
 def build_create_notebook() -> tuple[CreateNotebook, InMemoryNotebookRepository]:
@@ -88,6 +94,8 @@ def build_app(
     health: DeploymentHealth | None = None,
     capability_definitions: tuple[CapabilityDefinition, ...] | None = None,
     capability_runtime: CapabilityRuntime | None = None,
+    source_acquisition: AcquireSource | None = None,
+    source_catalog: SourceCatalog | None = None,
 ) -> FastAPI:
     """Build the API app from wired ports (the test/QA seam)."""
     app = FastAPI(title="MilpBook LM API")
@@ -152,6 +160,8 @@ def build_app(
     app.include_router(build_notebook_router(deps, principal))
     if jobs is not None:
         app.include_router(build_job_router(deps, principal, jobs))
+    if source_acquisition is not None and source_catalog is not None:
+        app.include_router(build_source_router(deps, principal, source_acquisition, source_catalog))
     return app
 
 
@@ -185,16 +195,34 @@ def create_app() -> FastAPI:
     )
     users = PgUserRepository(engine)
     notebooks = PgNotebookReader(engine)
+    audit = PgAuditLog(engine)
+    jobs = build_job_ports(engine, users, notebooks)
+    source_catalog = PgSourceCatalog(engine)
+    source_acquisition = AcquireSource(
+        quarantine=FilesystemQuarantineStore(
+            installation.blob_root,
+            max_bytes=MAX_ACQUISITION_BYTES,
+        ),
+        blobs=FilesystemBlobStore(
+            installation.blob_root,
+            PgBlobRepository(engine),
+            clock,
+        ),
+        catalog=source_catalog,
+        audit=audit,
+        jobs=jobs,
+        clock=clock,
+    )
     return build_app(
         users=users,
         hasher=Argon2PasswordHasher(),
         sessions=PgSessionTokenStore(engine, secret_key=settings.secret_key, clock=clock),
         custody=PgNotebookCustodyStore(engine),
-        audit=PgAuditLog(engine),
+        audit=audit,
         notebooks=notebooks,
         settings=settings,
         clock=clock,
-        jobs=build_job_ports(engine, users, notebooks),
+        jobs=jobs,
         health=DeploymentHealth(
             engine,
             installation.blob_root,
@@ -208,4 +236,6 @@ def create_app() -> FastAPI:
                 DependencyId(provider) for provider in installation.configured_provider_capabilities
             ),
         ),
+        source_acquisition=source_acquisition,
+        source_catalog=source_catalog,
     )
