@@ -1,0 +1,31 @@
+{
+  "task": "11. Phase-0 gate — Harness evidence bundle",
+  "scope": "prototype-first wave 1 (D12 prototype-first + D13 light-QA)",
+  "status": "prototype_complete_wave_2_deferred",
+  "requirements": ["TECH-00-003 (conformance emit, ch00)"],
+  "implemented": [
+    "Existing-suite runs at HEAD 364e9a3: tests/meta + tests/architecture + tests/unit (127 passed)",
+    "Conformance gates: ruff (repo), mypy (strict, 112 source files), import-linter (4 kept / 0 broken)",
+    "conformance.json v0 emitted via tools/spec/emit_conformance.py against packages/contracts/src/milpbooklm_contracts/capabilities.yaml (no patch needed: tool already points at the moved registry path from task 9)",
+    "Honest conformance: registry seed has 0 implemented/enabled entries -> 0 effective, 0 advertised (zero unimplemented-but-advertised)",
+    "artifacts/verification/phase-0-gate.json: per-workstream gate report (FND-01..07 done; OPS-01a/SCOPE-GUARD/MOD-01 partial with named wave-2 deferrals) sourced from .omo/start-work/ledger.jsonl + PLANNING-HANDOFF Phase 0 exit row"
+  ],
+  "verification": [
+    {"command": "rtk uv run pytest tests/meta tests/architecture tests/unit -q", "exit": 0, "result": "127 passed, 2 warnings in 5.38s"},
+    {"command": "rtk uv run ruff check .", "exit": 0, "result": "All checks passed!"},
+    {"command": "rtk uv run mypy", "exit": 0, "result": "Success: no issues found in 112 source files"},
+    {"command": "rtk uv run import-linter lint", "exit": 0, "result": "Contracts: 4 kept, 0 broken (152 files, 685 dependencies)"},
+    {"command": "rtk uv run python tools/spec/emit_conformance.py", "exit": 0, "result": "wrote /home/srcds/dev/milpbookLM/artifacts/conformance.json"},
+    {"command": "uv run python (read-only json load of artifacts/conformance.json)", "exit": 0, "result": "build=364e9a32255a54b67afbc98ecf013dcf8e0a7472; requirements_total=507; capabilities=61; implemented=[]; enabled=[]; effective=[]; advertised=[]"},
+    {"command": "grep 'PHASE-GATE|phase_gate' over tests/ (native tool)", "exit": 0, "result": "no matches — PHASE-GATE-001 suite does not exist at HEAD; reported deferred, not faked"}
+  ],
+  "gate_report": "artifacts/verification/phase-0-gate.json",
+  "deferred_wave_2": [
+    "PHASE-GATE-001 suite (tests/meta/phase_gates group) — plan acceptance criterion deferred with the rest of the test-writing",
+    "OPS-01a live podman compose up drill (sudo-gated podman install; user commands in infra/podman/README.md)",
+    "SCOPE-GUARD meta-test battery (advertisement-scan, excluded-infrastructure dependency-graph, flag-obligation activation)",
+    "MOD-01 10.4.2 contract-suite test files + recording mode; 10.6 full ADR; p95 latency assert; non-chat adapter methods; ModelHealth -> /api/v1/capabilities cross-process seam",
+    "FND-03 immutable-table invariant probe cleanup path (superuser DISABLE TRIGGER USER) — 13/20 probe failures were harness cleanup mechanics after passing body assertions"
+  ],
+  "notes": "No tools/ patch was required: emit_conformance.py and check_capabilities.py both already reference packages/contracts/src/milpbooklm_contracts/capabilities.yaml (moved in task 9). Conformance path per tool design is artifacts/conformance.json. Gate verdict is PARTIAL, not a full pass: the PHASE-GATE-001 acceptance suite is wave-2 scope and the three partial workstreams have named deferrals."
+}

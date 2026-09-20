@@ -1,0 +1,144 @@
+{
+  "schema": "milpbooklm.phase-gate/0",
+  "task": "11. Phase-0 gate — Harness evidence bundle",
+  "phase": 0,
+  "generated_at": "2026-09-20",
+  "build_head": "364e9a32255a54b67afbc98ecf013dcf8e0a7472",
+  "scope": "prototype-first (D12/D13): existing suites only, no new test/VER files, light manual QA; all new test-writing is wave 2",
+  "exit_row_source": "milpbookml-implementation-guide/PLANNING-HANDOFF.md § Phase entry and exit gates (Phase 0 required exit)",
+  "exit_row_required": "rootless composition, locks, migrations, identity skeleton, jobs/outbox, blobs, capability/requirement meta-tests and deterministic fakes pass",
+  "suites": {
+    "existing_pytest": {
+      "command": "rtk uv run pytest tests/meta tests/architecture tests/unit -q",
+      "result": "127 passed, 2 warnings in 5.38s",
+      "status": "green",
+      "note": "2 warnings are pre-existing starlette/anyio DeprecationWarning (BlockingPortal alias), not from this task"
+    },
+    "gates": {
+      "ruff": { "command": "rtk uv run ruff check .", "result": "All checks passed!", "status": "green" },
+      "mypy": { "command": "rtk uv run mypy", "result": "Success: no issues found in 112 source files", "status": "green" },
+      "import_linter": { "command": "rtk uv run import-linter lint", "result": "Contracts: 4 kept, 0 broken (152 files, 685 dependencies)", "status": "green" }
+    },
+    "phase_gate_suite": {
+      "name": "PHASE-GATE-001 (tests/meta/phase_gates group)",
+      "exists_at_head": false,
+      "status": "deferred_wave_2",
+      "evidence": "glob tests/meta/** lists only normative_extraction/ + capabilities/; grep 'PHASE-GATE|phase_gate' over tests/ returns no matches",
+      "note": "No phase_gates group exists at HEAD 364e9a3. Per D12 prototype-first, no new test files are authored in wave 1, so the PHASE-GATE-001 acceptance suite is wave-2 scope. It is NOT faked green here; it is reported as deferred."
+    }
+  },
+  "conformance": {
+    "emitter": "tools/spec/emit_conformance.py",
+    "registry": "packages/contracts/src/milpbooklm_contracts/capabilities.yaml",
+    "path": "artifacts/conformance.json",
+    "build": "364e9a32255a54b67afbc98ecf013dcf8e0a7472",
+    "schema_version": 1,
+    "requirements_total": 507,
+    "capabilities_total": 61,
+    "implemented": 0,
+    "enabled": 0,
+    "effective": 0,
+    "advertised": 0,
+    "unimplemented_but_advertised": 0,
+    "note": "Registry seed (capabilities.yaml, 61 entries) has 0 implemented/enabled entries; the T9 compute layer is fail-closed. Conformance therefore advertises nothing. Honest: zero advertised-but-unimplemented."
+  },
+  "workstreams": [
+    {
+      "id": "FND-01", "task": "1", "name": "Repository, locks, module boundaries and CI",
+      "status": "done",
+      "commits": ["597f92d", "2c3e80f"],
+      "evidence": [".omo/evidence/task-1-milpbooklm-implementation.json"],
+      "exit_row_coverage": "locks",
+      "deferred_wave_2": []
+    },
+    {
+      "id": "FND-02", "task": "2", "name": "Configuration, capability profile and specification tooling",
+      "status": "done",
+      "commits": ["dd77af1"],
+      "evidence": [".omo/evidence/task-2-milpbooklm-implementation.json"],
+      "exit_row_coverage": "capability/requirement meta-tests (requirement census 507/507 mapped)",
+      "deferred_wave_2": []
+    },
+    {
+      "id": "FND-03", "task": "3", "name": "PostgreSQL roles, migrations and transaction conventions",
+      "status": "done",
+      "commits": ["adef1e2", "a84ff84"],
+      "evidence": [".omo/evidence/task-3-milpbooklm-implementation.json"],
+      "exit_row_coverage": "migrations",
+      "deferred_wave_2": []
+    },
+    {
+      "id": "FND-04", "task": "4", "name": "Local identity, sessions, authorization and custody",
+      "status": "done",
+      "commits": ["47d6bd4"],
+      "evidence": [".omo/evidence/task-4-milpbooklm-implementation.json"],
+      "exit_row_coverage": "identity skeleton",
+      "deferred_wave_2": []
+    },
+    {
+      "id": "FND-05", "task": "5", "name": "Jobs, leases, outbox, SSE and cancellation",
+      "status": "done",
+      "commits": ["afd45c1"],
+      "evidence": [".omo/evidence/task-5-milpbooklm-implementation.json"],
+      "exit_row_coverage": "jobs/outbox",
+      "deferred_wave_2": []
+    },
+    {
+      "id": "FND-06", "task": "6", "name": "Immutable filesystem blobs and reconciliation",
+      "status": "done",
+      "commits": ["2bb96eb", "982c644", "079dd68", "4cbd15c"],
+      "evidence": [".omo/evidence/task-6-milpbooklm-implementation.json"],
+      "exit_row_coverage": "blobs",
+      "deferred_wave_2": []
+    },
+    {
+      "id": "FND-07", "task": "7", "name": "Telemetry, audit, secrets and security baseline",
+      "status": "done",
+      "commits": ["f063331", "2c28b52", "bfd62c1"],
+      "evidence": [".omo/evidence/task-7-milpbooklm-implementation.json"],
+      "exit_row_coverage": "identity skeleton (security baseline)",
+      "deferred_wave_2": []
+    },
+    {
+      "id": "OPS-01a", "task": "8", "name": "Rootless compose deployment, Caddy edge, installer prerequisites, host probes",
+      "status": "partial",
+      "commits": ["7a7c3d9", "5be5e77", "f9c612b", "3ad8850", "26efafc", "18c1c3b", "5905580", "cafc1ca", "fb65731"],
+      "evidence": [".omo/evidence/task-8-milpbooklm-implementation.json"],
+      "exit_row_coverage": "rootless composition",
+      "deferred_wave_2": ["live podman compose up drill (compose health, Caddy local-CA TLS handshake, stopped-PostgreSQL degradation) — sudo-gated podman install; user commands recorded in infra/podman/README.md"]
+    },
+    {
+      "id": "SCOPE-GUARD", "task": "9", "name": "Deliberate non-target enforcement + capability-gating surface",
+      "status": "partial",
+      "commits": ["63893f1", "4387b34", "5a722d5", "1e5e2a3", "a474595"],
+      "evidence": [".omo/evidence/task-9-milpbooklm-implementation.json"],
+      "exit_row_coverage": "capability/requirement meta-tests (gating surface)",
+      "deferred_wave_2": ["advertisement-scan meta-test file", "excluded-infrastructure dependency-graph meta-test file", "feature-flag-to-obligation activation meta-test file"]
+    },
+    {
+      "id": "MOD-01", "task": "10", "name": "Provider contracts, registry, routing and fakes (core)",
+      "status": "partial",
+      "commits": ["3c96066", "ec3c1f8", "c7fd37a", "691186a"],
+      "evidence": [".omo/evidence/task-10-milpbooklm-implementation.json"],
+      "exit_row_coverage": "deterministic fakes",
+      "deferred_wave_2": ["10.4.2 contract-suite test files + recording mode", "10.6 full ADR", "p95 latency assert", "non-chat adapter methods", "ModelHealth -> /api/v1/capabilities cross-process seam"]
+    }
+  ],
+  "phase0_exit_row_assessment": [
+    { "item": "rootless composition", "workstream": "OPS-01a", "satisfied": false, "reason": "live podman drill deferred (sudo-gated); installer + health adapter + compose YAML valid" },
+    { "item": "locks", "workstream": "FND-01", "satisfied": true, "reason": "frozen installs + import-linter 4 kept/0 broken" },
+    { "item": "migrations", "workstream": "FND-03", "satisfied": true, "reason": "alembic up->down->up green on scratch PG" },
+    { "item": "identity skeleton", "workstream": "FND-04", "satisfied": true, "reason": "41 PASS/0 FAIL QA matrix" },
+    { "item": "jobs/outbox", "workstream": "FND-05", "satisfied": true, "reason": "30/30 QA across lease-recovery/SSE/capacity" },
+    { "item": "blobs", "workstream": "FND-06", "satisfied": true, "reason": "live scratch-PG put/finalize/read + GC smoke" },
+    { "item": "capability/requirement meta-tests", "workstream": "FND-02 + SCOPE-GUARD", "satisfied": false, "reason": "census done; SCOPE-GUARD meta-test battery deferred to wave 2" },
+    { "item": "deterministic fakes", "workstream": "MOD-01", "satisfied": false, "reason": "fakes implemented and exercised in smoke; contract-suite test files deferred to wave 2" }
+  ],
+  "must_not_checks": {
+    "placeholder_adapters": { "violated": false, "reason": "MOD-01 ships real OpenAI-compat + llama.cpp native adapters and real deterministic fakes; no stand-in presented as implemented" },
+    "unclassified_requirements": { "violated": false, "reason": "FND-02 requirement census 507/507 mapped (12 narrative); conformance requirements_total=507" },
+    "stale_evidence": { "violated": false, "reason": "all suite/gate runs + conformance emitted at HEAD 364e9a3 (this session); no stale evidence bundled" }
+  },
+  "verdict": "partial",
+  "verdict_rationale": "Phase-0 harness evidence bundle is complete at prototype scope: existing pytest (127 passed) + ruff + mypy + import-linter all green; conformance.json v0 emitted with zero unimplemented-but-advertised capabilities; all three MUST NOTs clear. The plan's PHASE-GATE-001 suite and the T8/T9/T10 test batteries do not exist at HEAD and are wave-2 scope per D12 (no new test files in wave 1), so they are reported deferred, not faked green. Gate is therefore partial, not a full pass."
+}

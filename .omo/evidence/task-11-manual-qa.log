@@ -1,0 +1,77 @@
+# Task 11 — Phase-0 gate: manual QA log (light-QA mode, D13)
+
+Date: 2026-09-20
+Working dir: /home/srcds/dev/milpbookLM
+HEAD: 364e9a32255a54b67afbc98ecf013dcf8e0a7472
+
+All commands run via rtk; outputs below are verbatim captures from this session.
+
+## 1. Existing suites (phase-0 tier set, prototype scope)
+
+$ rtk uv run pytest tests/meta tests/architecture tests/unit -q
+(tail of output)
+/home/srcds/dev/milpbookLM/.venv/lib/python3.13/site-packages/starlette/testclient.py:53: DeprecationWarning: The anyio.abc.BlockingPortal alias is deprecated, use anyio.from_thread.BlockingPortal instead.
+    _PortalFactoryType = Callable[[], AbstractContextManager[anyio.abc.BlockingPortal]]
+
+-- Docs: https://docs.pytest.org/en/stable/how-to/capture-warnings.html
+127 passed, 2 warnings in 5.38s
+
+## 2. Conformance gates
+
+$ rtk uv run ruff check .
+All checks passed!
+
+$ rtk uv run mypy
+Success: no issues found in 112 source files
+
+$ rtk uv run import-linter lint
+Contracts
+---------
+
+Analyzed 152 files, 685 dependencies.
+-------------------------------------
+
+Inward dependency layering (domain innermost) KEPT
+domain imports no adapter, application, framework KEPT
+application imports no adapter KEPT
+api and workers are independent KEPT
+
+Contracts: 4 kept, 0 broken.
+
+## 3. Conformance emit (tools/spec, no patch required)
+
+$ rtk uv run python tools/spec/emit_conformance.py
+wrote /home/srcds/dev/milpbookLM/artifacts/conformance.json
+
+Honesty check (read-only json load of artifacts/conformance.json via `uv run python`):
+  build: 364e9a32255a54b67afbc98ecf013dcf8e0a7472
+  requirements_total: 507
+  capabilities: 61
+  implemented: []
+  enabled: []
+  effective: []
+  advertised: []
+
+=> 0 advertised-but-unimplemented capabilities (plan MUST NOT satisfied by construction:
+   registry seed has 0 implemented entries, T9 compute layer is fail-closed).
+
+## 4. PHASE-GATE-001 suite presence check
+
+- Glob tests/meta/** -> only tests/meta/normative_extraction/ (ver-arch-00-049/050, ver-tech-00-001/002/003)
+  and tests/meta/capabilities/ (ver-arch-02-001..007, ver-tech-02-001/002) + _tools.py / _evidence_fnd02.py.
+- Grep pattern 'PHASE-GATE|phase_gate' over tests/ -> No matches found.
+
+=> No phase_gates group exists at HEAD 364e9a3. Per D12 (no new test files in wave 1) the
+   PHASE-GATE-001 suite is wave-2 scope. Recorded as deferred in the gate report — NOT faked green.
+
+## 5. Gate report
+
+Wrote artifacts/verification/phase-0-gate.json:
+- per-workstream rows: FND-01..FND-07 done; OPS-01a / SCOPE-GUARD / MOD-01 partial (named wave-2 deferrals)
+- evidence pointers: per-task commit hashes + .omo/evidence/task-N-milpbooklm-implementation.json
+- exit-row mapping vs PLANNING-HANDOFF Phase 0 required exit (8 items: 5 satisfied, 3 deferred)
+- MUST NOT checks: placeholder_adapters=false, unclassified_requirements=false, stale_evidence=false
+- verdict: partial (prototype-scope evidence bundle complete; full green requires wave-2 test batteries)
+
+No tools/ patch needed: tools/spec/emit_conformance.py and tools/spec/check_capabilities.py already
+reference packages/contracts/src/milpbooklm_contracts/capabilities.yaml (registry moved in task 9).

@@ -136,6 +136,12 @@ _Auto-scaffolded by /start-work. Append new entries below - never overwrite._
 
 ---
 
+## T11 (2026-09-20)
+
+1. **`tools/spec/emit_conformance.py` needed no patch**: it already points at `packages/contracts/src/milpbooklm_contracts/capabilities.yaml` (moved in task 9), and its designed output path is `artifacts/conformance.json` (repo root artifacts, NOT `artifacts/verification/`). Honesty is by construction when the registry seed has 0 `implemented: true` entries: effective/advertised both come out `[]`, so the gate's "zero advertised-but-unimplemented" MUST NOT cannot be violated by hand-editing the emitter.
+2. **The PHASE-GATE-001 acceptance suite does not exist in wave 1** — `tests/meta/` has only `normative_extraction/` and `capabilities/` groups; `PHASE-GATE` appears in the registry's `required_test_groups` (a test-group NAME in data, not a file) but no test implements it. Under D12 (no new test files), a gate task whose acceptance criterion is "PHASE-GATE-001 suite green" must be reported PARTIAL with the suite recorded deferred — a green verdict would be a fabrication.
+3. **Gate-report ground truth lives in `.omo/start-work/ledger.jsonl`** (task-completed events carry commits/commands/deferred/verdict per task) joined with the PLANNING-HANDOFF "Phase entry and exit gates" table (Phase 0 required exit = 8 named items; map each to a workstream, and report each as satisfied/deferred). The registry's `required_test_groups` listing PHASE-GATE-001/CAP-PROFILE-001 is forward-looking data, not evidence.
+
 ## Spelling-unification (2026-09-20)
 
 - Renamed `.omo/plans/`, `.omo/drafts/`, `.omo/notepads/`, and `.omo/evidence/task-*-…` from `milpbookml-implementation` to `milpbooklm-implementation`; live references updated in the plan text, journal, ledger, boulder.json (unstaged runtime state), and the notepad headers.
