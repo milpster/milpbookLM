@@ -36,6 +36,7 @@ from milpbooklm_application.blob_usecases import BlobPorts, CollectBlobGarbage, 
 from milpbooklm_application.job_capacity import load_capacity_policy
 from milpbooklm_application.job_usecases import CancelJob, CompleteJob, RecoverExpiredLeases
 from milpbooklm_application.policy_engine import PolicyEngine
+from milpbooklm_domain.blobs import MAX_BACKUP_WINDOW, gc_safety_delay_valid
 from milpbooklm_domain.jobs import CapacityClass
 
 from milpbooklm_workers.handlers import BlobIntegrityScanHandler, DemoEchoHandler, JobHandler
@@ -109,8 +110,20 @@ def build_parser() -> argparse.ArgumentParser:
     return parser
 
 
+def _gc_safety_delay(args: argparse.Namespace) -> timedelta:
+    """Parse + validate the GC safety delay (ONE policy for finals AND temp sweeps)."""
+    delay = timedelta(hours=args.gc_safety_delay_hours)
+    if not gc_safety_delay_valid(delay):
+        window_hours = MAX_BACKUP_WINDOW.total_seconds() / 3600
+        raise SystemExit(
+            f"error: --gc-safety-delay-hours must be > {window_hours:g} "
+            f"(the ch21 max backup-copy window); got {args.gc_safety_delay_hours}"
+        )
+    return delay
+
+
 def build_blob_ports(
-    engine: sa.engine.Engine, blob_root: Path, safety_delay_hours: float
+    engine: sa.engine.Engine, blob_root: Path, safety_delay: timedelta
 ) -> BlobPorts:
     """Wire the blob surface: filesystem store + PG bookkeeping + maintenance use cases."""
     clock = SystemClock()
@@ -120,7 +133,7 @@ def build_blob_ports(
         store=store,
         repo=repo,
         reconcile=ReconcileBlobs(store, repo, clock),
-        gc=CollectBlobGarbage(store, repo, clock, timedelta(hours=safety_delay_hours)),
+        gc=CollectBlobGarbage(store, repo, clock, safety_delay),
     )
 
 
@@ -136,7 +149,7 @@ def build_worker(args: argparse.Namespace) -> WorkerLoop:
     worker_id = args.worker_id or f"worker-{os.getpid()}"
     handlers: dict[str, JobHandler] = {DemoEchoHandler.kind: DemoEchoHandler()}
     if args.blob_root:
-        blob_ports = build_blob_ports(engine, Path(args.blob_root), args.gc_safety_delay_hours)
+        blob_ports = build_blob_ports(engine, Path(args.blob_root), _gc_safety_delay(args))
         handlers[BlobIntegrityScanHandler.kind] = BlobIntegrityScanHandler(blob_ports.reconcile)
     return WorkerLoop(
         repo=repo,
@@ -175,7 +188,7 @@ def _run_maintenance(args: argparse.Namespace) -> int:
     """One-shot blob maintenance commands (reconcile / put-blob / get-blob / gc)."""
     _require(args, "dsn", "blob_root")
     engine = make_engine(args.dsn)
-    ports = build_blob_ports(engine, Path(args.blob_root), args.gc_safety_delay_hours)
+    ports = build_blob_ports(engine, Path(args.blob_root), _gc_safety_delay(args))
     if args.command == "reconcile":
         report = ports.reconcile()
         print(json.dumps(

@@ -6,8 +6,10 @@ finalized objects and missing/corrupt referenced objects, and never deletes
 anything (repeated scans are safe). CollectBlobGarbage is the separate,
 intentionally invoked deletion action: it enforces the configured safety
 delay - which must be strictly longer than the maximum backup-copy window
-(ch21) - before any finalized object file may go away, and it never touches
-missing referenced objects (those are integrity incidents, not garbage).
+(ch21) - before any finalized object file may go away and before any temp
+file is swept (a fresh temp may belong to an in-flight put), and it never
+touches missing referenced objects (those are integrity incidents, not
+garbage).
 GC deletes files only: the FND-03 finalize-guard trigger makes the
 ``finalized`` row state terminal in the database, so a GC'd object's record
 remains and is reported (never re-mutated) by subsequent scans.
@@ -79,18 +81,18 @@ class ReconcileBlobs:
         return ReconciliationReport(at=self._clock.now(), findings=tuple(findings))
 
     def _classify_temporaries(self) -> list[ReconciliationFinding]:
-        """Every staged temp file is an orphan: temps never carry references."""
+        """Classify staged temp files; the mtime is the GC age anchor (defect 1)."""
         return [
             ReconciliationFinding(
                 kind=ReconciliationClass.ORPHAN_TEMPORARY,
                 blob_id=None,
                 content_sha256=None,
-                storage_path=path,
-                finalized_at=None,
+                storage_path=stats.relative_path,
+                finalized_at=stats.mtime,
                 file_present=True,
                 detail="temporary file left outside a committed write",
             )
-            for path in self._store.list_temporaries()
+            for stats in self._store.list_temporaries()
         ]
 
     def _classify_finals(
@@ -192,13 +194,15 @@ class CollectBlobGarbage:
     """
     Delayed physical GC (ch21; FND-06 micro-index 6.3).
 
-    Deletion is an explicit action distinct from classification. Orphan
-    temporaries are swept immediately (never referenced, never part of any
-    backup); a finalized object is deleted only once its finalization is at
-    least the configured safety delay old, and the delay itself must be
-    strictly longer than the maximum backup-copy window (validated at
-    construction, so an unsafe GC cannot even be wired). Missing referenced
-    objects are never deleted - they are integrity incidents.
+    Deletion is an explicit action distinct from classification. One coherent
+    policy governs both artifact classes: the configured safety delay - which
+    must be strictly longer than the maximum backup-copy window (validated at
+    construction, so an unsafe GC cannot even be wired) - must have elapsed
+    since a finalized object's finalization, or since a temp file's last write
+    (its mtime), before it may go away. A fresh temp may belong to an in-flight
+    put and is never swept; temps are never part of any backup, they are simply
+    never touched while young. Missing referenced objects are never deleted -
+    they are integrity incidents.
     """
 
     def __init__(
@@ -228,6 +232,11 @@ class CollectBlobGarbage:
         deleted = 0
         pending = 0
         for finding in report.findings_of(ReconciliationClass.ORPHAN_TEMPORARY):
+            if not self._eligible(finding, now):
+                # A fresh temp may belong to an in-flight put: sweep only once
+                # the safety delay has elapsed since its last write (mtime).
+                pending += 1
+                continue
             if finding.storage_path is not None:
                 self._store.delete_temporary(finding.storage_path)
                 swept += 1
@@ -252,7 +261,7 @@ class CollectBlobGarbage:
         )
 
     def _eligible(self, finding: ReconciliationFinding, now: datetime) -> bool:
-        """Whether the safety delay has elapsed for one unreferenced final."""
+        """Whether the safety delay has elapsed for one sweepable finding (final or temp)."""
         return gc_eligible(
             finalized_at=finding.finalized_at, now=now, safety_delay=self._safety_delay
         )

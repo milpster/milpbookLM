@@ -12,8 +12,10 @@ Crash-consistent ordering of ``put``:
   3. re-validate the temp on disk (digest + size)
   4. atomic NO-OVERWRITE finalize: ``os.link`` (EEXIST means an identical
      content-addressed object already exists; a mismatch is an incident)
-  5. fsync the objects directory (and the tmp directory after the unlink)
-  6. commit the DB object/reference row (one transaction, strictly AFTER 4-5)
+  5. fsync the bucket directory - and the objects/ directory when the bucket
+     was newly created, so the bucket's own directory entry is durable
+  6. unlink the temp, then fsync the tmp directory so the unlink is durable
+  7. commit the DB object/reference row (one transaction, strictly AFTER 4-6)
 
 A crash anywhere in this sequence leaves either a sweepable orphan temp, or a
 complete, self-verifying finalized object without a reference (an unreferenced
@@ -36,6 +38,7 @@ from milpbooklm_application.blob_store import (
     BlobRepository,
     BlobWriteError,
     StoredObjectStats,
+    TemporaryStats,
 )
 from milpbooklm_application.ports import Clock
 from milpbooklm_domain.blobs import BlobObject, BlobState
@@ -83,6 +86,7 @@ class FilesystemBlobStore:
             self._finalize(temp, expected_sha, expected_size)
         finally:
             temp.unlink(missing_ok=True)
+            self._fsync_dir(self._tmp_dir)
         return self._repo.commit_finalized(
             content_sha256=expected_sha,
             size_bytes=expected_size,
@@ -136,6 +140,7 @@ class FilesystemBlobStore:
         if final.exists():
             self._require_identical(final, content_sha256, size_bytes)
         else:
+            bucket_created = not final.parent.is_dir()
             final.parent.mkdir(parents=True, exist_ok=True)
             try:
                 # link() is atomic on POSIX and refuses to overwrite (EEXIST):
@@ -146,7 +151,11 @@ class FilesystemBlobStore:
                 # the existing object identical - verify, then dedupe.
                 self._require_identical(final, content_sha256, size_bytes)
             self._fsync_dir(final.parent)
-        self._fsync_dir(self._tmp_dir)
+            if bucket_created:
+                # The bucket's own entry in objects/ is a new directory entry:
+                # fsync objects/ too, or a crash can lose the bucket (and every
+                # object inside it) while the DB row already points at it.
+                self._fsync_dir(self._objects_dir)
 
     @staticmethod
     def _require_identical(final: Path, content_sha256: str, size_bytes: int) -> None:
@@ -227,17 +236,22 @@ class FilesystemBlobStore:
 
     # -------------------------------------------------------------- inventory
 
-    def list_temporaries(self) -> tuple[str, ...]:
-        """Relative paths of all staged temp files (reconciliation input)."""
+    def list_temporaries(self) -> tuple[TemporaryStats, ...]:
+        """All staged temp files; the mtime is the GC age anchor (a live put keeps it fresh)."""
         if not self._tmp_dir.is_dir():
             return ()
-        return tuple(
-            sorted(
-                path.relative_to(self._root).as_posix()
-                for path in self._tmp_dir.iterdir()
-                if path.is_file() and path.name.endswith(_TMP_SUFFIX)
+        stats: list[TemporaryStats] = []
+        for path in sorted(self._tmp_dir.iterdir()):
+            if not path.is_file() or not path.name.endswith(_TMP_SUFFIX):
+                continue
+            info = path.stat()
+            stats.append(
+                TemporaryStats(
+                    relative_path=path.relative_to(self._root).as_posix(),
+                    mtime=datetime.fromtimestamp(info.st_mtime, tz=UTC),
+                )
             )
-        )
+        return tuple(stats)
 
     def list_finals(self) -> tuple[StoredObjectStats, ...]:
         """All finalized objects on disk, with size + mtime (reconciliation input)."""

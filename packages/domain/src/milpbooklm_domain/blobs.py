@@ -82,8 +82,10 @@ class ReconciliationFinding:
     blob_id: uuid.UUID | None
     content_sha256: str | None
     storage_path: str | None
-    # Age anchor for the GC safety delay: the record's finalized_at, or the file's
-    # mtime when the object has no record (the only available finalization signal).
+    # Age anchor for the GC safety delay: the record's finalized_at, the file's
+    # mtime when the object has no record, or the temp's mtime for orphan
+    # temporaries - an in-flight put keeps touching its temp, so a fresh temp
+    # never ages out and can never be swept from under a live write.
     finalized_at: datetime | None
     # Whether the object's file is on disk right now. GC may only act on
     # file-present findings; a record without a file is already settled.

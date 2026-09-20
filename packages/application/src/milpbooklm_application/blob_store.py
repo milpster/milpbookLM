@@ -52,6 +52,14 @@ class StoredObjectStats:
     mtime: datetime
 
 
+@dataclass(frozen=True, slots=True)
+class TemporaryStats:
+    """One staged temp file on disk: relative path and last-write time (mtime)."""
+
+    relative_path: str
+    mtime: datetime
+
+
 class BlobStore(Protocol):
     """
     Immutable content-addressed blob storage (the crash-consistent finalize protocol).
@@ -95,8 +103,8 @@ class BlobStore(Protocol):
         """Verify a finalized object by digest (reconciliation's integrity scan)."""
         ...
 
-    def list_temporaries(self) -> tuple[str, ...]:
-        """Relative paths of all temporary (staging) files currently on disk."""
+    def list_temporaries(self) -> tuple[TemporaryStats, ...]:
+        """All staged temp files with their mtime (the GC age anchor)."""
         ...
 
     def list_finals(self) -> tuple[StoredObjectStats, ...]:

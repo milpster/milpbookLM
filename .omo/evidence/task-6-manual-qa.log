@@ -100,3 +100,64 @@ Operational notes:
 - The abandoned smoke's S5 had only exercised GC on a FILE-ONLY final
   (no row -> no mark_purged call), which is why it missed the trigger crash
   on the record-based path.
+
+## Verification-fix regression smoke (2026-09-20, post-2bb96eb, V1-V6)
+
+Fixes under test (defects found by manual review of 2bb96eb):
+- DEFECT 1: GC swept every listed temp immediately - a temp of an in-flight
+  put (visible while writing/validating) could be unlinked from under it.
+  Fix: list_temporaries() now returns TemporaryStats (relative_path + mtime);
+  the finding carries the temp's mtime as its age anchor; GC sweeps a temp
+  only after the SAME safety delay (one coherent policy) has elapsed since
+  the temp's last write. A live put keeps its temp's mtime fresh, so a fresh
+  temp can never be swept.
+- DEFECT 2: _finalize() fsynced the tmp dir BEFORE put()'s finally ran
+  temp.unlink() (the docstring falsely claimed "after the unlink"), and a
+  newly created objects/<prefix> bucket was fsynced without its parent
+  objects/, so the bucket's own directory entry could be lost on crash while
+  the DB row already points at it.
+  Fix: temp-dir fsync moved to put()'s finally AFTER temp.unlink(); _finalize
+  fsyncs objects/ when the bucket was newly created; docstring now matches
+  the real ordering.
+
+V1: plant fresh temp blobs/tmp/cccc0000-3333-4444-5555-666677778888.tmp (49 B, mtime = now)
+
+## V2: gc @48h - the fresh temp MUST survive
+$ uv run python -m milpbooklm_workers --command gc --dsn $DSN --blob-root .../blobs --gc-safety-delay-hours 48
+-> {"swept_temps": 0, "deleted_finals": 0, "pending_safety_delay": 1, "integrity_incidents": 1}
+   (pending = the fresh temp; incident = pre-existing a1b2c3d4..., untouched)
+Disk check: tmp/cccc0000-...tmp still present (49 B). FRESH_TEMP_SURVIVED_GC
+
+## V3: gc @48h after aging the temp - it MUST be swept
+$ touch -d '3 days ago' blobs/tmp/cccc0000-...tmp
+$ uv run python -m milpbooklm_workers --command gc ... --gc-safety-delay-hours 48
+-> {"swept_temps": 1, "deleted_finals": 0, "pending_safety_delay": 0, "integrity_incidents": 1}
+Disk check: blobs/tmp/ empty. AGED_TEMP_SWEEPED
+
+## V4: normal put/get through the repaired finalize ordering
+$ uv run python -m milpbooklm_workers --command put-blob --dsn $DSN --blob-root .../blobs \
+    --file .../verify-sample.txt --content-type text/plain \
+    --referrer-kind source_version --referrer-id 34343434-5656-7878-9090-121212121212
+-> {"content_sha256": "b314a9428a7b97e0a17d8b5681adf4709190e9cf1461d81b89556fbefcc09c6d",
+    "id": "000001a0-bd53-7e31-97b1-5304c34bd233", "size_bytes": 61, "state": "finalized"}
+   (NEW bucket objects/b3/ created on this write -> exercises the parent
+    objects/ fsync of a newly created bucket + the post-unlink tmp-dir fsync)
+$ uv run python -m milpbooklm_workers --command get-blob --dsn $DSN --blob-root .../blobs \
+    --blob-id 000001a0-bd53-7e31-97b1-5304c34bd233 --out .../verify-readback.bin
+-> {"bytes": 61, "sha256": "b314a942...", "id": "000001a0-bd53-7e31-97b1-5304c34bd233"}
+$ cmp verify-sample.txt verify-readback.bin  ->  (no diff) READBACK_IDENTICAL
+
+## V5: invalid safety delay rejected at the composition boundary
+$ uv run python -m milpbooklm_workers --command gc ... --gc-safety-delay-hours 24
+-> error: --gc-safety-delay-hours must be > 24 (the ch21 max backup-copy window); got 24.0
+   (clean usage error, exit 1, no traceback; the use-case constructor keeps
+    its ValueError as the typed backstop for other wirings)
+
+## V6: post-fix reconciliation stable
+$ uv run python -m milpbooklm_workers --command reconcile --dsn $DSN --blob-root .../blobs
+-> findings: exactly the two known bookkeeping remainders -
+   1. missing_referenced  a1b2c3d4... (never GC'd)
+   2. unreferenced_final  eeee... (settled record, file gone)
+   No temporaries; healthy referenced blobs (1c12d9c8..., 0d72c9cb..., b314a942...) clean.
+
+SMOKE_RESULT: PASS (V1-V6 all as expected; no process left running; scratch PG stopped)
