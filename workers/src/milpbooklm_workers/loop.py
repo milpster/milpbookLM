@@ -160,6 +160,7 @@ class WorkerLoop:
                 capacity_class=capacity_class,
                 lease_seconds=self._lease_seconds,
                 policy=self._policy,
+                handled_kinds=tuple(self._handlers),
             )
             if claimed is not None:
                 self._run_one(claimed)

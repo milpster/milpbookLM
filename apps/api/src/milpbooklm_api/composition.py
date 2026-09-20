@@ -209,7 +209,6 @@ def create_app() -> FastAPI:
         catalog=source_catalog,
         audit=audit,
         jobs=jobs,
-        clock=clock,
     )
     return build_app(
         users=users,

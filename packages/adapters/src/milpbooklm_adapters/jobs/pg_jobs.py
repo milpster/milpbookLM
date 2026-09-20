@@ -14,6 +14,7 @@ from __future__ import annotations
 
 import json
 import uuid
+from collections.abc import Sequence
 from dataclasses import replace
 from datetime import UTC, datetime, timedelta
 from typing import Any
@@ -151,8 +152,11 @@ class PgJobRepository:
         capacity_class: str,
         lease_seconds: int,
         policy: CapacityPolicy,
+        handled_kinds: Sequence[str],
     ) -> JobRecord | None:
-        """Claim one queued job of the class under FOR UPDATE SKIP LOCKED + budget checks."""
+        """Claim one queued handled job under FOR UPDATE SKIP LOCKED + budget checks."""
+        if not handled_kinds:
+            return None
         budget = policy.budget(CapacityClass(capacity_class))
         with self._engine.begin() as conn:
             chosen = conn.execute(
@@ -160,7 +164,7 @@ class PgJobRepository:
                     """
                     WITH candidates AS (
                       SELECT id FROM jobs
-                      WHERE status = 'queued' AND queue = :q
+                      WHERE status = 'queued' AND queue = :q AND kind = ANY(:kinds)
                       ORDER BY (payload->>'priority')::int DESC NULLS LAST, enqueued_at ASC
                       LIMIT :batch
                       FOR UPDATE SKIP LOCKED
@@ -177,6 +181,7 @@ class PgJobRepository:
                 ),
                 {
                     "q": capacity_class,
+                    "kinds": list(handled_kinds),
                     "batch": _CLAIM_BATCH,
                     "class_cap": budget.max_concurrent,
                     "user_cap": budget.max_concurrent_per_user,

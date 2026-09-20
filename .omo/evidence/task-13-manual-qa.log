@@ -48,3 +48,19 @@ Final live database state:
   0002_ing_01b
 
 All 0002 ALTER/DROP operations now use IF EXISTS/IF NOT EXISTS or a drop-before-add constraint replacement, so 0001's live-metadata create_all and an interrupted 0002 retry are safe.
+
+
+Concurrent API/worker ownership QA, 2026-09-21
+
+Command:
+  rtk uv run python /home/srcds/dev/t13-smoke/atlas_t13.py
+
+The driver ran TestClient API requests while it started `python -m milpbooklm_workers` against `/home/srcds/dev/t13-smoke` PostgreSQL and blob root. Real output:
+  pdf_magic_wins: ok=true
+  jobs_terminal: text=succeeded, pdf=succeeded, malformed=failed
+  text_parsed_with_nodes: status=parsed nodes=4
+  pdf_parsed_page_and_paragraph: status=parsed nodes=3 text=Hello canonical world.
+  malformed_explicit_failure_no_fake_doc: ('parse_failed', 'corrupt')
+  ATLAS_T13_PASS
+
+The API response `job_id` remained the idempotent `ingestion.parse` job. No `ingestion.acquire_identify` row is now created or synchronously transitioned by the request path.

@@ -164,3 +164,5 @@ _Auto-scaffolded by /start-work. Append new entries below - never overwrite._
 3. **The supplied T12 scratch PostgreSQL endpoint can disappear between dispatches**: `/tmp/opencode/t12-qa/.s.PGSQL.29519` was absent during T13 manual QA. Record real isolated-parser output and distinguish unavailable persistence QA from verified parser behavior.
 
 4. **Live-metadata `create_all` composes dangerously with raw incremental migrations**: a fresh baseline can already contain newer columns, so every later raw `ALTER` must be idempotent. Use `IF EXISTS`/`IF NOT EXISTS` and drop-before-add constraint replacement to make fresh installs and interrupted-upgrade retries converge.
+
+5. **A synchronously driven request job and a polling worker are two writers by construction**: enqueuing `acquire_identify` and immediately leasing/completing it from the API races the normal worker claim CAS. Synchronous acquisition is audit-only; enqueue only the parse job, and make worker claims filter to registered handler kinds so unhandled work remains queued rather than leased and failed.

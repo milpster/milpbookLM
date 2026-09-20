@@ -11,6 +11,7 @@ publication and outbox event commit atomically").
 from __future__ import annotations
 
 import uuid
+from collections.abc import Sequence
 from dataclasses import dataclass
 from datetime import datetime
 from typing import Protocol
@@ -81,9 +82,10 @@ class JobRepository(Protocol):
         capacity_class: str,
         lease_seconds: int,
         policy: CapacityPolicy,
+        handled_kinds: Sequence[str],
     ) -> JobRecord | None:
         """
-        Claim one queued job of the class (FOR UPDATE SKIP LOCKED, bounded lease).
+        Claim one queued handled job of the class (FOR UPDATE SKIP LOCKED, bounded lease).
 
         Enforces the class + per-user concurrency budgets; returns None when the
         class is saturated or has no queued work (the work stays durably queued).

@@ -11,7 +11,7 @@ from typing import Final, Protocol
 from milpbooklm_domain.acquisition import AcquisitionError, IdentifiedMedia
 from milpbooklm_domain.blobs import BlobObject
 from milpbooklm_domain.job_capacity import CapacityClass
-from milpbooklm_domain.jobs import JobRecord, JobState
+from milpbooklm_domain.jobs import JobRecord
 from milpbooklm_domain.sources import Availability, SourceType
 from milpbooklm_domain.telemetry import current_context
 
@@ -19,7 +19,7 @@ from .audit_actions import AuditAction
 from .blob_store import BlobContentMismatchError, BlobStore
 from .job_actor import InitiatingActor
 from .job_usecases import JobPayload, JobPorts
-from .ports import AuditLog, Clock
+from .ports import AuditLog
 
 IMPORTER_VERSION: Final = "ing-01a-v1"
 
@@ -120,7 +120,6 @@ class AcquireSource:
         catalog: SourceCatalog,
         audit: AuditLog,
         jobs: JobPorts,
-        clock: Clock,
     ) -> None:
         """Wire the existing blob, audit, job, and source persistence seams."""
         self._quarantine = quarantine
@@ -128,7 +127,6 @@ class AcquireSource:
         self._catalog = catalog
         self._audit = audit
         self._jobs = jobs
-        self._clock = clock
 
     async def __call__(
         self, command: AcquireSourceCommand, chunks: AsyncIterable[bytes]
@@ -182,40 +180,10 @@ class AcquireSource:
             "blob_id": str(view.blob_id),
             "content_sha256": view.content_sha256,
             "importer_version": IMPORTER_VERSION,
-            "next_stage": "parse",
         }
-        key = f"{view.source_id}:{view.content_sha256}:{IMPORTER_VERSION}"
-        job, created = self._jobs.enqueue(
-            kind="ingestion.acquire_identify",
-            payload=payload,
-            actor=actor,
-            capacity_class=CapacityClass.INGESTION_INDEXING,
-            notebook_id=command.notebook_id,
-            capability="source_mutate",
-            idempotency_key=key,
-        )
-        if created:
-            leased = self._jobs.repo.transition(
-                job,
-                JobState.LEASED,
-                lease_owner=f"api-acquisition:{job.id}",
-                lease_expires_at=self._clock.now(),
-            )
-            running = self._jobs.repo.transition(leased, JobState.RUNNING)
-            self._jobs.complete(
-                running,
-                succeeded=True,
-                result_ref=f"source-version:{view.source_version_id}",
-            )
         parse_job, _ = self._jobs.enqueue(
             kind="ingestion.parse",
-            payload={
-                "source_id": str(view.source_id),
-                "source_version_id": str(view.source_version_id),
-                "blob_id": str(view.blob_id),
-                "content_sha256": view.content_sha256,
-                "importer_version": IMPORTER_VERSION,
-            },
+            payload=payload,
             actor=actor,
             capacity_class=CapacityClass.INGESTION_INDEXING,
             notebook_id=command.notebook_id,
