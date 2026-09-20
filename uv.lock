@@ -530,10 +530,13 @@ version = "0.1.0"
 source = { editable = "packages/adapters" }
 dependencies = [
     { name = "alembic" },
+    { name = "anyio" },
     { name = "argon2-cffi" },
+    { name = "httpx" },
     { name = "milpbooklm-application" },
     { name = "milpbooklm-domain" },
     { name = "psycopg", extra = ["binary"] },
+    { name = "pydantic" },
     { name = "pynacl" },
     { name = "sqlalchemy" },
 ]
@@ -546,10 +549,13 @@ dev = [
 [package.metadata]
 requires-dist = [
     { name = "alembic", specifier = ">=1.16,<2" },
+    { name = "anyio", specifier = ">=4.10,<5" },
     { name = "argon2-cffi", specifier = ">=25.1,<26" },
+    { name = "httpx", specifier = ">=0.28,<1" },
     { name = "milpbooklm-application", editable = "packages/application" },
     { name = "milpbooklm-domain", editable = "packages/domain" },
     { name = "psycopg", extras = ["binary"], specifier = ">=3.2,<4" },
+    { name = "pydantic", specifier = ">=2.11,<3" },
     { name = "pynacl", specifier = "==1.6.2" },
     { name = "sqlalchemy", specifier = ">=2.0,<3" },
 ]
@@ -614,6 +620,7 @@ name = "milpbooklm-workers"
 version = "0.1.0"
 source = { editable = "workers" }
 dependencies = [
+    { name = "anyio" },
     { name = "milpbooklm-adapters" },
     { name = "milpbooklm-application" },
     { name = "milpbooklm-domain" },
@@ -621,6 +628,7 @@ dependencies = [
 
 [package.metadata]
 requires-dist = [
+    { name = "anyio", specifier = ">=4.10,<5" },
     { name = "milpbooklm-adapters", editable = "packages/adapters" },
     { name = "milpbooklm-application", editable = "packages/application" },
     { name = "milpbooklm-domain", editable = "packages/domain" },

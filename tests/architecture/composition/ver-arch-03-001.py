@@ -24,6 +24,11 @@ ADAPTERS_SRC = REPO_ROOT / "packages" / "adapters" / "src" / "milpbooklm_adapter
 # nacl: the FND-07 credential-encryption line (PyNaCl binding), named in
 # REFERENCE-DEPENDENCIES.md ("libsodium XChaCha20-Poly1305 through a
 # maintained binding").
+# httpx: the MOD-01 dedicated provider transport (REFERENCE-DEPENDENCIES.md HTTP
+# row: "httpx/httpcore only behind the dedicated fetch/provider transports").
+# pydantic: the REFERENCE-DEPENDENCIES.md API line (Pydantic v2) for the adapter's
+# private response boundary models.
+# anyio: the httpx/httpcore async transport backend (MOD-01 streaming adapter).
 ALLOWED_ADAPTER_IMPORTS = {
     "milpbooklm_adapters",
     "milpbooklm_domain",
@@ -33,6 +38,9 @@ ALLOWED_ADAPTER_IMPORTS = {
     "psycopg",
     "argon2",
     "nacl",
+    "httpx",
+    "pydantic",
+    "anyio",
 } | set(sys.stdlib_module_names)
 
 

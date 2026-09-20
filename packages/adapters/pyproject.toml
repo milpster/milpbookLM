@@ -10,6 +10,11 @@ dependencies = [
     "sqlalchemy>=2.0,<3",
     "alembic>=1.16,<2",
     "psycopg[binary]>=3.2,<4",
+    # Authorized dedicated provider transport (REFERENCE-DEPENDENCIES HTTP row);
+    # anyio is the httpx/httpcore async backend these transports run on.
+    "httpx>=0.28,<1",
+    "anyio>=4.10,<5",
+    "pydantic>=2.11,<3",
     # REFERENCE-DEPENDENCIES security row: argon2-cffi; Argon2id params calibrated at
     # install/upgrade and stored with each hash (FND-04).
     "argon2-cffi>=25.1,<26",
