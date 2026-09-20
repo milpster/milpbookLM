@@ -22,8 +22,11 @@ _NODE_KINDS = (
 
 def upgrade() -> None:
     """Add explicit parser states and immutable canonical result metadata."""
-    op.execute("ALTER TABLE source_versions DROP CONSTRAINT ck_source_versions_status")
-    op.execute("ALTER TABLE source_versions ADD COLUMN parse_error_code text")
+    op.execute("ALTER TABLE source_versions DROP CONSTRAINT IF EXISTS ck_source_versions_status")
+    op.execute(
+        "ALTER TABLE source_versions DROP CONSTRAINT IF EXISTS ck_source_versions_parse_error"
+    )
+    op.execute("ALTER TABLE source_versions ADD COLUMN IF NOT EXISTS parse_error_code text")
     op.execute(
         "ALTER TABLE source_versions ADD CONSTRAINT ck_source_versions_status CHECK "
         "(status IN ('activating','parsing','parsed','encrypted','parse_failed',"
@@ -34,26 +37,26 @@ def upgrade() -> None:
         "((status IN ('encrypted','parse_failed')) = (parse_error_code IS NOT NULL))"
     )
     for ddl in (
-        "ADD COLUMN parser_identity text NOT NULL DEFAULT 'legacy'",
-        "ADD COLUMN parser_profile text NOT NULL DEFAULT 'legacy'",
-        "ADD COLUMN tool_versions jsonb NOT NULL DEFAULT '[]'::jsonb",
-        "ADD COLUMN contract_json jsonb NOT NULL DEFAULT '{}'::jsonb",
+        "ADD COLUMN IF NOT EXISTS parser_identity text NOT NULL DEFAULT 'legacy'",
+        "ADD COLUMN IF NOT EXISTS parser_profile text NOT NULL DEFAULT 'legacy'",
+        "ADD COLUMN IF NOT EXISTS tool_versions jsonb NOT NULL DEFAULT '[]'::jsonb",
+        "ADD COLUMN IF NOT EXISTS contract_json jsonb NOT NULL DEFAULT '{}'::jsonb",
     ):
         op.execute(f"ALTER TABLE canonical_documents {ddl}")
     for ddl in (
-        "ADD COLUMN structural_identity text NOT NULL DEFAULT 'legacy'",
-        "ADD COLUMN authority_class text NOT NULL DEFAULT 'source_authored'",
-        "ADD COLUMN language text",
+        "ADD COLUMN IF NOT EXISTS structural_identity text NOT NULL DEFAULT 'legacy'",
+        "ADD COLUMN IF NOT EXISTS authority_class text NOT NULL DEFAULT 'source_authored'",
+        "ADD COLUMN IF NOT EXISTS language text",
     ):
         op.execute(f"ALTER TABLE canonical_nodes {ddl}")
-    op.execute("ALTER TABLE canonical_nodes DROP CONSTRAINT ck_canonical_nodes_type")
+    op.execute("ALTER TABLE canonical_nodes DROP CONSTRAINT IF EXISTS ck_canonical_nodes_type")
     quoted = ",".join(f"'{kind}'" for kind in _NODE_KINDS)
     op.execute(
         "ALTER TABLE canonical_nodes ADD CONSTRAINT ck_canonical_nodes_type "
         f"CHECK (node_type IN ({quoted}))"
     )
     op.execute(
-        "ALTER TABLE canonical_locators ADD COLUMN structural_path jsonb "
+        "ALTER TABLE canonical_locators ADD COLUMN IF NOT EXISTS structural_path jsonb "
         "NOT NULL DEFAULT '[]'::jsonb"
     )
 
@@ -61,21 +64,23 @@ def upgrade() -> None:
 def downgrade() -> None:
     """Remove ING-01b fields after restoring baseline-compatible values."""
     op.execute("DELETE FROM canonical_documents WHERE parser_identity <> 'legacy'")
-    op.execute("ALTER TABLE canonical_locators DROP COLUMN structural_path")
-    op.execute("ALTER TABLE canonical_nodes DROP CONSTRAINT ck_canonical_nodes_type")
+    op.execute("ALTER TABLE canonical_locators DROP COLUMN IF EXISTS structural_path")
+    op.execute("ALTER TABLE canonical_nodes DROP CONSTRAINT IF EXISTS ck_canonical_nodes_type")
     op.execute(
         "ALTER TABLE canonical_nodes ADD CONSTRAINT ck_canonical_nodes_type CHECK "
         "(node_type IN ('heading','paragraph','list','list_item','table','image',"
         "'page','slide','sheet'))"
     )
     for column in ("language", "authority_class", "structural_identity"):
-        op.execute(f"ALTER TABLE canonical_nodes DROP COLUMN {column}")
+        op.execute(f"ALTER TABLE canonical_nodes DROP COLUMN IF EXISTS {column}")
     for column in ("contract_json", "tool_versions", "parser_profile", "parser_identity"):
-        op.execute(f"ALTER TABLE canonical_documents DROP COLUMN {column}")
+        op.execute(f"ALTER TABLE canonical_documents DROP COLUMN IF EXISTS {column}")
     op.execute("UPDATE source_versions SET status = 'activating', parse_error_code = NULL")
-    op.execute("ALTER TABLE source_versions DROP CONSTRAINT ck_source_versions_parse_error")
-    op.execute("ALTER TABLE source_versions DROP CONSTRAINT ck_source_versions_status")
-    op.execute("ALTER TABLE source_versions DROP COLUMN parse_error_code")
+    op.execute(
+        "ALTER TABLE source_versions DROP CONSTRAINT IF EXISTS ck_source_versions_parse_error"
+    )
+    op.execute("ALTER TABLE source_versions DROP CONSTRAINT IF EXISTS ck_source_versions_status")
+    op.execute("ALTER TABLE source_versions DROP COLUMN IF EXISTS parse_error_code")
     op.execute(
         "ALTER TABLE source_versions ADD CONSTRAINT ck_source_versions_status CHECK "
         "(status IN ('activating','active','inactive','tombstoned'))"

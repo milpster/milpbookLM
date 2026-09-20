@@ -21,3 +21,30 @@ Real result:
 Isolation profile exercised: separate `python -I -m milpbooklm_adapters.parsers.child` subprocess, empty per-run TMPDIR/cwd, stdin-only source bytes, RLIMIT_CPU=10s, RLIMIT_AS=536870912, RLIMIT_FSIZE=33554432, wall timeout=20s, and import guard before pypdf/pdfplumber imports.
 
 Scratch PostgreSQL at /tmp/opencode/t12-qa:29519 was unavailable (socket absent), so persistence-state QA and the requested benign/encrypted PDF fixture generation could not run in this dispatch. The encrypted branch is code-traced through `PdfReader.is_encrypted -> PdfEncryptedError -> encrypted` and is not claimed as hands-on verified.
+
+
+Migration restartability QA, 2026-09-21
+
+Fresh database recreation and bootstrap (socket=/tmp/opencode/t13-qa, port=29520) followed by:
+  MILPBOOKLM_DB_URL=postgresql+psycopg://milpbooklm_migration:... rtk uv run alembic -c migrations/alembic.ini upgrade head
+
+Real output:
+  Running upgrade -> 0001_baseline
+  Running upgrade 0001_baseline -> 0002_ing_01b
+
+Same-schema restart simulation:
+  alembic stamp 0001_baseline
+  alembic upgrade head
+  Running upgrade 0001_baseline -> 0002_ing_01b
+
+Downgrade/re-upgrade simulation:
+  alembic downgrade 0001_baseline
+  alembic upgrade head
+  Running downgrade 0002_ing_01b -> 0001_baseline
+  Running upgrade 0001_baseline -> 0002_ing_01b
+
+Final live database state:
+  version_num
+  0002_ing_01b
+
+All 0002 ALTER/DROP operations now use IF EXISTS/IF NOT EXISTS or a drop-before-add constraint replacement, so 0001's live-metadata create_all and an interrupted 0002 retry are safe.
