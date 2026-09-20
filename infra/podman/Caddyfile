@@ -1,0 +1,22 @@
+{
+	admin off
+	http_port 8080
+	https_port 8443
+}
+
+{$MILPBOOKLM_LAN_HOST:milpbooklm.local}:8443 {
+	tls internal
+
+	reverse_proxy unix//run/milpbooklm/api/api.sock {
+		header_up -Proxy-Authorization
+		header_up -Remote-User
+		header_up -X-Authenticated-User
+		header_up -X-Forwarded-For
+		header_up -X-Forwarded-Host
+		header_up -X-Forwarded-Proto
+		header_up Host {http.request.host}
+		header_up X-Forwarded-For {http.request.remote.host}
+		header_up X-Forwarded-Host {http.request.host}
+		header_up X-Forwarded-Proto {http.request.scheme}
+	}
+}
