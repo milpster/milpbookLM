@@ -139,7 +139,7 @@ class GroundingStore(Protocol):
         actor_user_id: uuid.UUID,
         source_version_id: uuid.UUID,
         canonical_node_id: uuid.UUID,
-    ) -> dict[str, str]:
+    ) -> dict[str, str | int]:
         """Resolve a pinned evidence locator under current authorization."""
         ...
 

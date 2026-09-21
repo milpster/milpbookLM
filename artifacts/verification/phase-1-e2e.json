@@ -1,0 +1,413 @@
+{
+  "gate": "E2E-001+E2E-002-phase-1",
+  "status": "pass",
+  "chat_provider": "llama_cpp",
+  "chat_model": "Swift-Qwen3.8-27B-Q6_K",
+  "embedding_model": "bge-m3-Q8_0",
+  "browsers": [
+    {
+      "browser": "chromium",
+      "status": "pass",
+      "origin": "http://localhost:5173",
+      "actor_id": "01a0c592-0968-4263-a468-42f4a79342b0",
+      "notebook_id": "01a0c592-0a09-419d-b3de-8e979272ff4e",
+      "text": {
+        "source_id": "e347706d-9354-4d20-aa00-36236dbe72b8",
+        "source_version_id": "e312f956-c7a2-41be-9a09-90a2059255ff",
+        "parse_job": "01a0c592-0bbb-4d38-8e35-c8e95ccbeea0",
+        "guide": {
+          "source_id": "e347706d-9354-4d20-aa00-36236dbe72b8",
+          "source_version_id": "e312f956-c7a2-41be-9a09-90a2059255ff",
+          "summary": "T20 lighthouse facts is an active plain text source (version 1).",
+          "labels": [
+            "plain text",
+            "active",
+            "canonical"
+          ],
+          "restrictions": []
+        },
+        "search_results": 1,
+        "chat_attempts": [
+          {
+            "question": "What is the Phase One lighthouse code? Answer only from the selected source.",
+            "status": 200,
+            "tokenEvents": 27,
+            "terminal": {
+              "answer_message_id": "5fc66ec2-085d-4f4d-9275-2a04d897b7e7",
+              "manifest_id": "0f97bb66-3de8-4a91-b749-83345224a5be",
+              "insufficient_evidence": false,
+              "state": {
+                "id": "8034fefc-81a0-4045-a53d-ffe7bd6b92b4",
+                "notebook_id": "01a0c592-0a09-419d-b3de-8e979272ff4e",
+                "config": {
+                  "style": "standard",
+                  "length": "shorter",
+                  "output_language": "EN"
+                },
+                "instructions": "",
+                "messages": [
+                  {
+                    "id": "3d7ab8b4-72ff-4dc3-8337-4bd190c8c688",
+                    "role": "user",
+                    "content": "What is the Phase One lighthouse code? Answer only from the selected source.",
+                    "manifest_id": "0f97bb66-3de8-4a91-b749-83345224a5be",
+                    "citations": []
+                  },
+                  {
+                    "id": "5fc66ec2-085d-4f4d-9275-2a04d897b7e7",
+                    "role": "assistant",
+                    "content": "ORION-T20",
+                    "manifest_id": "0f97bb66-3de8-4a91-b749-83345224a5be",
+                    "citations": [
+                      {
+                        "url": "/api/v1/source-versions/e312f956-c7a2-41be-9a09-90a2059255ff/nodes/997884eb-4a59-5fbf-9137-a86b67d9caeb",
+                        "label": "T20 lighthouse facts",
+                        "node_id": "997884eb-4a59-5fbf-9137-a86b67d9caeb",
+                        "char_end": 90,
+                        "char_start": 0,
+                        "evidence_id": "e1",
+                        "locator_kind": "char_range",
+                        "source_version_id": "e312f956-c7a2-41be-9a09-90a2059255ff"
+                      }
+                    ]
+                  }
+                ]
+              },
+              "tool_trace": [],
+              "disclosure": null,
+              "provider_dispatch": {
+                "locality": "local",
+                "external_dispatches": [],
+                "disclosure_events": []
+              }
+            },
+            "bytes": 2280
+          }
+        ],
+        "answer": "ORION-T20",
+        "citations": [
+          {
+            "url": "/api/v1/source-versions/e312f956-c7a2-41be-9a09-90a2059255ff/nodes/997884eb-4a59-5fbf-9137-a86b67d9caeb",
+            "label": "T20 lighthouse facts",
+            "node_id": "997884eb-4a59-5fbf-9137-a86b67d9caeb",
+            "char_end": 90,
+            "char_start": 0,
+            "evidence_id": "e1",
+            "locator_kind": "char_range",
+            "source_version_id": "e312f956-c7a2-41be-9a09-90a2059255ff"
+          }
+        ],
+        "locator": {
+          "state": "available",
+          "source_version_id": "e312f956-c7a2-41be-9a09-90a2059255ff",
+          "node_id": "997884eb-4a59-5fbf-9137-a86b67d9caeb",
+          "locator_kind": "char_range",
+          "media_type": "text/plain",
+          "char_start": 0,
+          "char_end": 90
+        }
+      },
+      "pdf": {
+        "source_id": "d27124bd-e951-4e9b-afc7-bcda936b554e",
+        "source_version_id": "dbc25303-3e24-4a42-9bfc-c3a493365364",
+        "parse_job": "01a0c592-36cf-40d5-a7e2-3fec84dbd06c",
+        "guide": {
+          "source_id": "d27124bd-e951-4e9b-afc7-bcda936b554e",
+          "source_version_id": "dbc25303-3e24-4a42-9bfc-c3a493365364",
+          "summary": "Uploaded source is an active pdf source (version 1).",
+          "labels": [
+            "pdf",
+            "active",
+            "canonical"
+          ],
+          "restrictions": []
+        },
+        "search_results": 2,
+        "chat_attempts": [
+          {
+            "question": "What exact words appear in the selected PDF? Answer only from the selected source.",
+            "status": 200,
+            "tokenEvents": 25,
+            "terminal": {
+              "answer_message_id": "ad3af67c-c7dc-427e-a3f1-1b319e20b914",
+              "manifest_id": "8174a287-6ee5-49b1-bfdb-5debb6d1ba3b",
+              "insufficient_evidence": false,
+              "state": {
+                "id": "bddd963a-c252-4fb9-8d5a-2048f35e9e2c",
+                "notebook_id": "01a0c592-0a09-419d-b3de-8e979272ff4e",
+                "config": {
+                  "style": "standard",
+                  "length": "shorter",
+                  "output_language": "EN"
+                },
+                "instructions": "",
+                "messages": [
+                  {
+                    "id": "98866f3f-de55-4b1e-bbc2-1060b2547bcf",
+                    "role": "user",
+                    "content": "What exact words appear in the selected PDF? Answer only from the selected source.",
+                    "manifest_id": "8174a287-6ee5-49b1-bfdb-5debb6d1ba3b",
+                    "citations": []
+                  },
+                  {
+                    "id": "ad3af67c-c7dc-427e-a3f1-1b319e20b914",
+                    "role": "assistant",
+                    "content": "Hello canonical world.",
+                    "manifest_id": "8174a287-6ee5-49b1-bfdb-5debb6d1ba3b",
+                    "citations": [
+                      {
+                        "url": "/api/v1/source-versions/dbc25303-3e24-4a42-9bfc-c3a493365364/nodes/2cd46985-0dd7-5bdc-b4a8-db82f367b1d4",
+                        "label": "Uploaded source",
+                        "node_id": "2cd46985-0dd7-5bdc-b4a8-db82f367b1d4",
+                        "char_end": 22,
+                        "char_start": 0,
+                        "evidence_id": "e1",
+                        "locator_kind": "bbox",
+                        "source_version_id": "dbc25303-3e24-4a42-9bfc-c3a493365364"
+                      }
+                    ]
+                  }
+                ]
+              },
+              "tool_trace": [],
+              "disclosure": null,
+              "provider_dispatch": {
+                "locality": "local",
+                "external_dispatches": [],
+                "disclosure_events": []
+              }
+            },
+            "bytes": 2233
+          }
+        ],
+        "answer": "Hello canonical world.",
+        "citations": [
+          {
+            "url": "/api/v1/source-versions/dbc25303-3e24-4a42-9bfc-c3a493365364/nodes/2cd46985-0dd7-5bdc-b4a8-db82f367b1d4",
+            "label": "Uploaded source",
+            "node_id": "2cd46985-0dd7-5bdc-b4a8-db82f367b1d4",
+            "char_end": 22,
+            "char_start": 0,
+            "evidence_id": "e1",
+            "locator_kind": "bbox",
+            "source_version_id": "dbc25303-3e24-4a42-9bfc-c3a493365364"
+          }
+        ],
+        "locator": {
+          "state": "available",
+          "source_version_id": "dbc25303-3e24-4a42-9bfc-c3a493365364",
+          "node_id": "2cd46985-0dd7-5bdc-b4a8-db82f367b1d4",
+          "locator_kind": "bbox",
+          "media_type": "application/pdf",
+          "page": 1,
+          "char_start": 0,
+          "char_end": 22
+        },
+        "deselected_source_excluded": true
+      },
+      "page_errors": []
+    },
+    {
+      "browser": "firefox",
+      "status": "pass",
+      "origin": "http://localhost:5173",
+      "actor_id": "01a0c592-5ad7-4a76-841e-6e515a5f5a4a",
+      "notebook_id": "01a0c592-5b77-4f63-a500-43fa5d65a008",
+      "text": {
+        "source_id": "66277225-28ff-475b-b296-2aea79d5d960",
+        "source_version_id": "c61f526a-38e0-4090-baba-a15420d51fa8",
+        "parse_job": "01a0c592-5d5d-4841-b2b1-5d13b32d371f",
+        "guide": {
+          "source_id": "66277225-28ff-475b-b296-2aea79d5d960",
+          "source_version_id": "c61f526a-38e0-4090-baba-a15420d51fa8",
+          "summary": "T20 lighthouse facts is an active plain text source (version 1).",
+          "labels": [
+            "plain text",
+            "active",
+            "canonical"
+          ],
+          "restrictions": []
+        },
+        "search_results": 1,
+        "chat_attempts": [
+          {
+            "question": "What is the Phase One lighthouse code? Answer only from the selected source.",
+            "status": 200,
+            "tokenEvents": 27,
+            "terminal": {
+              "answer_message_id": "3d27ffe5-0c36-4d3b-a32a-95add7ce4e29",
+              "manifest_id": "1441dfaf-7338-4ef6-8723-b764227004f5",
+              "insufficient_evidence": false,
+              "state": {
+                "id": "e47df67a-cec9-495e-bb6d-c52d51c1cfe7",
+                "notebook_id": "01a0c592-5b77-4f63-a500-43fa5d65a008",
+                "config": {
+                  "style": "standard",
+                  "length": "shorter",
+                  "output_language": "EN"
+                },
+                "instructions": "",
+                "messages": [
+                  {
+                    "id": "765b6493-561a-4d7e-8bb3-a17d4101fa3a",
+                    "role": "user",
+                    "content": "What is the Phase One lighthouse code? Answer only from the selected source.",
+                    "manifest_id": "1441dfaf-7338-4ef6-8723-b764227004f5",
+                    "citations": []
+                  },
+                  {
+                    "id": "3d27ffe5-0c36-4d3b-a32a-95add7ce4e29",
+                    "role": "assistant",
+                    "content": "ORION-T20",
+                    "manifest_id": "1441dfaf-7338-4ef6-8723-b764227004f5",
+                    "citations": [
+                      {
+                        "url": "/api/v1/source-versions/c61f526a-38e0-4090-baba-a15420d51fa8/nodes/cff0ed78-74d1-56da-904e-ccdb9556e95f",
+                        "label": "T20 lighthouse facts",
+                        "node_id": "cff0ed78-74d1-56da-904e-ccdb9556e95f",
+                        "char_end": 90,
+                        "char_start": 0,
+                        "evidence_id": "e1",
+                        "locator_kind": "char_range",
+                        "source_version_id": "c61f526a-38e0-4090-baba-a15420d51fa8"
+                      }
+                    ]
+                  }
+                ]
+              },
+              "tool_trace": [],
+              "disclosure": null,
+              "provider_dispatch": {
+                "locality": "local",
+                "external_dispatches": [],
+                "disclosure_events": []
+              }
+            },
+            "bytes": 2280
+          }
+        ],
+        "answer": "ORION-T20",
+        "citations": [
+          {
+            "url": "/api/v1/source-versions/c61f526a-38e0-4090-baba-a15420d51fa8/nodes/cff0ed78-74d1-56da-904e-ccdb9556e95f",
+            "label": "T20 lighthouse facts",
+            "node_id": "cff0ed78-74d1-56da-904e-ccdb9556e95f",
+            "char_end": 90,
+            "char_start": 0,
+            "evidence_id": "e1",
+            "locator_kind": "char_range",
+            "source_version_id": "c61f526a-38e0-4090-baba-a15420d51fa8"
+          }
+        ],
+        "locator": {
+          "state": "available",
+          "source_version_id": "c61f526a-38e0-4090-baba-a15420d51fa8",
+          "node_id": "cff0ed78-74d1-56da-904e-ccdb9556e95f",
+          "locator_kind": "char_range",
+          "media_type": "text/plain",
+          "char_start": 0,
+          "char_end": 90
+        }
+      },
+      "pdf": {
+        "source_id": "e4ce3ce9-3ff0-4ed0-9858-854f414af538",
+        "source_version_id": "7d17ff13-517a-49e3-97ee-797b09ecbeb5",
+        "parse_job": "01a0c592-712f-4d62-959f-11123653ea1f",
+        "guide": {
+          "source_id": "e4ce3ce9-3ff0-4ed0-9858-854f414af538",
+          "source_version_id": "7d17ff13-517a-49e3-97ee-797b09ecbeb5",
+          "summary": "Uploaded source is an active pdf source (version 1).",
+          "labels": [
+            "pdf",
+            "active",
+            "canonical"
+          ],
+          "restrictions": []
+        },
+        "search_results": 2,
+        "chat_attempts": [
+          {
+            "question": "What exact words appear in the selected PDF? Answer only from the selected source.",
+            "status": 200,
+            "tokenEvents": 25,
+            "terminal": {
+              "answer_message_id": "e8293998-c71a-4dba-a0a7-add453da1457",
+              "manifest_id": "21a98930-89d6-4f71-8a91-3c6cb72e2c56",
+              "insufficient_evidence": false,
+              "state": {
+                "id": "f92bb6ac-7b13-4d06-9c47-d20cbc9a2dcf",
+                "notebook_id": "01a0c592-5b77-4f63-a500-43fa5d65a008",
+                "config": {
+                  "style": "standard",
+                  "length": "shorter",
+                  "output_language": "EN"
+                },
+                "instructions": "",
+                "messages": [
+                  {
+                    "id": "33745a2c-39b2-43c5-869e-41e7cfb73211",
+                    "role": "user",
+                    "content": "What exact words appear in the selected PDF? Answer only from the selected source.",
+                    "manifest_id": "21a98930-89d6-4f71-8a91-3c6cb72e2c56",
+                    "citations": []
+                  },
+                  {
+                    "id": "e8293998-c71a-4dba-a0a7-add453da1457",
+                    "role": "assistant",
+                    "content": "Hello canonical world.",
+                    "manifest_id": "21a98930-89d6-4f71-8a91-3c6cb72e2c56",
+                    "citations": [
+                      {
+                        "url": "/api/v1/source-versions/7d17ff13-517a-49e3-97ee-797b09ecbeb5/nodes/92085c33-a9a4-5912-b863-8ac2aea455be",
+                        "label": "Uploaded source",
+                        "node_id": "92085c33-a9a4-5912-b863-8ac2aea455be",
+                        "char_end": 22,
+                        "char_start": 0,
+                        "evidence_id": "e1",
+                        "locator_kind": "bbox",
+                        "source_version_id": "7d17ff13-517a-49e3-97ee-797b09ecbeb5"
+                      }
+                    ]
+                  }
+                ]
+              },
+              "tool_trace": [],
+              "disclosure": null,
+              "provider_dispatch": {
+                "locality": "local",
+                "external_dispatches": [],
+                "disclosure_events": []
+              }
+            },
+            "bytes": 2233
+          }
+        ],
+        "answer": "Hello canonical world.",
+        "citations": [
+          {
+            "url": "/api/v1/source-versions/7d17ff13-517a-49e3-97ee-797b09ecbeb5/nodes/92085c33-a9a4-5912-b863-8ac2aea455be",
+            "label": "Uploaded source",
+            "node_id": "92085c33-a9a4-5912-b863-8ac2aea455be",
+            "char_end": 22,
+            "char_start": 0,
+            "evidence_id": "e1",
+            "locator_kind": "bbox",
+            "source_version_id": "7d17ff13-517a-49e3-97ee-797b09ecbeb5"
+          }
+        ],
+        "locator": {
+          "state": "available",
+          "source_version_id": "7d17ff13-517a-49e3-97ee-797b09ecbeb5",
+          "node_id": "92085c33-a9a4-5912-b863-8ac2aea455be",
+          "locator_kind": "bbox",
+          "media_type": "application/pdf",
+          "page": 1,
+          "char_start": 0,
+          "char_end": 22
+        },
+        "deselected_source_excluded": true
+      },
+      "page_errors": []
+    }
+  ]
+}

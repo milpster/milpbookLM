@@ -106,12 +106,20 @@ class PgGroundingStore:
         actor_user_id: uuid.UUID,
         source_version_id: uuid.UUID,
         canonical_node_id: uuid.UUID,
-    ) -> dict[str, str]:
+    ) -> dict[str, str | int]:
         """Resolve a historical version under current authorization or report purge state."""
         with self._engine.begin() as connection:
             row = (
                 connection.execute(
-                    sa.select(sources.c.availability, sources.c.notebook_id)
+                    sa.select(
+                        sources.c.availability,
+                        sources.c.notebook_id,
+                        canonical_documents.c.contract_json,
+                        canonical_locators.c.locator_kind,
+                        canonical_locators.c.page,
+                        canonical_locators.c.char_start,
+                        canonical_locators.c.char_end,
+                    )
                     .join(source_versions, source_versions.c.source_id == sources.c.id)
                     .join(
                         canonical_documents,
@@ -120,6 +128,10 @@ class PgGroundingStore:
                     .join(
                         canonical_nodes,
                         canonical_nodes.c.canonical_document_id == canonical_documents.c.id,
+                    )
+                    .join(
+                        canonical_locators,
+                        canonical_locators.c.canonical_node_id == canonical_nodes.c.id,
                     )
                     .where(
                         source_versions.c.id == source_version_id,
@@ -133,11 +145,21 @@ class PgGroundingStore:
                 return {"state": "unavailable (purged)"}
             if not self._can_read(connection, actor_user_id, source_version_id, row["notebook_id"]):
                 raise GroundingError("citation is no longer authorized")
-        return {
+        payload: dict[str, str | int] = {
             "state": "available",
             "source_version_id": str(source_version_id),
             "node_id": str(canonical_node_id),
+            "locator_kind": row["locator_kind"],
         }
+        contract = row["contract_json"]
+        media_type = contract.get("mime_type")
+        if isinstance(media_type, str):
+            payload["media_type"] = media_type
+        for field in ("page", "char_start", "char_end"):
+            value = row[field]
+            if isinstance(value, int):
+                payload[field] = value
+        return payload
 
     def _selected_versions(
         self, connection: sa.engine.Connection, request: GroundingRequest

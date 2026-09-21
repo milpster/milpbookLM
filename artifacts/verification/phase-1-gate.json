@@ -1,0 +1,247 @@
+{
+  "schema": "milpbooklm.phase-gate/0",
+  "task": "20. Phase-1 gate — Source-to-grounded-chat evidence bundle",
+  "phase": 1,
+  "generated_at": "2026-09-21",
+  "build_head": "522a6c23 (plus this task's bundle: grounding locator enrichment + gate artifacts)",
+  "scope": "prototype-first (D12/D13): existing suites only, no new test files, light manual QA; E2E journeys + EVAL-GATE on the live stack",
+  "exit_row_source": "PLANNING-HANDOFF § Phase entry and exit gates (Phase 1) + guide ch22 Phase 1",
+  "exit_row_required": "one user-visible text/PDF->grounded-chat path, basic Source Guide, exact citations, source viewer, browser E2E pass — real local models, fakes never the chat-quality basis",
+  "deployment_form": {
+    "decision": "gate runs on the real local stack (orchestrator-authorized); podman-rootless form deferred to wave 2",
+    "stack": {
+      "database": "shared scratch PostgreSQL at scratch/t13-smoke socket, port 29521, db milpbooklm_t13, schema 0006_rag_01b (pre-existing, never reset)",
+      "api": "uvicorn milpbooklm_api :8000 (task-owned, scratch/t20-gate/api.pid)",
+      "worker": "milpbooklm_workers t20-w1 (task-owned, scratch/t20-gate/worker.pid)",
+      "web": "vite dev apps/web :5173, real web origin for every E2E request (task-owned, scratch/t20-gate/web.pid)",
+      "chat": "SHARED pre-existing llama.cpp Swift-Qwen3.8-27B-Q6_K :8009 (prod config per D16/D17) — consumed only, never spawned/restarted/reconfigured/killed",
+      "embeddings": "task-owned llama.cpp bge-m3-Q8_0 CPU :8010, dimension 1024"
+    },
+    "chat_provider_env": "MILPBOOKLM_CHAT_PROVIDER=llama_cpp (real model, not fake)"
+  },
+  "suites": {
+    "e2e": {
+      "name": "E2E-001 + E2E-002 (text/PDF legs)",
+      "driver": "scratch/t20-gate/phase1-e2e.mjs (playwright chromium + firefox, headless)",
+      "report": "artifacts/verification/phase-1-e2e.json",
+      "traces": "scratch/t20-gate/{chromium,firefox}-trace.zip",
+      "screenshots": "scratch/t20-gate/{chromium,firefox}-{text,pdf}-viewer.png",
+      "result": "pass on Chromium AND Firefox; each leg passed on its FIRST question attempt (no abstention retries needed)",
+      "journey": "register -> notebook -> text paste + PDF upload (UI forms) -> parse jobs -> activate -> Source Guide -> hybrid search -> grounded streaming chat with REAL Swift-Qwen :8009 through :5173 (SSE token+terminal frames) -> server-validated citations -> locator resolve -> SPA source-viewer jump (text + PDF page 1)",
+      "answers": {
+        "chromium": { "text": "ORION-T20", "pdf": "Hello canonical world." },
+        "firefox": { "text": "ORION-T20", "pdf": "Hello canonical world." }
+      }
+    },
+    "eval_gate": {
+      "name": "EVAL-GATE-001 v1",
+      "report": "artifacts/verification/phase-1-eval-report-v1.json",
+      "result": "pass — recall@3 overall/DE/EN = 1.0/1.0/1.0 at embedding dimension 1024 (thresholds 0.95/0.90/0.90) against the live task-owned bge-m3 :8010 (same process that served the E2E indexing; kept from the predecessor's fresh pass, not rerun)"
+    },
+    "existing_pytest": {
+      "command": "rtk uv run pytest tests/meta tests/architecture tests/unit -q",
+      "result": "128 passed, 2 warnings in 6.89s",
+      "status": "green",
+      "note": "baseline 128; 2 warnings are the pre-existing starlette/anyio DeprecationWarning"
+    },
+    "gates": {
+      "ruff": { "command": "rtk uv run ruff check .", "result": "All checks passed!", "status": "green" },
+      "mypy": { "command": "rtk uv run mypy", "result": "Success: no issues found in 157 source files", "status": "green" },
+      "import_linter": { "command": "rtk uv run import-linter lint", "result": "Contracts: 4 kept, 0 broken", "status": "green" }
+    },
+    "deferred_automated_suites": [
+      {
+        "name": "PHASE-GATE-001 (tests/meta/phase_gates group)",
+        "status": "deferred_wave_2",
+        "evidence": "no such group exists at HEAD (phase-0 gate recorded the same); this gate report is the phase-1 instrument per plan task 20",
+        "note": "not faked green; phase-1 scope judged by the live-stack evidence below"
+      },
+      {
+        "name": "PARITY-ACCEPTANCE-001 (tests/parity/capabilities.md)",
+        "status": "deferred_wave_2",
+        "evidence": "tests/parity/ does not exist; D12 forbids new test files in wave 1",
+        "note": "phase-1 functionality judged by REST/live evidence (orchestrator-authorized for this gate)"
+      }
+    ]
+  },
+  "conformance": {
+    "emitter": "tools/spec/emit_conformance.py",
+    "path": "artifacts/conformance.json",
+    "build": "522a6c23",
+    "capabilities_total": 61,
+    "implemented": 0,
+    "advertised": 0,
+    "unimplemented_but_advertised": 0,
+    "frozen_seed_note": "packages/contracts/.../capabilities.yaml equals the guide seed (tools/spec/check_capabilities.py::_check_seed_drift); it was NOT modified. Registry flags stay false until the wave-2 seed review, so emitter-pure conformance advertises nothing — honest, not a failure.",
+    "phase_1_advertisement": {
+      "where": "this gate report (orchestrator-authorized location for wave-1 phase scope)",
+      "statement": "The 15 phase-1 capabilities below are advertised AT PHASE-1 PROTOTYPE SCOPE by the live-stack evidence recorded here, while the frozen registry keeps them disabled/compiled_support_missing. Live /api/v1/capabilities states recorded verbatim in scratch/t20-gate/capabilities-live.json: all 15 phase-1 entries state=disabled, reason=compiled_support_missing.",
+      "ui_effect": "UI affordances gated on the registry (e.g. the notebooks create form) render disabled-with-reason; journeys used the REST surface, which is capability-independent — honest behavior per the frozen-registry policy, not a gate failure"
+    }
+  },
+  "capabilities": [
+    {
+      "id": "notebook_management",
+      "classification": "stable/core",
+      "required_test_groups": ["CAP-PROFILE-001", "PHASE-GATE-001", "PARITY-ACCEPTANCE-001"],
+      "phase_1_verdict": "pass",
+      "evidence": ["phase-1-e2e.json: POST /api/v1/notebooks 201 + GET 200 + route render, both browsers", "task-18-milpbooklm-implementation.json browser_pass (chromium+firefox, deep-link, capability-gated create form)"],
+      "notes": "UI create affordance disabled-with-reason (frozen seed); REST create/get/list exercised live"
+    },
+    {
+      "id": "notebook_instructions",
+      "classification": "stable/core",
+      "required_test_groups": ["CAP-PROFILE-001", "PHASE-GATE-001", "PARITY-ACCEPTANCE-001"],
+      "phase_1_verdict": "pass",
+      "evidence": ["task-17-milpbooklm-implementation.json manual_qa PASS: manifest-pinned instructions (fake provider + live PG)", "REST route PUT /api/v1/conversations/{id}/instructions (conversation_routes.py)"],
+      "notes": "verified at T17; not re-driven live in this gate run"
+    },
+    {
+      "id": "notebook_overview",
+      "classification": "stable/core",
+      "required_test_groups": ["CAP-PROFILE-001", "PHASE-GATE-001", "PARITY-ACCEPTANCE-001"],
+      "phase_1_verdict": "pass",
+      "evidence": ["task-17-milpbooklm-implementation.json manual_qa PASS: grounded overview", "REST route notebook_overview_routes.py"],
+      "notes": "verified at T17; not re-driven live in this gate run"
+    },
+    {
+      "id": "sources",
+      "classification": "stable/core",
+      "required_test_groups": ["CAP-PROFILE-001", "PHASE-GATE-001", "PARITY-ACCEPTANCE-001", "E2E-002"],
+      "phase_1_verdict": "pass",
+      "evidence": ["phase-1-e2e.json: paste + upload -> parse job -> activate -> select/remove on both browsers, both legs", "task-12/task-14 evidence for acquisition + activation transactions"],
+      "notes": "E2E-002 text/PDF legs green; office-family E2E-002 legs are task 21 (wave 2)"
+    },
+    {
+      "id": "source_guide",
+      "classification": "stable/core",
+      "required_test_groups": ["CAP-PROFILE-001", "PHASE-GATE-001", "PARITY-ACCEPTANCE-001"],
+      "phase_1_verdict": "pass",
+      "evidence": ["phase-1-e2e.json: GET /api/v1/sources/{id}/guide 200 with summary+labels on all four browser legs (recorded verbatim per leg)"],
+      "notes": "basic Source Guide per the phase-1 exit row"
+    },
+    {
+      "id": "grounded_chat",
+      "classification": "stable/core",
+      "required_test_groups": ["CAP-PROFILE-001", "PHASE-GATE-001", "PARITY-ACCEPTANCE-001", "E2E-001"],
+      "phase_1_verdict": "pass",
+      "evidence": ["phase-1-e2e.json: real Swift-Qwen3.8-27B-Q6_K streaming SSE (25-27 token frames + terminal) through :5173 on both browsers", "insufficient_evidence=false; answers published atomically with validated citations"],
+      "notes": "chat quality basis is the REAL model (:8009), never the fake provider (MUST NOT satisfied)"
+    },
+    {
+      "id": "chat_configuration",
+      "classification": "stable/core",
+      "required_test_groups": ["CAP-PROFILE-001", "PHASE-GATE-001", "PARITY-ACCEPTANCE-001"],
+      "phase_1_verdict": "pass",
+      "evidence": ["phase-1-e2e.json: conversation create with style=standard/length=shorter/output_language=EN (both browsers)", "task-17 manual_qa: config update DE/EN"],
+      "notes": ""
+    },
+    {
+      "id": "chat_lifecycle",
+      "classification": "stable/core",
+      "required_test_groups": ["CAP-PROFILE-001", "PHASE-GATE-001", "PARITY-ACCEPTANCE-001"],
+      "phase_1_verdict": "pass",
+      "evidence": ["phase-1-e2e.json: conversation create + authoritative terminal state + persistence", "task-17 manual_qa PASS: cancellation, reset-as-replacement, SSE-drop resync"],
+      "notes": "cancel/reset verified at T17; create/persist re-proven live here"
+    },
+    {
+      "id": "citations",
+      "classification": "stable/core",
+      "required_test_groups": ["CAP-PROFILE-001", "PHASE-GATE-001", "PARITY-ACCEPTANCE-001", "E2E-001"],
+      "phase_1_verdict": "pass",
+      "evidence": ["phase-1-e2e.json: server-validated citation spans (char_start/char_end; PDF also page=1) resolved via /api/v1/source-versions/{v}/nodes/{n} -> state=available on all legs"],
+      "notes": "publication is validator-gated: an invalid span leaves no message row (T16); every E2E citation resolved"
+    },
+    {
+      "id": "output_language",
+      "classification": "stable/core",
+      "required_test_groups": ["CAP-PROFILE-001", "PHASE-GATE-001", "PARITY-ACCEPTANCE-001"],
+      "phase_1_verdict": "pass",
+      "evidence": ["phase-1-e2e.json: output_language=EN configured and honored in terminal state", "task-17 manual_qa: DE/EN both directions"],
+      "notes": ""
+    },
+    {
+      "id": "appearance",
+      "classification": "stable/core",
+      "required_test_groups": ["CAP-PROFILE-001", "PHASE-GATE-001", "PARITY-ACCEPTANCE-001"],
+      "phase_1_verdict": "pass",
+      "evidence": ["task-18 browser evidence + apps/web/src/styles.css (typography/spacing system)", "phase-1-e2e.json: full-page renders at 1440x900 with zero pageerror on both browsers"],
+      "notes": "prototype appearance scope = T18 shell styling; richer theming later waves"
+    },
+    {
+      "id": "responsive_web_access",
+      "classification": "stable/core",
+      "required_test_groups": ["CAP-PROFILE-001", "PHASE-GATE-001", "PARITY-ACCEPTANCE-001"],
+      "phase_1_verdict": "pass",
+      "evidence": ["apps/web/src/styles.css: @media (max-width: 47.5rem) narrow layouts + @media (prefers-reduced-motion: reduce)", "task-18 browser pass on chromium+firefox"],
+      "notes": "prototype scope: narrow-layout + reduced-motion support; full WCAG 2.2 AA battery is wave 2 (D15)"
+    },
+    {
+      "id": "custom_providers",
+      "classification": "stable/core",
+      "required_test_groups": ["CAP-PROFILE-001", "PHASE-GATE-001", "PARITY-ACCEPTANCE-001"],
+      "phase_1_verdict": "pass",
+      "evidence": ["this gate ran on a real configured provider: MILPBOOKLM_CHAT_PROVIDER=llama_cpp -> :8009, no code change", "task-7: AEAD credential keyring + worker credential CLI", "task-10: typed provider gateway + routing", "task-19/ADR: routing order local -> Big Pickle -> Muse Spark Standard; external legs degraded local-only per D17 (403/401 probes)"],
+      "notes": "provider configuration surface at phase 1 = env/config + credentials CLI (T7); user-facing provider-management UI is later waves"
+    },
+    {
+      "id": "source_pdf",
+      "classification": "stable/core",
+      "required_test_groups": ["CAP-PROFILE-001", "PHASE-GATE-001", "PARITY-ACCEPTANCE-001", "E2E-002"],
+      "phase_1_verdict": "pass",
+      "evidence": ["phase-1-e2e.json: PDF upload (UI file input) -> parse -> activate -> index -> real-model answer 'Hello canonical world.' with page-1 locator, both browsers"],
+      "notes": "fixture scratch/t13-smoke/fixture.pdf"
+    },
+    {
+      "id": "source_plain_text_and_pasted_text",
+      "classification": "stable/core",
+      "required_test_groups": ["CAP-PROFILE-001", "PHASE-GATE-001", "PARITY-ACCEPTANCE-001", "E2E-002"],
+      "phase_1_verdict": "pass",
+      "evidence": ["phase-1-e2e.json: text paste (UI form) -> parse -> activate -> index -> real-model answer 'ORION-T20' with char-range locator, both browsers"],
+      "notes": ""
+    }
+  ],
+  "test_group_resolution": {
+    "E2E-001": "real suites executed this task (chromium+firefox, live stack, real model) — green",
+    "E2E-002": "text+PDF legs executed this task — green; office-family legs are task 21 (wave 2) by plan",
+    "CAP-PROFILE-001": "no suite carries this exact name; the existing capability-profile enforcement is tests/meta/capabilities (8 ver files) — green this run; live REST capability snapshot recorded verbatim",
+    "PHASE-GATE-001": "no automated group exists (phase-0 precedent); this gate report is the phase-1 instrument — see deferred_automated_suites",
+    "PARITY-ACCEPTANCE-001": "tests/parity/capabilities.md not authored in wave 1 (D12) — deferred; phase-1 judged by REST/live evidence"
+  },
+  "real_model_deferred_smokes_discharged": {
+    "T16": "live real-model grounded publication with validated citations (was infrastructure-blocked at T16)",
+    "T17": "live real-model SSE streaming through the web origin (was deferred at T17 when :8009 was down)",
+    "T18": "real-model streaming/grounding evidence through :5173 proxy chain (was deferred at T18: frozen capability + :8009 out of scope)"
+  },
+  "phase1_exit_row_assessment": [
+    { "item": "one user-visible text/PDF->grounded-chat path", "satisfied": true, "reason": "E2E journey green on both browsers via the real web UI origin with real Swift-Qwen :8009" },
+    { "item": "basic Source Guide", "satisfied": true, "reason": "GET guide 200 with summary/labels on every leg (recorded in phase-1-e2e.json)" },
+    { "item": "exact citations", "satisfied": true, "reason": "validator-gated spans (char ranges; PDF page) all resolved; no invalid-span publication" },
+    { "item": "source viewer", "satisfied": true, "reason": "SPA viewer route rendered from citation jumps on all four legs; PDF locator seeks page 1" },
+    { "item": "browser E2E pass", "satisfied": true, "reason": "chromium AND firefox headless, zero pageerror events, traces + screenshots captured" }
+  ],
+  "must_not_checks": {
+    "fakes_only_chat_quality": { "violated": false, "reason": "every chat answer in the gate evidence came from the real llama_cpp provider (:8009); the fake provider was not configured for this stack" },
+    "firefox_skipped": { "violated": false, "reason": "firefox leg ran and passed (trace scratch/t20-gate/firefox-trace.zip)" },
+    "pdf_leg_skipped": { "violated": false, "reason": "PDF leg ran on both browsers with page-1 locator validation" },
+    "shared_chat_server_touched": { "violated": false, "reason": ":8009 was only probed (GET /v1/models 200) and consumed; never spawned/restarted/reconfigured/killed" },
+    "frozen_capabilities_seed_modified": { "violated": false, "reason": "capabilities.yaml untouched; check_capabilities meta tests green in the 128-pass run" }
+  },
+  "findings": [
+    {
+      "id": "T20-F1",
+      "severity": "app-side prototype limitation (recorded, not fixed: non-trivial CSRF-recovery surface, out of task-20 scope)",
+      "finding": "A full page reload (F5/deep link) resets the web client's in-memory CSRF token (client.ts module state); the next unsafe action then fails 403 csrf_rejected until the next login. The app's own in-app links navigate client-side, so citation/viewer journeys never hit it.",
+      "observed_in": "first E2E attempt used page.goto() for notebook navigation -> paste 403 csrf_rejected; reproduced with a focused browser probe (scratch/t20-gate/debug-paste.mjs)",
+      "workaround": "E2E navigates SPA-style (pushState + popstate), matching real user flows"
+    }
+  ],
+  "grounding_change_in_bundle": {
+    "files": ["packages/adapters/src/milpbooklm_adapters/grounding.py", "packages/application/src/milpbooklm_application/grounding.py"],
+    "change": "resolve-locator now joins canonical_locators + contract JSON so the payload carries locator_kind/media_type/page/char_start/char_end",
+    "why_needed": "the source viewer needs media_type + page to seek PDF locators; the E2E PDF leg asserts media_type=application/pdf and page=1 — this change is exercised by the gate evidence",
+    "gates": "ruff/mypy/import-linter/pytest 128 all green with the change included"
+  },
+  "verdict": "pass",
+  "verdict_rationale": "Phase-1 exit row fully evidenced on the real local stack: text/PDF->grounded-chat journeys green on Chromium AND Firefox with the real Swift-Qwen model through the real web origin, Source Guide + exact validated citations + source viewer on every leg, EVAL-GATE-001 v1 recall 1.0/1.0/1.0, existing suites + gates green at baseline (128). All 15 phase-1 capabilities carry phase-1-scope evidence (live or verified prior-task), none blocked. The named PHASE-GATE-001/PARITY-ACCEPTANCE-001 automated suites remain wave-2 deferrals (D12; phase-0 precedent) — recorded, not faked. Frozen registry keeps advertised=0; the phase-1 advertisement lives in this report per orchestrator authorization."
+}

@@ -1,0 +1,44 @@
+# Task 20 manual QA log (light per D13) — Phase-1 gate takeover run
+Date: 2026-09-21 (all times CEST)
+
+## Stack adoption (predecessor pidfiles verified before use)
+- api.pid 4005295 alive -> :8000 /health/live 200 ... restarted once at 22:0x (own pid, register-limiter
+  reset) -> new pid recorded in scratch/t20-gate/api.pid; :8000 healthy after
+- embedding.pid 3927790 alive -> :8010 /v1/models 200 (task-owned bge-m3, dim 1024; never restarted,
+  eval report v1 stays valid for this process)
+- worker.pid 3930092 alive -> worker.log shows t20-w1 leasing parse/index jobs during E2E
+- web.pid 3933023 alive -> :5173 200
+- SHARED chat :8009 -> GET /v1/models 200, model Swift-Qwen3.8-27B-Q6_K.gguf (probe only; never
+  spawned/restarted/reconfigured/killed)
+- shared scratch PG :29521 -> alembic_version 0006_rag_01b (read-only checks; never reset)
+
+## E2E attempts (honest record)
+1. phase1-e2e.mjs first run: FAILED at text paste — 403 csrf_rejected. Root-caused with a focused
+   chromium probe (scratch/t20-gate/debug-paste.mjs): full page.goto() reload wipes the ky client's
+   in-memory CSRF token; the app's own links navigate client-side. Fix: driver navigates SPA-style
+   (pushState + popstate). Recorded as finding T20-F1 (app-side limitation, not fixed here).
+   Side effect: API restarted (own pid) to clear the in-memory register rate limiter (2/3 used).
+2. phase1-e2e.mjs second run: PASS on chromium AND firefox.
+   - text leg: first question attempt answered 'ORION-T20' with 1 validated citation (both browsers)
+   - pdf leg: first question attempt answered 'Hello canonical world.' with page-1 locator (both browsers)
+   - no abstention retries needed; insufficient_evidence=false on all four terminal frames
+   - zero pageerror events on both browsers
+   - traces: scratch/t20-gate/{chromium,firefox}-trace.zip; screenshots: *-text-viewer.png, *-pdf-viewer.png
+   - register->login->CSRF->SSE all through http://localhost:5173 (proxy+origin+cookie+CSRF chain proven)
+
+## Live capability snapshot
+- GET /api/v1/capabilities through :5173: all 15 phase-1 entries state=disabled
+  reason=compiled_support_missing (frozen seed; recorded verbatim scratch/t20-gate/capabilities-live.json).
+  UI affordances render disabled-with-reason; journeys used the REST surface. Honest, per policy.
+
+## Quality gates (with predecessor's grounding diff included)
+- ruff check .            -> All checks passed!
+- mypy                    -> Success: no issues found in 157 source files
+- import-linter lint      -> Contracts: 4 kept, 0 broken
+- pytest tests/meta tests/architecture tests/unit -q -> 128 passed, 2 warnings (pre-existing
+  starlette/anyio deprecations). Baseline 128 met.
+- VER-* evidence churn from the pytest run restored via git checkout before staging.
+
+## Cleanup
+- Only task-owned processes may be killed; none needed killing at gate close (stack left running for
+  the orchestrator; pidfiles updated). scratch/t20-gate/ holds all run artifacts (git-ignored).

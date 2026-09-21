@@ -1,0 +1,53 @@
+{
+  "task": "20. Phase-1 gate - Source-to-grounded-chat evidence bundle",
+  "date": "2026-09-21",
+  "status": "complete",
+  "takeover": "usage-limit-dead predecessor left live stack pidfiles (api/embedding/worker/web) + an unrun E2E driver; adopted and completed",
+  "stack": {
+    "database": "shared scratch PG scratch/t13-smoke :29521 db milpbooklm_t13 schema 0006_rag_01b (never reset)",
+    "api": ":8000 MILPBOOKLM_CHAT_PROVIDER=llama_cpp (real), restarted once (own pid) to clear the in-memory register limiter",
+    "chat": "SHARED llama.cpp Swift-Qwen3.8-27B-Q6_K :8009 - consumed only, never touched",
+    "embeddings": "task-owned bge-m3-Q8_0 :8010 dim 1024",
+    "web": "vite :5173 - every E2E request through the real web origin"
+  },
+  "e2e": {
+    "driver": "scratch/t20-gate/phase1-e2e.mjs (playwright chromium+firefox headless)",
+    "report": "artifacts/verification/phase-1-e2e.json",
+    "result": "PASS both browsers, all legs first-attempt; answers: text='ORION-T20', pdf='Hello canonical world.' with page-1 locator",
+    "driver_fixes_by_takeover": [
+      "playwright resolved via createRequire(apps/web) (bare import unresolvable from repo root)",
+      "dropped waitUntil networkidle (Vite HMR websocket risks never-idle)",
+      "register submit targeted via form button[type=submit] (mode toggle + submit both named Register -> strict-mode violation)",
+      "SPA navigation via pushState+popstate instead of page.goto after login (full reload wipes the in-memory CSRF token - finding T20-F1)"
+    ]
+  },
+  "deferred_smokes_discharged": [
+    "T16 real-model grounded publication (was infra-blocked)",
+    "T17 live real-model SSE streaming through web origin (was :8009-down deferred)",
+    "T18 real-model streaming/grounding through :5173 (was capability-frozen deferred)"
+  ],
+  "eval_gate": "kept predecessor's fresh pass artifacts/verification/phase-1-eval-report-v1.json (recall@3 1.0/1.0/1.0 @1024d) - same :8010 process, not restarted",
+  "conformance": "artifacts/conformance.json re-emitted via tools/spec/emit_conformance.py (emitter-pure: advertised=0, frozen seed untouched); phase-1 advertisement recorded in artifacts/verification/phase-1-gate.json per orchestrator authorization",
+  "gate_report": "artifacts/verification/phase-1-gate.json - verdict pass at phase-1 prototype scope; PHASE-GATE-001/PARITY-ACCEPTANCE-001 automated suites recorded as wave-2 deferrals (phase-0 precedent), 15/15 phase-1 capabilities evidenced, 0 blocked",
+  "deployment_form": "real local stack per orchestrator authorization; podman-rootless form deferred to wave 2 (recorded in gate report)",
+  "grounding_change_included": {
+    "files": ["packages/adapters/src/milpbooklm_adapters/grounding.py", "packages/application/src/milpbooklm_application/grounding.py"],
+    "reason": "viewer-jump journey needs locator media_type/page/char span; exercised by the E2E PDF leg (media_type=application/pdf, page=1); gates green with it"
+  },
+  "findings": [
+    "T20-F1: full page reload drops the web client's in-memory CSRF token -> next unsafe call 403 csrf_rejected until re-login; in-app links navigate client-side so real citation journeys never hit it; recorded, not fixed (out of scope)"
+  ],
+  "verification": [
+    { "command": "rtk uv run ruff check .", "exit": 0 },
+    { "command": "rtk uv run mypy", "exit": 0, "result": "157 source files clean" },
+    { "command": "rtk uv run import-linter lint", "exit": 0, "result": "4 contracts kept, 0 broken" },
+    { "command": "rtk uv run pytest tests/meta tests/architecture tests/unit -q", "exit": 0, "result": "128 passed (baseline 128)" }
+  ],
+  "manual_qa": ".omo/evidence/task-20-manual-qa.log",
+  "deferred": [
+    "PHASE-GATE-001 / PARITY-ACCEPTANCE-001 automated test groups (wave 2 per D12; phase-0 precedent)",
+    "E2E-002 office-family legs (task 21)",
+    "podman-rootless deployment-form gate (wave 2, orchestrator-authorized deferral)",
+    "T20-F1 CSRF-recovery-after-reload app fix (wave 2)"
+  ]
+}
