@@ -23,6 +23,7 @@ from milpbooklm_adapters.parsers.isolation import (
     ParseSuccess,
 )
 from milpbooklm_adapters.parsers.pg_canonical import PgCanonicalRepository
+from milpbooklm_adapters.parsers.sniffing import sniff_media_type
 from milpbooklm_application.blob_store import BlobIntegrityError, BlobStore
 from milpbooklm_application.blob_usecases import ReconcileBlobs
 from milpbooklm_domain.blobs import ReconciliationClass
@@ -124,8 +125,11 @@ class SourceParseHandler:
         except BlobIntegrityError:
             self._canonical.persist_failure(source_version_id, "internal")
             raise
-        media_type = "application/pdf" if data.startswith(b"%PDF-") else "text/plain"
-        result = self._parser.parse(source_version_id, media_type, data)
+        media = sniff_media_type(data)
+        if media is None:
+            self._canonical.persist_failure(source_version_id, "unsupported")
+            raise SourceParseFailedError(source_version_id, "unsupported")
+        result = self._parser.parse(source_version_id, media.value, data)
         match result:
             case ParseSuccess(document=document):
                 self._canonical.persist(document)

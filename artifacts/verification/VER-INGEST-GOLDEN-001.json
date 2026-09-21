@@ -1,0 +1,32 @@
+{
+  "verification_id": "VER-INGEST-GOLDEN-001",
+  "requirement_id": "ARCH-06-family-subset",
+  "task": "FND-01",
+  "test_path": "tests/fixtures/sources/ver-ingest-golden-001.py",
+  "result": "passed",
+  "timestamp": "2026-09-21T21:09:29.174489+00:00",
+  "checks": {
+    "golden_families": [
+      "golden-csv-utf16le.csv",
+      "golden-csv.csv",
+      "golden-docx.docx",
+      "golden-markdown.md",
+      "golden-pptx.pptx",
+      "golden-xlsx.xlsx"
+    ],
+    "locator_guarantees": "markdown: char spans over NFC/LF text; csv: row/col structural; xlsx: sheet name + A1 cell refs + row/col; docx: block/row/col; pptx: slide/shape/paragraph with separate notes stream",
+    "formula_policy": "cached values as text, formulas as distinct extra field; never evaluated",
+    "hostile_corpus": {
+      "hostile-bomb.xlsx": "too_large",
+      "hostile-corrupt.xlsx": "corrupt",
+      "hostile-extref.docx": "policy_blocked",
+      "hostile-macro.xlsx": "policy_blocked"
+    },
+    "macro_execution": "none - vbaProject.bin and external links are rejected before any parser library loads"
+  },
+  "environment": {
+    "python": "3.13.3",
+    "platform": "Linux-7.2.6-x64v3-xanmod1-x86_64-with-glibc2.41",
+    "host": "GUAM"
+  }
+}

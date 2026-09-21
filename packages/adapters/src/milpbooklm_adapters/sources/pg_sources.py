@@ -35,6 +35,11 @@ from .pg_source_guide import SourceGuideStore
 _SOURCE_TYPES: Final = {
     "application/pdf": SourceType.PDF,
     "text/plain": SourceType.PLAIN_TEXT,
+    "text/markdown": SourceType.MARKDOWN,
+    "text/csv": SourceType.CSV,
+    "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet": SourceType.XLSX,
+    "application/vnd.openxmlformats-officedocument.wordprocessingml.document": SourceType.DOCX,
+    "application/vnd.openxmlformats-officedocument.presentationml.presentation": SourceType.PPTX,
 }
 
 

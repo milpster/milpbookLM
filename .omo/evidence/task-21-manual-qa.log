@@ -1,0 +1,33 @@
+# Task 21 manual QA log — ING-02a families (2026-09-21, Sisyphus Worker)
+
+Stack (task-owned, per reboot-recovery order): scratch PG :29521 (shared, not reset),
+bge-m3 :8010 (task-owned, up), API :8000 (restarted with new code, pid scratch/t21-ingest/api.pid),
+worker t21-w1 (scratch/t21-ingest/worker.pid), vite :5173 + chat :8009 untouched/unneeded.
+Driver: scratch/t21-ingest/e2e-legs.py (httpx, Origin=http://localhost:5173 trust origin,
+csrf from login body, Secure mb_session presented as an explicit Cookie header).
+
+1. Register/login/notebook via API — OK (register limiter note: one API restart was needed
+   mid-QA after 3 registration attempts; in-process limiter, established T20 recipe).
+2. Markdown leg: upload golden-markdown.md -> 201 source_type=markdown -> parsed ->
+   activate 200 -> guide 200 -> fused search 'Kosten sanken' hit rank 1 — PASS.
+3. CSV leg: golden-csv.csv -> parsed/activated -> search 'Zuständig für Einkauf' rank 1 — PASS.
+   (Found + fixed along the way: the structural chunker's TABLE branch sat after the
+   empty-text early return, so table containers never chunked — CSV/XLSX indexed 0 chunks.
+   First run surfaced only markdown chunks; fix verified by re-run.)
+4. XLSX leg: golden-xlsx.xlsx -> parsed/activated -> search 'Saldo' rank 1 — PASS.
+   (Found + fixed along the way: quarantine text validation ran for office media too,
+   rejecting the workbook bytes as non-UTF-8 at acquisition; scoped to the text family.)
+5. DOCX leg: golden-docx.docx -> search 'Das Team wuchs auf zwölf Personen' rank 1 — PASS.
+6. PPTX leg: golden-pptx.pptx -> search 'Ergebnisse des dritten Quartals' rank 1 — PASS.
+7. Hostile macro leg: hostile-macro.xlsx upload accepted (family identification only);
+   parse job failed; GET /sources/{id} pipeline_status=parse_failed; SQL check:
+   source_versions.status='parse_failed', parse_error_code='policy_blocked'; vbaProject.bin
+   rejected in the isolated child BEFORE openpyxl loads — no macro execution — PASS.
+8. VER batch: uv run pytest tests/fixtures/sources/ver-ingest-golden-001.py -> 6/6 green,
+   evidence artifacts/verification/VER-INGEST-GOLDEN-001.json.
+9. Gates: ruff clean; mypy 165 files clean; import-linter 4-0; pytest 141 passed
+   (128 baseline + 13 new) + 20 pre-existing environmental errors (FND-03 scratch PG
+   under /run/user/1000 wiped by today's reboots; not touched by this change).
+10. LibreOffice: soffice 25.2.7.2 present on host but never invoked (per the dependency
+    matrix LO is only for explicit recalc/render; this task's paths are pure-python and
+    store formulas un-evaluated). Recorded as deferred, not silently skipped.

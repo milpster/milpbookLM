@@ -2,7 +2,6 @@
 
 from __future__ import annotations
 
-import codecs
 import hashlib
 import os
 import uuid
@@ -17,9 +16,14 @@ from milpbooklm_domain.acquisition import (
     IdentifiedMedia,
 )
 
+from milpbooklm_adapters.parsers.sniffing import SNIFF_SAMPLE_BYTES, sniff_media_type
+from milpbooklm_adapters.parsers.textcodec import validate_text_stream
+
 _CHUNK_SIZE: Final = 1024 * 1024
-_PDF_MAGIC: Final = b"%PDF-"
 _PDF_ENCRYPT_MARKER: Final = b"/Encrypt"
+_TEXT_FAMILY: Final = frozenset(
+    {IdentifiedMedia.TEXT, IdentifiedMedia.MARKDOWN, IdentifiedMedia.CSV}
+)
 
 
 class FilesystemQuarantineStore:
@@ -80,28 +84,27 @@ class FilesystemQuarantineStore:
         if size == 0:
             raise AcquisitionError(AcquisitionErrorCode.CORRUPT, "source is empty")
         with path.open("rb") as handle:
-            prefix = handle.read(len(_PDF_MAGIC))
-        if prefix == _PDF_MAGIC:
-            encrypted = any(
+            prefix = handle.read(SNIFF_SAMPLE_BYTES)
+        media = sniff_media_type(prefix)
+        if media is None:
+            raise AcquisitionError(
+                AcquisitionErrorCode.UNSUPPORTED,
+                "content is not an accepted PDF, office, or decodable text family",
+            )
+        if media is IdentifiedMedia.PDF:
+            if any(
                 _PDF_ENCRYPT_MARKER in chunk
                 for chunk in FilesystemQuarantineStore._read_chunks(path)
-            )
-            if encrypted:
+            ):
                 raise AcquisitionError(
                     AcquisitionErrorCode.POLICY_BLOCKED, "encrypted PDF is not accepted"
                 )
-            return IdentifiedMedia.PDF
-        decoder = codecs.getincrementaldecoder("utf-8")("strict")
-        try:
-            for chunk in FilesystemQuarantineStore._read_chunks(path):
-                decoder.decode(chunk)
-            decoder.decode(b"", final=True)
-        except UnicodeDecodeError as exc:
+        elif media in _TEXT_FAMILY and _text_rejected(path):
             raise AcquisitionError(
                 AcquisitionErrorCode.UNSUPPORTED,
-                "content is neither a PDF nor UTF-8 text",
-            ) from exc
-        return IdentifiedMedia.TEXT
+                "text content is not decodable after BOM detection",
+            )
+        return media
 
     def _fsync_root(self) -> None:
         fd = os.open(self._root, os.O_RDONLY | os.O_DIRECTORY)
@@ -109,3 +112,7 @@ class FilesystemQuarantineStore:
             os.fsync(fd)
         finally:
             os.close(fd)
+
+
+def _text_rejected(path: Path) -> bool:
+    return validate_text_stream(FilesystemQuarantineStore._read_chunks(path)) is not None

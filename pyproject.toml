@@ -98,6 +98,12 @@ show_error_codes = true
 module = "yaml"
 ignore_missing_imports = true
 
+# REFERENCE-DEPENDENCIES parser matrix (ING-02a): openpyxl ships no py.typed
+# marker; the adapter boundary annotates its objects explicitly.
+[[tool.mypy.overrides]]
+module = "openpyxl.*"
+ignore_missing_imports = true
+
 [tool.pytest.ini_options]
 testpaths = ["tests"]
 addopts = "-ra"

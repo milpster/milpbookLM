@@ -1,0 +1,94 @@
+{
+  "task": "21",
+  "title": "ING-02a — Markdown, CSV/XLSX, DOCX/PPTX source families",
+  "commit_message": "feat(ingestion): ING-02a office/markdown/csv families (ARCH-06 subset)",
+  "verdict": "done",
+  "implemented": {
+    "adapters": [
+      "parsers/markdown.py — structural Markdown (headings/lists/code/quotes/GFM tables), stdlib only, NFC+LF char-span locators, profile markdown-structure-v1",
+      "parsers/textcodec.py — BOM-bound decoding (UTF-8/UTF-8-BOM/UTF-16 with BOM), strict, NFC+LF",
+      "parsers/csv_parser.py — stdlib csv with bounded Sniffer dialect handling + tolerant fallback, document>table>row>cell, row/col locators, profile csv-table-v1",
+      "parsers/office.py — shared OOXML pre-flight: member/size bomb limits, vbaProject.bin macro rejection, non-hyperlink external-reference rejection, 1MB rels read cap",
+      "parsers/xlsx.py — openpyxl read_only+data_only (two loads), cached values as cell text and formulas stored DISTINCTLY in extra fields (never evaluated), sheet/A1 cell locators, externalLinks rejected, profile xlsx-values-v1",
+      "parsers/docx_parser.py — python-docx body walk in document order, heading styles -> headings with levels, tables, block/row/col locators, profile docx-structure-v1",
+      "parsers/pptx_parser.py — python-pptx slides/shapes, titles -> headings, speaker notes a SEPARATE stream (notes locator segment), profile pptx-slides-v1",
+      "parsers/sniffing.py — bounded byte sniffing (8192B sample: PDF magic, zip part markers xl/word/ppt, BOM/text heuristics with declared CSV/Markdown rules)"
+    ],
+    "pipeline_wiring": [
+      "domain IdentifiedMedia: +MARKDOWN/CSV/XLSX/DOCX/PPTX",
+      "quarantine _identify routes through the shared sniffer + full strict text validation (text family only)",
+      "worker SourceParseHandler uses sniff_media_type; unknown -> persist_failure(unsupported)",
+      "child dispatch table + typed failure mapping incl. policy_blocked",
+      "isolation.py ParseFailure/envelope +policy_blocked",
+      "pg_sources._SOURCE_TYPES +5 content-type->SourceType mappings",
+      "pg_canonical persists slide/sheet/row/col locator columns from locator extra fields",
+      "chunking.py: TABLE branch moved before the empty-text early return (pre-existing gap: table containers with text=None never chunked; exposed by table-heavy families, fixed at the shared seam)"
+    ],
+    "child_network_guard_fix": "python-pptx imports xml.sax.saxutils whose stdlib chain pulls urllib.request/http.client/socket/ssl; the child now preloads that inert chain BEFORE the finder and then stubs the five network modules in sys.modules so any use still raises ImportError"
+  },
+  "acceptance": {
+    "INGEST_GOLDEN_001": {
+      "suite": "tests/fixtures/sources/ver-ingest-golden-001.py (execution-map path for the group)",
+      "goldens": [
+        "golden-markdown.md", "golden-csv.csv", "golden-csv-utf16le.csv",
+        "golden-xlsx.xlsx", "golden-docx.docx", "golden-pptx.pptx"
+      ],
+      "mechanism": "each golden parses through the REAL IsolatedParser child and byte-equals its committed goldens/*.canonical.json at a fixed source-version UUID",
+      "result": "6/6 green; evidence VER-INGEST-GOLDEN-001.json"
+    },
+    "hostile_office_corpus": {
+      "hostile-macro.xlsx": "policy_blocked (xl/vbaProject.bin)",
+      "hostile-extref.docx": "policy_blocked (external non-hyperlink relationship)",
+      "hostile-bomb.xlsx": "too_large (central directory forges a 2GB member; rejected pre-inflation)",
+      "hostile-corrupt.xlsx": "corrupt (zip magic + garbage)",
+      "no_success_empty": "asserted: failed parses return typed ParseFailure states, never an empty success document"
+    },
+    "e2e_002_legs": {
+      "shape": "API-level drives (allowed per task brief; the T20 browser harness drove this same REST surface through the vite proxy)",
+      "driver": "scratch/t21-ingest/e2e-legs.py against the live stack (PG :29521 scratch, bge-m3 :8010, API :8000, worker t21-w1; :8009 shared chat untouched/not needed)",
+      "legs": {
+        "markdown": "upload->parsed->activated->guide->fused search hit rank 1 (probe 'Kosten sanken')",
+        "csv": "PASS rank 1 (probe 'Zuständig für Einkauf')",
+        "xlsx": "PASS rank 1 (probe 'Saldo')",
+        "docx": "PASS rank 1 (probe 'Das Team wuchs auf zwölf Personen')",
+        "pptx": "PASS rank 1 (probe 'Ergebnisse des dritten Quartals')",
+        "hostile-macro": "upload accepted (family identification only), parse job failed, source_version status=parse_failed, parse_error_code=policy_blocked (SQL-verified), no macro execution"
+      },
+      "results_file": "scratch/t21-ingest/e2e-results.json"
+    }
+  },
+  "sandbox_audit": {
+    "parser_isolation": "separate rootless child (python -I -m milpbooklm_adapters.parsers.child), empty temp HOME/TMPDIR, RLIMIT_CPU 10s, RLIMIT_AS 512MB, RLIMIT_FSIZE 32MB, wall clock 20s",
+    "network": "meta-path finder rejects socket/ssl/http.client/urllib.request/ftplib; after the saxutils preload these five are replaced by stub modules whose attribute access raises",
+    "macros": "never executed — vbaProject.bin members are rejected from the zip central directory BEFORE openpyxl/python-docx/python-pptx load any part",
+    "external_references": "never fetched — external non-hyperlink relationships and xl/externalLinks are policy-blocked pre-parse; hyperlinks remain inert text",
+    "formulas": "never evaluated — cached values + formula strings stored distinctly; parser descriptor records formula_policy=stored_not_evaluated, recalculation=none",
+    "libreoffice": "installed on host (LibreOffice 25.2.7.2) but NOT invoked — per the matrix LO is only for explicit recalc/render, which no default path in this task performs; recorded as deferred until a recalc/render feature lands"
+  },
+  "gates": {
+    "ruff": "clean (uv run ruff check .)",
+    "mypy": "clean — 165 files (baseline 157 + 8 new; openpyxl override added next to the yaml precedent)",
+    "import_linter": "4 kept, 0 broken",
+    "pytest": "141 passed (baseline 128 + 13 new: 6 golden/hostile suite + 7 sniffing matrix), 20 errors PRE-EXISTING environmental: tests/domain/invariants need the FND-03 scratch PostgreSQL under /run/user/1000/fnd03-ctd, wiped by today's host reboots (tmpfs; FND-03 learning 3) — unrelated to this change",
+    "arch_policy": "ALLOWED_ADAPTER_IMPORTS += openpyxl/docx/pptx (REFERENCE-DEPENDENCIES parser-matrix rows, FND-07 policy-data precedent)"
+  },
+  "dependency_registration": {
+    "uv_add": "openpyxl 3.1.5, python-docx 1.2.0, python-pptx 1.0.2 (+lxml 6.1.3, Pillow, et-xmlfile, xlsxwriter transitives) in packages/adapters with REFERENCE-DEPENDENCIES row citations",
+    "guide_file": "milpbookml-implementation-guide/REFERENCE-DEPENDENCIES.md NOT edited: its parser matrix already names all three verbatim ('openpyxl read-only/data-only', 'python-docx', 'python-pptx'), and the guide package is fingerprinted (MANIFEST-SHA256.txt) — re-stating rows would be a no-op mutation of a frozen artifact"
+  },
+  "deferred": [
+    "LibreOffice recalc/render paths (host binary present; no feature in scope invokes it — xlsx recalculation explicitly 'none')",
+    "DOMAIN invariants suite green-run pending an FND-03 scratch PG rebuild after the host reboots (environmental, pre-existing)"
+  ],
+  "files_touched": [
+    "packages/domain/src/milpbooklm_domain/acquisition.py",
+    "packages/adapters/src/milpbooklm_adapters/parsers/{sniffing,textcodec,markdown,csv_parser,office,xlsx,docx_parser,pptx_parser}.py (new)",
+    "packages/adapters/src/milpbooklm_adapters/parsers/{child,isolation,pg_canonical}.py",
+    "packages/adapters/src/milpbooklm_adapters/sources/{filesystem_quarantine,pg_sources}.py",
+    "packages/application/src/milpbooklm_application/chunking.py",
+    "workers/src/milpbooklm_workers/handlers.py",
+    "packages/adapters/pyproject.toml, pyproject.toml (mypy override), uv.lock",
+    "tests/architecture/composition/ver-arch-03-001.py",
+    "tests/fixtures/ (sources + goldens + generator + ver-ingest-golden-001.py), tests/unit/test_media_sniffing.py"
+  ]
+}

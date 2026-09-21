@@ -30,6 +30,8 @@ ADAPTERS_SRC = REPO_ROOT / "packages" / "adapters" / "src" / "milpbooklm_adapter
 # private response boundary models.
 # anyio: the httpx/httpcore async transport backend (MOD-01 streaming adapter).
 # pypdf/pdfplumber/pdfminer: the ING-01b PDF chain named verbatim in the parser matrix.
+# openpyxl/docx/pptx: the ING-02a office rows named verbatim in the parser matrix
+# ("openpyxl read-only/data-only", "python-docx", "python-pptx").
 ALLOWED_ADAPTER_IMPORTS = {
     "milpbooklm_adapters",
     "milpbooklm_domain",
@@ -46,6 +48,9 @@ ALLOWED_ADAPTER_IMPORTS = {
     "pypdf",
     "pdfplumber",
     "pdfminer",
+    "openpyxl",
+    "docx",
+    "pptx",
 } | set(sys.stdlib_module_names)
 
 

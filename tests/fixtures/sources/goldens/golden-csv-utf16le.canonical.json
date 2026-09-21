@@ -1,0 +1,228 @@
+{
+ "schema_version": "1",
+ "document_id": "62df34c7-34fc-54cb-8b0e-6dc3e92e7584",
+ "source_version_id": "00000000-0000-5000-8000-000000000211",
+ "mime_type": "text/csv",
+ "parser": {
+  "identity": "milpbooklm.csv",
+  "version": "1",
+  "profile": "csv-table-v1",
+  "tool_versions": [
+   "python=3.13.3"
+  ]
+ },
+ "languages": [],
+ "metadata": {
+  "dialect": "sniffed",
+  "has_header": true,
+  "rows": 2
+ },
+ "root_node_ids": [
+  "59a5a949-0b3b-5358-b7c1-ef32f38563f2"
+ ],
+ "nodes": [
+  {
+   "node_id": "59a5a949-0b3b-5358-b7c1-ef32f38563f2",
+   "kind": "document",
+   "structural_identity": "document",
+   "parent_id": null,
+   "child_order": 0,
+   "text": null,
+   "locator": {
+    "path": [
+     "document"
+    ]
+   },
+   "authority": "source_authored",
+   "language": null
+  },
+  {
+   "node_id": "d7b52337-1779-5b1f-9e04-e15f3fdaf190",
+   "kind": "table",
+   "structural_identity": "table:1",
+   "parent_id": "59a5a949-0b3b-5358-b7c1-ef32f38563f2",
+   "child_order": 1,
+   "text": null,
+   "locator": {
+    "header": [
+     "Name",
+     "City",
+     "Notes"
+    ],
+    "path": [
+     "document",
+     "table",
+     "1"
+    ]
+   },
+   "authority": "source_authored",
+   "language": null
+  },
+  {
+   "node_id": "e5cffa98-bbf8-59ab-b253-e36045dc493a",
+   "kind": "row",
+   "structural_identity": "table:1:row:1",
+   "parent_id": "d7b52337-1779-5b1f-9e04-e15f3fdaf190",
+   "child_order": 1,
+   "text": null,
+   "locator": {
+    "row": 1,
+    "path": [
+     "document",
+     "table",
+     "1",
+     "row",
+     "1"
+    ]
+   },
+   "authority": "source_authored",
+   "language": null
+  },
+  {
+   "node_id": "549236dc-3ef3-56d3-bccb-297d3e949d0b",
+   "kind": "cell",
+   "structural_identity": "table:1:row:1:cell:1",
+   "parent_id": "e5cffa98-bbf8-59ab-b253-e36045dc493a",
+   "child_order": 1,
+   "text": "Name",
+   "locator": {
+    "row": 1,
+    "col": 1,
+    "path": [
+     "document",
+     "table",
+     "1",
+     "row",
+     "1"
+    ]
+   },
+   "authority": "source_authored",
+   "language": null
+  },
+  {
+   "node_id": "5e962fa6-84bb-5148-9da8-334da2ae6cdd",
+   "kind": "cell",
+   "structural_identity": "table:1:row:1:cell:2",
+   "parent_id": "e5cffa98-bbf8-59ab-b253-e36045dc493a",
+   "child_order": 2,
+   "text": "City",
+   "locator": {
+    "row": 1,
+    "col": 2,
+    "path": [
+     "document",
+     "table",
+     "1",
+     "row",
+     "1"
+    ]
+   },
+   "authority": "source_authored",
+   "language": null
+  },
+  {
+   "node_id": "9dfa6139-b175-5dee-bbd9-c649b24c0e77",
+   "kind": "cell",
+   "structural_identity": "table:1:row:1:cell:3",
+   "parent_id": "e5cffa98-bbf8-59ab-b253-e36045dc493a",
+   "child_order": 3,
+   "text": "Notes",
+   "locator": {
+    "row": 1,
+    "col": 3,
+    "path": [
+     "document",
+     "table",
+     "1",
+     "row",
+     "1"
+    ]
+   },
+   "authority": "source_authored",
+   "language": null
+  },
+  {
+   "node_id": "433e4294-17b7-5704-8773-465a1eac3d33",
+   "kind": "row",
+   "structural_identity": "table:1:row:2",
+   "parent_id": "d7b52337-1779-5b1f-9e04-e15f3fdaf190",
+   "child_order": 2,
+   "text": null,
+   "locator": {
+    "row": 2,
+    "path": [
+     "document",
+     "table",
+     "1",
+     "row",
+     "2"
+    ]
+   },
+   "authority": "source_authored",
+   "language": null
+  },
+  {
+   "node_id": "46d04d8f-8b0a-5dc8-86a4-89f4cbe5b9cf",
+   "kind": "cell",
+   "structural_identity": "table:1:row:2:cell:1",
+   "parent_id": "433e4294-17b7-5704-8773-465a1eac3d33",
+   "child_order": 1,
+   "text": "Anna",
+   "locator": {
+    "row": 2,
+    "col": 1,
+    "path": [
+     "document",
+     "table",
+     "1",
+     "row",
+     "2"
+    ]
+   },
+   "authority": "source_authored",
+   "language": null
+  },
+  {
+   "node_id": "7488c60e-acf3-5461-9dd6-dcf5eb7c9401",
+   "kind": "cell",
+   "structural_identity": "table:1:row:2:cell:2",
+   "parent_id": "433e4294-17b7-5704-8773-465a1eac3d33",
+   "child_order": 2,
+   "text": "Berlin",
+   "locator": {
+    "row": 2,
+    "col": 2,
+    "path": [
+     "document",
+     "table",
+     "1",
+     "row",
+     "2"
+    ]
+   },
+   "authority": "source_authored",
+   "language": null
+  },
+  {
+   "node_id": "3a2a1461-feaf-5cbd-bffe-9b40b4cf34b7",
+   "kind": "cell",
+   "structural_identity": "table:1:row:2:cell:3",
+   "parent_id": "433e4294-17b7-5704-8773-465a1eac3d33",
+   "child_order": 3,
+   "text": "Team A",
+   "locator": {
+    "row": 2,
+    "col": 3,
+    "path": [
+     "document",
+     "table",
+     "1",
+     "row",
+     "2"
+    ]
+   },
+   "authority": "source_authored",
+   "language": null
+  }
+ ]
+}

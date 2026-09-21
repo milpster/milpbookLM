@@ -11,6 +11,11 @@ class IdentifiedMedia(StrEnum):
 
     PDF = "application/pdf"
     TEXT = "text/plain"
+    MARKDOWN = "text/markdown"
+    CSV = "text/csv"
+    XLSX = "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet"
+    DOCX = "application/vnd.openxmlformats-officedocument.wordprocessingml.document"
+    PPTX = "application/vnd.openxmlformats-officedocument.presentationml.presentation"
 
 
 class AcquisitionErrorCode(StrEnum):

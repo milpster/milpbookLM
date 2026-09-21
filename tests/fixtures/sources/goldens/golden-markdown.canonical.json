@@ -1,0 +1,351 @@
+{
+ "schema_version": "1",
+ "document_id": "72eb4bd2-46ed-5127-ae75-db5a4d1b886c",
+ "source_version_id": "00000000-0000-5000-8000-000000000211",
+ "mime_type": "text/markdown",
+ "parser": {
+  "identity": "milpbooklm.markdown",
+  "version": "1",
+  "profile": "markdown-structure-v1",
+  "tool_versions": [
+   "python=3.13.3"
+  ]
+ },
+ "languages": [],
+ "metadata": {
+  "normalization": "NFC+LF"
+ },
+ "root_node_ids": [
+  "43182c70-a1ce-52dd-9a72-c7046c922e0f"
+ ],
+ "nodes": [
+  {
+   "node_id": "43182c70-a1ce-52dd-9a72-c7046c922e0f",
+   "kind": "document",
+   "structural_identity": "document",
+   "parent_id": null,
+   "child_order": 0,
+   "text": null,
+   "locator": {
+    "path": [
+     "document"
+    ],
+    "char_start": 0,
+    "char_end": 314
+   },
+   "authority": "source_authored",
+   "language": null
+  },
+  {
+   "heading_level": 1,
+   "node_id": "d802ab47-00ad-503d-ad20-10fd7559a809",
+   "kind": "heading",
+   "structural_identity": "heading:1",
+   "parent_id": "43182c70-a1ce-52dd-9a72-c7046c922e0f",
+   "child_order": 1,
+   "text": "Vierteljahresbericht",
+   "locator": {
+    "path": [
+     "document",
+     "block",
+     "1"
+    ],
+    "char_start": 0,
+    "char_end": 22
+   },
+   "authority": "source_authored",
+   "language": null
+  },
+  {
+   "node_id": "1627d54f-1038-5627-9d11-0813b56dc3cc",
+   "kind": "paragraph",
+   "structural_identity": "paragraph:2",
+   "parent_id": "43182c70-a1ce-52dd-9a72-c7046c922e0f",
+   "child_order": 2,
+   "text": "Eine Einleitung mit **Hervorhebung** und einem [Link](https://example.org).",
+   "locator": {
+    "path": [
+     "document",
+     "block",
+     "2"
+    ],
+    "char_start": 24,
+    "char_end": 99
+   },
+   "authority": "source_authored",
+   "language": null
+  },
+  {
+   "heading_level": 2,
+   "node_id": "79707f0f-3e55-58c5-b3d6-cd27732ce6fa",
+   "kind": "heading",
+   "structural_identity": "heading:3",
+   "parent_id": "43182c70-a1ce-52dd-9a72-c7046c922e0f",
+   "child_order": 3,
+   "text": "Zahlen",
+   "locator": {
+    "path": [
+     "document",
+     "block",
+     "3"
+    ],
+    "char_start": 101,
+    "char_end": 110
+   },
+   "authority": "source_authored",
+   "language": null
+  },
+  {
+   "node_id": "1ae2c27e-a208-53de-a0ce-f96f3a8b1f7a",
+   "kind": "list",
+   "structural_identity": "list:4",
+   "parent_id": "43182c70-a1ce-52dd-9a72-c7046c922e0f",
+   "child_order": 4,
+   "text": null,
+   "locator": {
+    "path": [
+     "document",
+     "block",
+     "4"
+    ],
+    "char_start": 112,
+    "char_end": 142
+   },
+   "authority": "source_authored",
+   "language": null
+  },
+  {
+   "node_id": "3497c78f-51d2-59fd-8bc4-bd56d6248320",
+   "kind": "list_item",
+   "structural_identity": "list_item:5:item:1",
+   "parent_id": "1ae2c27e-a208-53de-a0ce-f96f3a8b1f7a",
+   "child_order": 1,
+   "text": "Umsatz stieg",
+   "locator": {
+    "path": [
+     "document",
+     "block",
+     "5"
+    ],
+    "char_start": 112,
+    "char_end": 126
+   },
+   "authority": "source_authored",
+   "language": null
+  },
+  {
+   "node_id": "b2aea7b9-d419-5c14-87c5-227be2f78a25",
+   "kind": "list_item",
+   "structural_identity": "list_item:6:item:2",
+   "parent_id": "1ae2c27e-a208-53de-a0ce-f96f3a8b1f7a",
+   "child_order": 2,
+   "text": "Kosten sanken",
+   "locator": {
+    "path": [
+     "document",
+     "block",
+     "6"
+    ],
+    "char_start": 127,
+    "char_end": 142
+   },
+   "authority": "source_authored",
+   "language": null
+  },
+  {
+   "node_id": "0d06121f-dfc3-5a3b-bc3a-5d6582cd7ff0",
+   "kind": "list",
+   "structural_identity": "list:7",
+   "parent_id": "43182c70-a1ce-52dd-9a72-c7046c922e0f",
+   "child_order": 7,
+   "text": null,
+   "locator": {
+    "path": [
+     "document",
+     "block",
+     "7"
+    ],
+    "char_start": 144,
+    "char_end": 166
+   },
+   "authority": "source_authored",
+   "language": null
+  },
+  {
+   "node_id": "02c7fa46-755d-5ee0-86e3-f71bda839f5a",
+   "kind": "list_item",
+   "structural_identity": "list_item:8:item:1",
+   "parent_id": "0d06121f-dfc3-5a3b-bc3a-5d6582cd7ff0",
+   "child_order": 1,
+   "text": "Erstens",
+   "locator": {
+    "path": [
+     "document",
+     "block",
+     "8"
+    ],
+    "char_start": 144,
+    "char_end": 154
+   },
+   "authority": "source_authored",
+   "language": null
+  },
+  {
+   "node_id": "b7515678-07fb-589b-983f-642462919a8d",
+   "kind": "list_item",
+   "structural_identity": "list_item:9:item:2",
+   "parent_id": "0d06121f-dfc3-5a3b-bc3a-5d6582cd7ff0",
+   "child_order": 2,
+   "text": "Zweitens",
+   "locator": {
+    "path": [
+     "document",
+     "block",
+     "9"
+    ],
+    "char_start": 155,
+    "char_end": 166
+   },
+   "authority": "source_authored",
+   "language": null
+  },
+  {
+   "node_id": "8f0416c1-e320-551c-8b41-883f44d3672b",
+   "kind": "quote",
+   "structural_identity": "quote:10",
+   "parent_id": "43182c70-a1ce-52dd-9a72-c7046c922e0f",
+   "child_order": 10,
+   "text": "Eine zitierte Aussage aus dem Bericht.",
+   "locator": {
+    "path": [
+     "document",
+     "block",
+     "10"
+    ],
+    "char_start": 168,
+    "char_end": 208
+   },
+   "authority": "source_authored",
+   "language": null
+  },
+  {
+   "node_id": "2543bef6-5e04-50c1-8788-53358a83bcba",
+   "kind": "code",
+   "structural_identity": "code:11",
+   "parent_id": "43182c70-a1ce-52dd-9a72-c7046c922e0f",
+   "child_order": 11,
+   "text": "summe = sum(range(10))",
+   "locator": {
+    "path": [
+     "document",
+     "block",
+     "11"
+    ],
+    "char_start": 210,
+    "char_end": 246
+   },
+   "authority": "source_authored",
+   "language": null
+  },
+  {
+   "header": [
+    "Kennzahl",
+    "2025",
+    "2026"
+   ],
+   "node_id": "4213b3e2-b257-5481-a76f-1f46c545ac0c",
+   "kind": "table",
+   "structural_identity": "table:12",
+   "parent_id": "43182c70-a1ce-52dd-9a72-c7046c922e0f",
+   "child_order": 12,
+   "text": null,
+   "locator": {
+    "path": [
+     "document",
+     "block",
+     "12"
+    ],
+    "char_start": 248,
+    "char_end": 313
+   },
+   "authority": "source_authored",
+   "language": null
+  },
+  {
+   "node_id": "f6e6664b-faf8-5037-b5d3-b4d9fc5a8afd",
+   "kind": "row",
+   "structural_identity": "row:13:row:1",
+   "parent_id": "4213b3e2-b257-5481-a76f-1f46c545ac0c",
+   "child_order": 1,
+   "text": null,
+   "locator": {
+    "path": [
+     "document",
+     "block",
+     "13"
+    ],
+    "char_start": 291,
+    "char_end": 313
+   },
+   "authority": "source_authored",
+   "language": null
+  },
+  {
+   "node_id": "57466989-2f25-5242-b1cc-e8751dbac07e",
+   "kind": "cell",
+   "structural_identity": "cell:14:row:1:cell:1",
+   "parent_id": "f6e6664b-faf8-5037-b5d3-b4d9fc5a8afd",
+   "child_order": 1,
+   "text": "Umsatz",
+   "locator": {
+    "path": [
+     "document",
+     "block",
+     "14"
+    ],
+    "char_start": 291,
+    "char_end": 313
+   },
+   "authority": "source_authored",
+   "language": null
+  },
+  {
+   "node_id": "ed9cde13-7678-5498-aea2-53e8f37c4263",
+   "kind": "cell",
+   "structural_identity": "cell:15:row:1:cell:2",
+   "parent_id": "f6e6664b-faf8-5037-b5d3-b4d9fc5a8afd",
+   "child_order": 2,
+   "text": "120",
+   "locator": {
+    "path": [
+     "document",
+     "block",
+     "15"
+    ],
+    "char_start": 291,
+    "char_end": 313
+   },
+   "authority": "source_authored",
+   "language": null
+  },
+  {
+   "node_id": "e8050e1c-e9fa-5781-8e68-60dd1344bdd0",
+   "kind": "cell",
+   "structural_identity": "cell:16:row:1:cell:3",
+   "parent_id": "f6e6664b-faf8-5037-b5d3-b4d9fc5a8afd",
+   "child_order": 3,
+   "text": "180",
+   "locator": {
+    "path": [
+     "document",
+     "block",
+     "16"
+    ],
+    "char_start": 291,
+    "char_end": 313
+   },
+   "authority": "source_authored",
+   "language": null
+  }
+ ]
+}

@@ -5,7 +5,11 @@ from __future__ import annotations
 import uuid
 
 import sqlalchemy as sa
-from milpbooklm_contracts.canonical_document import CanonicalDocument, CanonicalNode
+from milpbooklm_contracts.canonical_document import (
+    CanonicalDocument,
+    CanonicalNode,
+    SourceLocator,
+)
 
 from milpbooklm_adapters.db.tables.sources import (
     canonical_documents,
@@ -107,21 +111,47 @@ class PgCanonicalRepository:
             )
         )
         locator = node.locator
-        locator_kind = (
-            "bbox" if locator.bbox is not None else "page" if locator.page else "char_range"
-        )
+        locator_kind = _locator_kind(locator)
+        row = locator.extra_fields.get("row")
+        column = locator.extra_fields.get("col")
         connection.execute(
             sa.insert(canonical_locators).values(
                 id=uuid.uuid5(node.node_id, "locator:primary"),
                 canonical_node_id=node.node_id,
                 locator_kind=locator_kind,
                 page=locator.page,
+                slide=_int_or_none(locator.extra_fields.get("slide")),
+                sheet=_text_or_none(locator.extra_fields.get("sheet")),
+                row_start=row if isinstance(row, int) else None,
+                row_end=row if isinstance(row, int) else None,
+                col_start=column if isinstance(column, int) else None,
+                col_end=column if isinstance(column, int) else None,
                 char_start=locator.char_start,
                 char_end=locator.char_end,
                 bbox=list(locator.bbox) if locator.bbox is not None else None,
                 structural_path=list(locator.path),
             )
         )
+
+
+def _locator_kind(locator: SourceLocator) -> str:
+    if locator.extra_fields.get("slide") is not None:
+        return "slide"
+    if locator.extra_fields.get("sheet") is not None:
+        return "sheet"
+    if locator.bbox is not None:
+        return "bbox"
+    if locator.page is not None:
+        return "page"
+    return "char_range"
+
+
+def _int_or_none(value: object) -> int | None:
+    return value if isinstance(value, int) else None
+
+
+def _text_or_none(value: object) -> str | None:
+    return value if isinstance(value, str) else None
 
 
 class CanonicalPersistenceError(RuntimeError):

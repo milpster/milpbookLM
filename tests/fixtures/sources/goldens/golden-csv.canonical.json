@@ -1,0 +1,389 @@
+{
+ "schema_version": "1",
+ "document_id": "62df34c7-34fc-54cb-8b0e-6dc3e92e7584",
+ "source_version_id": "00000000-0000-5000-8000-000000000211",
+ "mime_type": "text/csv",
+ "parser": {
+  "identity": "milpbooklm.csv",
+  "version": "1",
+  "profile": "csv-table-v1",
+  "tool_versions": [
+   "python=3.13.3"
+  ]
+ },
+ "languages": [],
+ "metadata": {
+  "dialect": "sniffed",
+  "has_header": false,
+  "rows": 4
+ },
+ "root_node_ids": [
+  "59a5a949-0b3b-5358-b7c1-ef32f38563f2"
+ ],
+ "nodes": [
+  {
+   "node_id": "59a5a949-0b3b-5358-b7c1-ef32f38563f2",
+   "kind": "document",
+   "structural_identity": "document",
+   "parent_id": null,
+   "child_order": 0,
+   "text": null,
+   "locator": {
+    "path": [
+     "document"
+    ]
+   },
+   "authority": "source_authored",
+   "language": null
+  },
+  {
+   "node_id": "d7b52337-1779-5b1f-9e04-e15f3fdaf190",
+   "kind": "table",
+   "structural_identity": "table:1",
+   "parent_id": "59a5a949-0b3b-5358-b7c1-ef32f38563f2",
+   "child_order": 1,
+   "text": null,
+   "locator": {
+    "path": [
+     "document",
+     "table",
+     "1"
+    ]
+   },
+   "authority": "source_authored",
+   "language": null
+  },
+  {
+   "node_id": "e5cffa98-bbf8-59ab-b253-e36045dc493a",
+   "kind": "row",
+   "structural_identity": "table:1:row:1",
+   "parent_id": "d7b52337-1779-5b1f-9e04-e15f3fdaf190",
+   "child_order": 1,
+   "text": null,
+   "locator": {
+    "row": 1,
+    "path": [
+     "document",
+     "table",
+     "1",
+     "row",
+     "1"
+    ]
+   },
+   "authority": "source_authored",
+   "language": null
+  },
+  {
+   "node_id": "549236dc-3ef3-56d3-bccb-297d3e949d0b",
+   "kind": "cell",
+   "structural_identity": "table:1:row:1:cell:1",
+   "parent_id": "e5cffa98-bbf8-59ab-b253-e36045dc493a",
+   "child_order": 1,
+   "text": "Name",
+   "locator": {
+    "row": 1,
+    "col": 1,
+    "path": [
+     "document",
+     "table",
+     "1",
+     "row",
+     "1"
+    ]
+   },
+   "authority": "source_authored",
+   "language": null
+  },
+  {
+   "node_id": "5e962fa6-84bb-5148-9da8-334da2ae6cdd",
+   "kind": "cell",
+   "structural_identity": "table:1:row:1:cell:2",
+   "parent_id": "e5cffa98-bbf8-59ab-b253-e36045dc493a",
+   "child_order": 2,
+   "text": "Stadt",
+   "locator": {
+    "row": 1,
+    "col": 2,
+    "path": [
+     "document",
+     "table",
+     "1",
+     "row",
+     "1"
+    ]
+   },
+   "authority": "source_authored",
+   "language": null
+  },
+  {
+   "node_id": "9dfa6139-b175-5dee-bbd9-c649b24c0e77",
+   "kind": "cell",
+   "structural_identity": "table:1:row:1:cell:3",
+   "parent_id": "e5cffa98-bbf8-59ab-b253-e36045dc493a",
+   "child_order": 3,
+   "text": "Bemerkung",
+   "locator": {
+    "row": 1,
+    "col": 3,
+    "path": [
+     "document",
+     "table",
+     "1",
+     "row",
+     "1"
+    ]
+   },
+   "authority": "source_authored",
+   "language": null
+  },
+  {
+   "node_id": "433e4294-17b7-5704-8773-465a1eac3d33",
+   "kind": "row",
+   "structural_identity": "table:1:row:2",
+   "parent_id": "d7b52337-1779-5b1f-9e04-e15f3fdaf190",
+   "child_order": 2,
+   "text": null,
+   "locator": {
+    "row": 2,
+    "path": [
+     "document",
+     "table",
+     "1",
+     "row",
+     "2"
+    ]
+   },
+   "authority": "source_authored",
+   "language": null
+  },
+  {
+   "node_id": "46d04d8f-8b0a-5dc8-86a4-89f4cbe5b9cf",
+   "kind": "cell",
+   "structural_identity": "table:1:row:2:cell:1",
+   "parent_id": "433e4294-17b7-5704-8773-465a1eac3d33",
+   "child_order": 1,
+   "text": "Anna",
+   "locator": {
+    "row": 2,
+    "col": 1,
+    "path": [
+     "document",
+     "table",
+     "1",
+     "row",
+     "2"
+    ]
+   },
+   "authority": "source_authored",
+   "language": null
+  },
+  {
+   "node_id": "7488c60e-acf3-5461-9dd6-dcf5eb7c9401",
+   "kind": "cell",
+   "structural_identity": "table:1:row:2:cell:2",
+   "parent_id": "433e4294-17b7-5704-8773-465a1eac3d33",
+   "child_order": 2,
+   "text": "Berlin",
+   "locator": {
+    "row": 2,
+    "col": 2,
+    "path": [
+     "document",
+     "table",
+     "1",
+     "row",
+     "2"
+    ]
+   },
+   "authority": "source_authored",
+   "language": null
+  },
+  {
+   "node_id": "3a2a1461-feaf-5cbd-bffe-9b40b4cf34b7",
+   "kind": "cell",
+   "structural_identity": "table:1:row:2:cell:3",
+   "parent_id": "433e4294-17b7-5704-8773-465a1eac3d33",
+   "child_order": 3,
+   "text": "Halbtags; Montag",
+   "locator": {
+    "row": 2,
+    "col": 3,
+    "path": [
+     "document",
+     "table",
+     "1",
+     "row",
+     "2"
+    ]
+   },
+   "authority": "source_authored",
+   "language": null
+  },
+  {
+   "node_id": "239769c7-6e4c-5353-8f96-8cc67e6b1a0b",
+   "kind": "row",
+   "structural_identity": "table:1:row:3",
+   "parent_id": "d7b52337-1779-5b1f-9e04-e15f3fdaf190",
+   "child_order": 3,
+   "text": null,
+   "locator": {
+    "row": 3,
+    "path": [
+     "document",
+     "table",
+     "1",
+     "row",
+     "3"
+    ]
+   },
+   "authority": "source_authored",
+   "language": null
+  },
+  {
+   "node_id": "4df54841-6d18-51f7-82b3-8706c6ee3049",
+   "kind": "cell",
+   "structural_identity": "table:1:row:3:cell:1",
+   "parent_id": "239769c7-6e4c-5353-8f96-8cc67e6b1a0b",
+   "child_order": 1,
+   "text": "Ben",
+   "locator": {
+    "row": 3,
+    "col": 1,
+    "path": [
+     "document",
+     "table",
+     "1",
+     "row",
+     "3"
+    ]
+   },
+   "authority": "source_authored",
+   "language": null
+  },
+  {
+   "node_id": "825a6273-c940-5635-b5fd-319091c25ac3",
+   "kind": "cell",
+   "structural_identity": "table:1:row:3:cell:2",
+   "parent_id": "239769c7-6e4c-5353-8f96-8cc67e6b1a0b",
+   "child_order": 2,
+   "text": "Wien",
+   "locator": {
+    "row": 3,
+    "col": 2,
+    "path": [
+     "document",
+     "table",
+     "1",
+     "row",
+     "3"
+    ]
+   },
+   "authority": "source_authored",
+   "language": null
+  },
+  {
+   "node_id": "f2f1a2fb-0737-53b8-9b54-1c0e0e8559b9",
+   "kind": "cell",
+   "structural_identity": "table:1:row:3:cell:3",
+   "parent_id": "239769c7-6e4c-5353-8f96-8cc67e6b1a0b",
+   "child_order": 3,
+   "text": "Zust\u00e4ndig f\u00fcr Einkauf",
+   "locator": {
+    "row": 3,
+    "col": 3,
+    "path": [
+     "document",
+     "table",
+     "1",
+     "row",
+     "3"
+    ]
+   },
+   "authority": "source_authored",
+   "language": null
+  },
+  {
+   "node_id": "c2667354-d9b4-5667-8fa5-e4aea04b693f",
+   "kind": "row",
+   "structural_identity": "table:1:row:4",
+   "parent_id": "d7b52337-1779-5b1f-9e04-e15f3fdaf190",
+   "child_order": 4,
+   "text": null,
+   "locator": {
+    "row": 4,
+    "path": [
+     "document",
+     "table",
+     "1",
+     "row",
+     "4"
+    ]
+   },
+   "authority": "source_authored",
+   "language": null
+  },
+  {
+   "node_id": "9211912f-74b1-5f78-b192-d489f41ea237",
+   "kind": "cell",
+   "structural_identity": "table:1:row:4:cell:1",
+   "parent_id": "c2667354-d9b4-5667-8fa5-e4aea04b693f",
+   "child_order": 1,
+   "text": "Clara",
+   "locator": {
+    "row": 4,
+    "col": 1,
+    "path": [
+     "document",
+     "table",
+     "1",
+     "row",
+     "4"
+    ]
+   },
+   "authority": "source_authored",
+   "language": null
+  },
+  {
+   "node_id": "3f37ff82-0dac-55a8-8be5-26e4ad499d26",
+   "kind": "cell",
+   "structural_identity": "table:1:row:4:cell:2",
+   "parent_id": "c2667354-d9b4-5667-8fa5-e4aea04b693f",
+   "child_order": 2,
+   "text": "Z\u00fcrich",
+   "locator": {
+    "row": 4,
+    "col": 2,
+    "path": [
+     "document",
+     "table",
+     "1",
+     "row",
+     "4"
+    ]
+   },
+   "authority": "source_authored",
+   "language": null
+  },
+  {
+   "node_id": "4704e5ba-1798-5bd0-a2c3-2431737a62ad",
+   "kind": "cell",
+   "structural_identity": "table:1:row:4:cell:3",
+   "parent_id": "c2667354-d9b4-5667-8fa5-e4aea04b693f",
+   "child_order": 3,
+   "text": "",
+   "locator": {
+    "row": 4,
+    "col": 3,
+    "path": [
+     "document",
+     "table",
+     "1",
+     "row",
+     "4"
+    ]
+   },
+   "authority": "source_authored",
+   "language": null
+  }
+ ]
+}

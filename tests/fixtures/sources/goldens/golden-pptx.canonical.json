@@ -1,0 +1,220 @@
+{
+ "schema_version": "1",
+ "document_id": "68e491eb-565b-52df-9abc-4f57530b4a83",
+ "source_version_id": "00000000-0000-5000-8000-000000000211",
+ "mime_type": "application/vnd.openxmlformats-officedocument.presentationml.presentation",
+ "parser": {
+  "identity": "milpbooklm.pptx",
+  "version": "1",
+  "profile": "pptx-slides-v1",
+  "tool_versions": [
+   "python-pptx=1.0.2"
+  ]
+ },
+ "languages": [],
+ "metadata": {
+  "slides": 2
+ },
+ "root_node_ids": [
+  "fe43a289-89a1-5445-9190-6007af7ff024"
+ ],
+ "nodes": [
+  {
+   "node_id": "fe43a289-89a1-5445-9190-6007af7ff024",
+   "kind": "document",
+   "structural_identity": "document",
+   "parent_id": null,
+   "child_order": 0,
+   "text": null,
+   "locator": {
+    "path": [
+     "document"
+    ]
+   },
+   "authority": "source_authored",
+   "language": null
+  },
+  {
+   "node_id": "99522808-6c12-5ab5-bf64-458fd6d9856d",
+   "kind": "slide",
+   "structural_identity": "slide:1",
+   "parent_id": "fe43a289-89a1-5445-9190-6007af7ff024",
+   "child_order": 1,
+   "text": null,
+   "locator": {
+    "slide": 1,
+    "path": [
+     "document",
+     "slide",
+     "1"
+    ]
+   },
+   "authority": "source_authored",
+   "language": null
+  },
+  {
+   "shape_name": "Title 1",
+   "heading_level": 1,
+   "node_id": "5d36886a-52ae-5235-b2bd-857d508dab4e",
+   "kind": "heading",
+   "structural_identity": "slide:1:shape:1:p:1",
+   "parent_id": "99522808-6c12-5ab5-bf64-458fd6d9856d",
+   "child_order": 1,
+   "text": "Vierteljahresbericht",
+   "locator": {
+    "slide": 1,
+    "shape": 1,
+    "path": [
+     "document",
+     "slide",
+     "1",
+     "shape",
+     "1",
+     "paragraph",
+     "1"
+    ]
+   },
+   "authority": "source_authored",
+   "language": null
+  },
+  {
+   "shape_name": "Subtitle 2",
+   "heading_level": 1,
+   "node_id": "b71165ef-161a-52eb-beb7-77d7bb335d82",
+   "kind": "heading",
+   "structural_identity": "slide:1:shape:2:p:1",
+   "parent_id": "99522808-6c12-5ab5-bf64-458fd6d9856d",
+   "child_order": 2,
+   "text": "Ergebnisse des dritten Quartals",
+   "locator": {
+    "slide": 1,
+    "shape": 2,
+    "path": [
+     "document",
+     "slide",
+     "1",
+     "shape",
+     "2",
+     "paragraph",
+     "1"
+    ]
+   },
+   "authority": "source_authored",
+   "language": null
+  },
+  {
+   "node_id": "1515328a-0f09-5b39-8232-98daec221645",
+   "kind": "paragraph",
+   "structural_identity": "slide:1:notes:p:1",
+   "parent_id": "99522808-6c12-5ab5-bf64-458fd6d9856d",
+   "child_order": 513,
+   "text": "Sprechernotiz: Umsatz hervorheben.",
+   "locator": {
+    "slide": 1,
+    "notes": true,
+    "path": [
+     "document",
+     "slide",
+     "1",
+     "notes",
+     "paragraph",
+     "1"
+    ]
+   },
+   "authority": "source_authored",
+   "language": null
+  },
+  {
+   "node_id": "3472b2b2-1920-5cff-ae18-68145a39c1eb",
+   "kind": "slide",
+   "structural_identity": "slide:2",
+   "parent_id": "fe43a289-89a1-5445-9190-6007af7ff024",
+   "child_order": 2,
+   "text": null,
+   "locator": {
+    "slide": 2,
+    "path": [
+     "document",
+     "slide",
+     "2"
+    ]
+   },
+   "authority": "source_authored",
+   "language": null
+  },
+  {
+   "shape_name": "Title 1",
+   "heading_level": 1,
+   "node_id": "adb721d5-758f-5a68-9569-71bfd5175a5a",
+   "kind": "heading",
+   "structural_identity": "slide:2:shape:1:p:1",
+   "parent_id": "3472b2b2-1920-5cff-ae18-68145a39c1eb",
+   "child_order": 1,
+   "text": "Ausblick",
+   "locator": {
+    "slide": 2,
+    "shape": 1,
+    "path": [
+     "document",
+     "slide",
+     "2",
+     "shape",
+     "1",
+     "paragraph",
+     "1"
+    ]
+   },
+   "authority": "source_authored",
+   "language": null
+  },
+  {
+   "shape_name": "Content Placeholder 2",
+   "heading_level": 1,
+   "node_id": "994cee11-9772-5eca-9172-61650104353f",
+   "kind": "heading",
+   "structural_identity": "slide:2:shape:2:p:1",
+   "parent_id": "3472b2b2-1920-5cff-ae18-68145a39c1eb",
+   "child_order": 2,
+   "text": "Erstes Halbjahr",
+   "locator": {
+    "slide": 2,
+    "shape": 2,
+    "path": [
+     "document",
+     "slide",
+     "2",
+     "shape",
+     "2",
+     "paragraph",
+     "1"
+    ]
+   },
+   "authority": "source_authored",
+   "language": null
+  },
+  {
+   "shape_name": "Content Placeholder 2",
+   "node_id": "ad3b9c6f-62ad-57e4-9f3e-6c08908eca58",
+   "kind": "paragraph",
+   "structural_identity": "slide:2:shape:2:p:2",
+   "parent_id": "3472b2b2-1920-5cff-ae18-68145a39c1eb",
+   "child_order": 2,
+   "text": "Zweites Halbjahr",
+   "locator": {
+    "slide": 2,
+    "shape": 2,
+    "path": [
+     "document",
+     "slide",
+     "2",
+     "shape",
+     "2",
+     "paragraph",
+     "2"
+    ]
+   },
+   "authority": "source_authored",
+   "language": null
+  }
+ ]
+}

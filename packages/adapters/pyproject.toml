@@ -23,6 +23,11 @@ dependencies = [
     # REFERENCE-DEPENDENCIES parser matrix: PDF extraction chain.
     "pypdf>=6.0,<7",
     "pdfplumber>=0.11,<1",
+    # REFERENCE-DEPENDENCIES parser matrix (ING-02a office rows): XLSX
+    # "openpyxl read-only/data-only", DOCX "python-docx", PPTX "python-pptx".
+    "openpyxl>=3.1,<4",
+    "python-docx>=1.1,<2",
+    "python-pptx>=1.0,<2",
 ]
 
 [dependency-groups]

@@ -1,0 +1,351 @@
+{
+ "schema_version": "1",
+ "document_id": "aa5f3070-ffa5-529e-96ec-cfa68b71472c",
+ "source_version_id": "00000000-0000-5000-8000-000000000211",
+ "mime_type": "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
+ "parser": {
+  "formula_policy": "stored_not_evaluated",
+  "recalculation": "none",
+  "identity": "milpbooklm.xlsx",
+  "version": "1",
+  "profile": "xlsx-values-v1",
+  "tool_versions": [
+   "openpyxl=3.1.5"
+  ]
+ },
+ "languages": [],
+ "metadata": {
+  "sheets": [
+   "Daten"
+  ]
+ },
+ "root_node_ids": [
+  "f03f7321-14d7-5632-bd8c-682e10e778e0"
+ ],
+ "nodes": [
+  {
+   "node_id": "f03f7321-14d7-5632-bd8c-682e10e778e0",
+   "kind": "document",
+   "structural_identity": "document",
+   "parent_id": null,
+   "child_order": 0,
+   "text": null,
+   "locator": {
+    "path": [
+     "document"
+    ]
+   },
+   "authority": "source_authored",
+   "language": null
+  },
+  {
+   "sheet_name": "Daten",
+   "node_id": "151082d6-94dd-5064-bdae-f4fa872f59d4",
+   "kind": "sheet",
+   "structural_identity": "sheet:1",
+   "parent_id": "f03f7321-14d7-5632-bd8c-682e10e778e0",
+   "child_order": 1,
+   "text": null,
+   "locator": {
+    "sheet": "Daten",
+    "sheet_index": 1,
+    "path": [
+     "document",
+     "sheet",
+     "Daten"
+    ]
+   },
+   "authority": "source_authored",
+   "language": null
+  },
+  {
+   "node_id": "4af3cf38-4d34-5a65-a893-1e0394a170fb",
+   "kind": "table",
+   "structural_identity": "sheet:Daten:table:1",
+   "parent_id": "151082d6-94dd-5064-bdae-f4fa872f59d4",
+   "child_order": 1,
+   "text": null,
+   "locator": {
+    "sheet": "Daten",
+    "path": [
+     "document",
+     "sheet",
+     "Daten",
+     "table",
+     "1"
+    ]
+   },
+   "authority": "source_authored",
+   "language": null
+  },
+  {
+   "node_id": "1fd54365-e036-5025-9b7d-c618b442b918",
+   "kind": "row",
+   "structural_identity": "sheet:Daten:table:1:row:1",
+   "parent_id": "4af3cf38-4d34-5a65-a893-1e0394a170fb",
+   "child_order": 1,
+   "text": null,
+   "locator": {
+    "sheet": "Daten",
+    "row": 1,
+    "path": [
+     "document",
+     "sheet",
+     "Daten",
+     "row",
+     "1"
+    ]
+   },
+   "authority": "source_authored",
+   "language": null
+  },
+  {
+   "node_id": "a8d5b621-9722-5f3c-9fdd-0292e81dda3f",
+   "kind": "cell",
+   "structural_identity": "sheet:Daten:table:1:row:1:cell:A1",
+   "parent_id": "1fd54365-e036-5025-9b7d-c618b442b918",
+   "child_order": 1,
+   "text": "Kennzahl",
+   "locator": {
+    "sheet": "Daten",
+    "row": 1,
+    "col": 1,
+    "cell_ref": "A1",
+    "path": [
+     "document",
+     "sheet",
+     "Daten",
+     "cell",
+     "A1"
+    ]
+   },
+   "authority": "source_authored",
+   "language": null
+  },
+  {
+   "node_id": "1ae826fc-1b1e-5b0e-9b8a-15819abdebbe",
+   "kind": "cell",
+   "structural_identity": "sheet:Daten:table:1:row:1:cell:B1",
+   "parent_id": "1fd54365-e036-5025-9b7d-c618b442b918",
+   "child_order": 2,
+   "text": "Wert",
+   "locator": {
+    "sheet": "Daten",
+    "row": 1,
+    "col": 2,
+    "cell_ref": "B1",
+    "path": [
+     "document",
+     "sheet",
+     "Daten",
+     "cell",
+     "B1"
+    ]
+   },
+   "authority": "source_authored",
+   "language": null
+  },
+  {
+   "node_id": "787ad6e7-1670-5b7e-a02e-6b7809b5866a",
+   "kind": "row",
+   "structural_identity": "sheet:Daten:table:1:row:2",
+   "parent_id": "4af3cf38-4d34-5a65-a893-1e0394a170fb",
+   "child_order": 2,
+   "text": null,
+   "locator": {
+    "sheet": "Daten",
+    "row": 2,
+    "path": [
+     "document",
+     "sheet",
+     "Daten",
+     "row",
+     "2"
+    ]
+   },
+   "authority": "source_authored",
+   "language": null
+  },
+  {
+   "node_id": "1b79f95e-ca92-5396-9f7e-6c605e44df7f",
+   "kind": "cell",
+   "structural_identity": "sheet:Daten:table:1:row:2:cell:A2",
+   "parent_id": "787ad6e7-1670-5b7e-a02e-6b7809b5866a",
+   "child_order": 1,
+   "text": "Umsatz",
+   "locator": {
+    "sheet": "Daten",
+    "row": 2,
+    "col": 1,
+    "cell_ref": "A2",
+    "path": [
+     "document",
+     "sheet",
+     "Daten",
+     "cell",
+     "A2"
+    ]
+   },
+   "authority": "source_authored",
+   "language": null
+  },
+  {
+   "node_id": "59569fa3-ce7d-580f-9257-68209cb08bcb",
+   "kind": "cell",
+   "structural_identity": "sheet:Daten:table:1:row:2:cell:B2",
+   "parent_id": "787ad6e7-1670-5b7e-a02e-6b7809b5866a",
+   "child_order": 2,
+   "text": "120",
+   "locator": {
+    "sheet": "Daten",
+    "row": 2,
+    "col": 2,
+    "cell_ref": "B2",
+    "path": [
+     "document",
+     "sheet",
+     "Daten",
+     "cell",
+     "B2"
+    ]
+   },
+   "authority": "source_authored",
+   "language": null
+  },
+  {
+   "node_id": "316a72dd-dac4-5aeb-9ac9-a73319abbac4",
+   "kind": "row",
+   "structural_identity": "sheet:Daten:table:1:row:3",
+   "parent_id": "4af3cf38-4d34-5a65-a893-1e0394a170fb",
+   "child_order": 3,
+   "text": null,
+   "locator": {
+    "sheet": "Daten",
+    "row": 3,
+    "path": [
+     "document",
+     "sheet",
+     "Daten",
+     "row",
+     "3"
+    ]
+   },
+   "authority": "source_authored",
+   "language": null
+  },
+  {
+   "node_id": "89993234-a859-5e88-9f89-0e2e74780c3f",
+   "kind": "cell",
+   "structural_identity": "sheet:Daten:table:1:row:3:cell:A3",
+   "parent_id": "316a72dd-dac4-5aeb-9ac9-a73319abbac4",
+   "child_order": 1,
+   "text": "Kosten",
+   "locator": {
+    "sheet": "Daten",
+    "row": 3,
+    "col": 1,
+    "cell_ref": "A3",
+    "path": [
+     "document",
+     "sheet",
+     "Daten",
+     "cell",
+     "A3"
+    ]
+   },
+   "authority": "source_authored",
+   "language": null
+  },
+  {
+   "node_id": "6534b4d3-3a12-5f6a-90eb-06f7f5e3f745",
+   "kind": "cell",
+   "structural_identity": "sheet:Daten:table:1:row:3:cell:B3",
+   "parent_id": "316a72dd-dac4-5aeb-9ac9-a73319abbac4",
+   "child_order": 2,
+   "text": "80",
+   "locator": {
+    "sheet": "Daten",
+    "row": 3,
+    "col": 2,
+    "cell_ref": "B3",
+    "path": [
+     "document",
+     "sheet",
+     "Daten",
+     "cell",
+     "B3"
+    ]
+   },
+   "authority": "source_authored",
+   "language": null
+  },
+  {
+   "node_id": "ad73a1f4-9dd9-5c47-9220-11714f4f2034",
+   "kind": "row",
+   "structural_identity": "sheet:Daten:table:1:row:4",
+   "parent_id": "4af3cf38-4d34-5a65-a893-1e0394a170fb",
+   "child_order": 4,
+   "text": null,
+   "locator": {
+    "sheet": "Daten",
+    "row": 4,
+    "path": [
+     "document",
+     "sheet",
+     "Daten",
+     "row",
+     "4"
+    ]
+   },
+   "authority": "source_authored",
+   "language": null
+  },
+  {
+   "node_id": "2102321e-2783-5111-b7a5-8ac5c0afba51",
+   "kind": "cell",
+   "structural_identity": "sheet:Daten:table:1:row:4:cell:A4",
+   "parent_id": "ad73a1f4-9dd9-5c47-9220-11714f4f2034",
+   "child_order": 1,
+   "text": "Saldo",
+   "locator": {
+    "sheet": "Daten",
+    "row": 4,
+    "col": 1,
+    "cell_ref": "A4",
+    "path": [
+     "document",
+     "sheet",
+     "Daten",
+     "cell",
+     "A4"
+    ]
+   },
+   "authority": "source_authored",
+   "language": null
+  },
+  {
+   "formula": "=B2-B3",
+   "node_id": "95f92ff8-bf2e-5aec-a342-5d52c2e40006",
+   "kind": "cell",
+   "structural_identity": "sheet:Daten:table:1:row:4:cell:B4",
+   "parent_id": "ad73a1f4-9dd9-5c47-9220-11714f4f2034",
+   "child_order": 2,
+   "text": "40",
+   "locator": {
+    "sheet": "Daten",
+    "row": 4,
+    "col": 2,
+    "cell_ref": "B4",
+    "path": [
+     "document",
+     "sheet",
+     "Daten",
+     "cell",
+     "B4"
+    ]
+   },
+   "authority": "source_authored",
+   "language": null
+  }
+ ]
+}

@@ -40,7 +40,15 @@ class ParseSuccess:
 class ParseFailure:
     """An explicit source parse failure; no substitute document exists."""
 
-    state: Literal["unsupported", "corrupt", "encrypted", "too_large", "timeout", "internal"]
+    state: Literal[
+        "unsupported",
+        "corrupt",
+        "encrypted",
+        "too_large",
+        "timeout",
+        "policy_blocked",
+        "internal",
+    ]
     detail: str
 
 
@@ -51,7 +59,14 @@ class _ChildEnvelope(BaseModel):
     model_config = ConfigDict(extra="forbid", frozen=True)
 
     state: Literal[
-        "succeeded", "unsupported", "corrupt", "encrypted", "too_large", "timeout", "internal"
+        "succeeded",
+        "unsupported",
+        "corrupt",
+        "encrypted",
+        "too_large",
+        "timeout",
+        "policy_blocked",
+        "internal",
     ]
     document: dict[str, JsonValue] | None = None
     detail: str | None = None
@@ -146,6 +161,8 @@ def _decode_envelope(envelope: _ChildEnvelope) -> ParseResult:  # noqa: PLR0911
             return ParseFailure("too_large", envelope.detail or "too_large")
         case "timeout":
             return ParseFailure("timeout", envelope.detail or "timeout")
+        case "policy_blocked":
+            return ParseFailure("policy_blocked", envelope.detail or "policy_blocked")
         case "internal":
             return ParseFailure("internal", envelope.detail or "internal")
         case unreachable:

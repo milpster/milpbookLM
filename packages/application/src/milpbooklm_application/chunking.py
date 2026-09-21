@@ -147,10 +147,8 @@ def _walk_units(
         for child in context.children.get(node_id, ()):
             _walk_units(child.node_id, ancestry, context)
         return
-    text = node.text or ""
-    if not text.strip():
-        return
     if kind is NodeKind.TABLE:
+        # Tables are containers (text is None); their rows/cells are flattened.
         table_text = _table_text(node, context.children)
         if table_text.strip():
             context.units.append(
@@ -158,6 +156,9 @@ def _walk_units(
                       node.language or context.default_language, kind, ancestry,
                       (NodeSpan(node.node_id, 0, len(table_text)),))
             )
+        return
+    text = node.text or ""
+    if not text.strip():
         return
     context.units.append(
         _Unit(node.node_id, 0, len(text), text,
