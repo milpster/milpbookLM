@@ -19,6 +19,10 @@ dist/
 compaction-handoff/
 .codegraph
 
+# Agent scratch (drivers, fixtures, DB clusters, logs, screenshots) —
+# everything lives in-repo under scratch/ and is never committed.
+scratch/
+
 # OS
 .DS_Store
 

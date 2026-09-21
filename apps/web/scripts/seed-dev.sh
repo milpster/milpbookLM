@@ -6,7 +6,7 @@ if [[ $# -ne 1 ]]; then
   exit 2
 fi
 
-database_url="${MILPBOOKLM_SEED_DATABASE_URL:-postgresql://srcds@/milpbooklm_t13?host=/home/srcds/dev/t13-smoke&port=29521}"
+database_url="${MILPBOOKLM_SEED_DATABASE_URL:-postgresql://srcds@/milpbooklm_t13?host=/home/srcds/dev/milpbookLM/scratch/t13-smoke&port=29521}"
 email="$1"
 psql "$database_url" -v ON_ERROR_STOP=1 -v email="$email" <<'SQL'
 WITH actor AS (

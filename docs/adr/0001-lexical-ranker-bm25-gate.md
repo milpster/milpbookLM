@@ -41,7 +41,7 @@ retriever behind the fusion contract).
    casefolded text contains every query term). MRR@9 and top-1, never raw
    score magnitudes: PG FTS 0.8 / 0.8; Okapi BM25 (k1=1.5, b=0.75) 0.8 /
    0.8. Identical at prototype scale — no material gain. Report:
-   `/home/srcds/dev/t15-smoke/bm25-eval.json`.
+    `/home/srcds/dev/milpbookLM/scratch/t15-smoke/bm25-eval.json`.
 3. **Resource / privacy classification**: option 3 runs inside the existing
    database process — no extra process, no data leaves the host. Option 1
    is a second networked store (data-egress + availability surface);

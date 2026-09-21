@@ -27,7 +27,7 @@ Recall@10 = 1.0 in both arms (exact kNN over 9 rows). Key observation:
 with 9 rows the planner never used the HNSW index even when it existed —
 both plans degrade to a full-table sort, so the index bought nothing at
 this scale while adding build/memory cost. Report:
-`/home/srcds/dev/t15-smoke/hnsw-eval.json`.
+`/home/srcds/dev/milpbookLM/scratch/t15-smoke/hnsw-eval.json`.
 
 ## Decision
 
