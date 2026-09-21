@@ -1,0 +1,50 @@
+# Task 14 (ING-01c) manual QA log — 2026-09-21
+
+## Environment
+- Scratch PG: host PostgreSQL 17.7, socket /home/srcds/dev/t13-smoke, port 29521, db milpbooklm_t13 (T13 rows retained)
+- Migration state: 0001+0002 pre-existing (T13), 0003_ing_01c applied this session (upgrade path) — also proven idempotent on a FRESH cluster (0001->0002->0003 clean, second run no-op; head=0003_ing_01c; trg_provenance_edges_immutable present)
+- App DSN: postgresql+psycopg://milpbooklm_app:milpbooklm_app@/milpbooklm_t13?host=/home/srcds/dev/t13-smoke&port=29521
+- Blob root: /home/srcds/dev/t13-smoke/blob-root
+- LIVE worker: `python -m milpbooklm_workers --dsn <app DSN> --worker-id w14 --blob-root <blob root>` (worker.log: "worker w14 starting (queues=interactive_text,ingestion_indexing,research_browser,execution,media, lease=10s, poll=0.50s)")
+- Driver: /home/srcds/dev/t14-smoke/qa_t14.py (TestClient, https://testserver + mb_session cookie + x-csrf-token; fresh user via /api/v1/auth/register; notebook seeded via superuser SQL; fixture.pdf from /home/srcds/dev/t13-smoke)
+
+## Activation choice (stated per task)
+Activation is a DIRECT TRANSACTIONAL API CALL (POST /api/v1/sources/{id}/activate) on already-existing artifacts (parsed source version + canonical document). No job is driven from the API; the API only enqueued the parse job at acquisition (T12), and the live worker owns that job's lifecycle to the `parsed` state. ch05: "Service logic plus serializable/advisory-lock sections protect cross-row rules such as ... active-version swap" — the swap runs as one transaction guarded by source-row FOR UPDATE locks plus the partial unique index uq_source_versions_one_active (double win impossible).
+
+## QA driver output (verbatim)
+{"check": "pdf_identified", "ok": true, "detail": "pdf"}
+{"check": "live_worker_parsed_both", "ok": true, "detail": "{\"01a0c1bd-2405-489d-9496-70c0f22a3c53\": \"succeeded\", \"01a0c1bd-242a-49c5-a772-ea0b061d0df8\": \"succeeded\"}"}
+{"check": "guide_before_activation_409", "ok": true, "detail": "409 {\"type\":\"urn:milpbooklm:problem:source_guide_unavailable\",\"title\":\"Source acquisition rejected\",\"status\":409,\"code\":\"sou"}
+{"check": "activate_text_200", "ok": true, "detail": "200 {\"source_id\":\"385d2415-b014-4ab6-9e6f-1162e1400777\",\"source_version_id\":\"74c0d1f6-dbd0-4e64-849a-96c695b7b9d3\",\"notebook"}
+{"check": "guide_text_summary_labels", "ok": true, "detail": "{\"source_id\": \"385d2415-b014-4ab6-9e6f-1162e1400777\", \"source_version_id\": \"74c0d1f6-dbd0-4e64-849a-96c695b7b9d3\", \"summary\": \"Field notes is an active plain text source (version 1).\", \"labels\": [\"plain text\", \"active\", \"canonical\"], \"restrictions\": []}"}
+{"check": "text_provenance_edges", "ok": true, "detail": "[[\"contains\", false], [\"derived_from\", false], [\"generated_from\", true]]"}
+{"check": "activate_pdf_200", "ok": true, "detail": "{\"source_id\":\"a85566d0-7ef9-45c3-820c-439bf0c0d472\",\"source_version_id\":\"d162604a-7b99-43d8-aeae-51c3d6c64930\",\"notebook"}
+{"check": "guide_pdf_summary_labels", "ok": true, "detail": "{\"source_id\": \"a85566d0-7ef9-45c3-820c-439bf0c0d472\", \"source_version_id\": \"d162604a-7b99-43d8-aeae-51c3d6c64930\", \"summary\": \"Uploaded source is an active pdf source (version 1).\", \"labels\": [\"pdf\", \"active\", \"canonical\"], \"restrictions\": []}"}
+{"check": "v2_parsed", "ok": true, "detail": "{'01a0c1bd-2a76-49eb-8f25-da21e3f89a0b': 'succeeded'}"}
+{"check": "activate_second_source_200", "ok": true, "detail": "{\"source_id\":\"ef039025-2dc6-4eca-8a3b-f0feaa473888\",\"source_version_id\":\"e94804d8-93ad-4768-b586-d1aa8085b184\",\"notebook"}
+{"check": "s3_parsed", "ok": true, "detail": "{'01a0c1bd-2e9d-4a80-b683-741e808f4be5': 'succeeded'}"}
+{"check": "concurrent_activate_exactly_one_winner", "ok": true, "detail": "[200, 409]"}
+{"check": "missing_document_activation_409", "ok": true, "detail": "409 {\"type\":\"urn:milpbooklm:problem:source_activation_conflict\",\"title\":\"Source acquisition rejected\",\"status\":409,\"code\":\"s"}
+{"check": "prior_active_intact_after_failed_refresh", "ok": true, "detail": "row=('active', 1, True) current=('ed6ca1b6-284a-461a-851a-b5ea5e93555b',)"}
+{"check": "guide_still_readable_after_failed_refresh", "ok": true, "detail": "200 {\"source_id\": \"b0ba5c68-d663-4e2e-9b20-da0344b74616\", \"source_version_id\": \"ed6ca1b6-284a-461a-851a-b5ea5e93555b\", \"summary\""}
+{"check": "activated_version_immutable", "ok": true, "detail": "milpbooklm: activated source version ed6ca1b6-284a-461a-851a-b5ea5e93555b is immutable\nCONTEXT:  PL/pgSQL function milpbooklm_source_version_activation_guard() line 9 at RAISE"}
+{"check": "audit_source_activated", "ok": true, "detail": "[(4,)]"}
+{"result": "PASS", "failures": []}
+
+## Pre-fix / post-fix swap-order probe (empirical, on the T13 scratch)
+- probe-swap-order.sql (pre-fix order: promote new active BEFORE demoting the old active, one transaction):
+  ERROR: duplicate key value violates unique constraint "uq_source_versions_one_active" — DETAIL: Key (source_id)=(00000000-0000-7000-8000-000000000003) already exists.
+- probe-swap-order-fixed.sql (post-fix order: demote before promote):
+  v1 -> inactive, v2 -> active, transaction commits.
+- The prior WIP used the pre-fix order; every refresh (second activation) would have 500'd on the UniqueViolation. Fixed in pg_source_activation.py.
+
+## Scenario coverage
+1. upload text (paste) + PDF (import fixture.pdf) -> live worker w14 parses both (jobs succeeded)
+2. Source Guide before activation -> explicit 409 problem (source_guide_unavailable)
+3. activate text -> 200 (full source payload, pipeline_status=active); guide -> summary + labels ["plain text","active","canonical"]
+4. activate PDF -> 200; guide -> summary + labels ["pdf","active","canonical"]
+5. provenance edges written on activation: contains, derived_from, generated_from (transform identity recorded)
+6. two concurrent activations on the same source -> exactly [200, 409]
+7. simulated failure (newest version parsed but no canonical document) -> activation 409 source_activation_conflict; prior active version + its active canonical document + sources.current_version_id all intact; guide still 200 on the prior version
+8. activated SourceVersion content tamper attempt -> RAISE (milpbooklm: activated source version ... is immutable)
+9. audit_events contains source.activated rows for the 4 successful activations

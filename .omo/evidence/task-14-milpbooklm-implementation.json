@@ -1,0 +1,28 @@
+{
+  "task": "14 ING-01c",
+  "date": "2026-09-21",
+  "commit": null,
+  "commands": [
+    {"command": "rtk uv run ruff check .", "exit": 0},
+    {"command": "rtk uv run mypy", "exit": 0, "result": "no issues in 136 source files"},
+    {"command": "rtk uv run import-linter lint", "exit": 0, "contracts": "4 kept, 0 broken"},
+    {"command": "rtk uv run pytest tests/meta tests/architecture tests/unit -q", "exit": 0, "result": "127 passed"},
+    {"command": "alembic upgrade head on FRESH UTF8/C cluster (0001->0002->0003) + second run", "exit": 0, "result": "head=0003_ing_01c; second run no-op; trg_provenance_edges_immutable present"},
+    {"command": "alembic upgrade head on T13 scratch (0002->0003 upgrade path)", "exit": 0, "result": "clean converge, fresh and upgraded DBs identical"},
+    {"command": "manual QA driver qa_t14.py with LIVE worker w14", "exit": 0, "result": "18/18 checks PASS (see task-14-manual-qa.log)"}
+  ],
+  "review_findings_fixed": [
+    "WIP activate() promoted the new version BEFORE demoting the prior active: empirically rejected by uq_source_versions_one_active (UniqueViolation inside the same transaction) on every refresh; reordered to demote-then-promote (probe scripts in /home/srcds/dev/t14-smoke/)",
+    "pg_source_activation.py exceeded the 250 pure-LOC ceiling (344): split into pg_provenance.py (edge persistence), pg_source_activation.py (atomic swap), pg_source_guide.py (guide + cached effective restrictions + bounded traversal)",
+    "activate route now returns the full source payload (etag/version/pipeline_status) like the other source routes",
+    "VER-ARCH-03-001.json + all pytest-regenerated VER artifacts reverted (churn; ALLOWED_ADAPTER_IMPORTS needed no T14 entries — no new third-party adapter imports)"
+  ],
+  "activation_choice": "direct transactional API call (POST /api/v1/sources/{id}/activate) on existing artifacts; no job driven from the API (worker owns the parse job lifecycle to `parsed`, T12/T13)",
+  "capability_registry_decision": "unchanged — capabilities.yaml is the frozen spec seed (T11/T9); T12/T13 shipped their capabilities without seeding; seeding/enablement belongs to the capability gate work (wave 2, D12). Reported honestly: phase-1 flows (sources, source_guide, source_pdf, source_plain_text_and_pasted_text) work, but the registry still reads implemented:false",
+  "deferred": [
+    "Provenance golden tests + swap-concurrency pytest suite (wave 2, D12)",
+    "Purge traversal over provenance rows + manifest/blob/cache ownership (T24)",
+    "Refresh rebuild flows beyond the failure-retention semantic (T24, D15)",
+    "Source Guide model-inferred summaries (phase 1 is deterministic metadata-only per parity scope)"
+  ]
+}
