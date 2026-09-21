@@ -21,9 +21,15 @@ depends_on = None
 
 def upgrade() -> None:
     """Scope the chunk primary key to its generation."""
-    op.drop_constraint("uq_index_chunks_generation_chunk", "index_chunks", type_="unique")
-    op.drop_constraint("index_chunks_prev_chunk_id_fkey", "index_chunks", type_="foreignkey")
-    op.drop_constraint("index_chunks_next_chunk_id_fkey", "index_chunks", type_="foreignkey")
+    op.execute(
+        "ALTER TABLE index_chunks DROP CONSTRAINT IF EXISTS uq_index_chunks_generation_chunk"
+    )
+    op.execute(
+        "ALTER TABLE index_chunks DROP CONSTRAINT IF EXISTS index_chunks_prev_chunk_id_fkey"
+    )
+    op.execute(
+        "ALTER TABLE index_chunks DROP CONSTRAINT IF EXISTS index_chunks_next_chunk_id_fkey"
+    )
     op.drop_constraint("index_chunks_pkey", "index_chunks", type_="primary")
     op.create_primary_key("index_chunks_pkey", "index_chunks", ["index_generation_id", "id"])
 

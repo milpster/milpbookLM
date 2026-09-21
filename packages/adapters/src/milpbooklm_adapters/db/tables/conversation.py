@@ -51,6 +51,8 @@ conversations = sa.Table(
         server_default=sa.text("'open'"),
         # Reset creates a NEW conversation; it never mutates the old one (ARCH-05-005).
     ),
+    sa.Column("chat_config", JSONB, nullable=False, server_default=sa.text("'{}'::jsonb")),
+    sa.Column("instructions", sa.Text, nullable=False, server_default=sa.text("''")),
     revision_column(),
     etag_column(),
     created_at(),
