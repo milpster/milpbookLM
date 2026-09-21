@@ -292,7 +292,7 @@ Blocks column = DIRECT dependants only (tasks listing X in their Depends on); a 
   QA scenarios: happy — eval gate green (evidence tests/evaluation report v1); failure — swapping embedding model without parallel generation → dimension-rejection blocks activation (evidence test). Evidence <attemptDir>/task-19-milpbooklm-implementation.json
   Commit: Y | docs(adr)+feat(eval): MOD-01b model selections + corpora v1 (ARCH-23-001..004)
 
-- [ ] 20. Phase-1 gate — Source-to-grounded-chat evidence
+- [~] 20. Phase-1 gate — Source-to-grounded-chat evidence
   What to do / Must NOT do: Phase 1 exit per PLANNING-HANDOFF: one user-visible text/PDF→grounded-chat path, basic Source Guide, exact citations, source viewer, browser E2E pass — on the real rootless deployment (task 8 stack) with real local models (task 19 selections) plus fakes where CI. Run E2E-001 + E2E-002 (text/PDF legs), evaluation report v1 attached, conformance.json updated (phase-1 capabilities advertised), gate report. MUST NOT: gate on fakes-only chat quality; skip Firefox.
   Micro-index: 20.1 deploy stack w/ models · 20.2 E2E journeys · 20.3 eval report attach · 20.4 conformance + gate report.
   Parallelization: Wave 1 | Blocked by: 12..19 | Blocks: Wave 2 (gate),54
