@@ -33,15 +33,14 @@ _BASE_SQL = """
 FROM index_chunks ic
 JOIN index_generations g ON g.id = ic.index_generation_id AND g.status = 'ready'
 JOIN sources s ON s.id = ic.source_id
-JOIN source_versions sv ON sv.id = s.current_version_id
+JOIN source_versions sv ON sv.id = ic.source_version_id
 WHERE ic.notebook_id = :notebook_id
   AND s.notebook_id IN (
     SELECT nm.notebook_id FROM notebook_memberships nm
     WHERE nm.user_id = :actor_user_id
   )
   AND s.availability IN ('active', 'stale')
-  AND sv.status = 'active'
-  AND ic.source_version_id = s.current_version_id
+  AND (sv.status = 'active' OR :allow_pinned_versions)
 """
 
 _COLUMN_LIST = """
@@ -82,8 +81,9 @@ class PgRetrievalService:
         sql = (
             f"SELECT {_COLUMN_LIST}, "
             "ts_rank(ic.fts_vector, websearch_to_tsquery(ic.fts_config::regconfig, :query)) "
-            "AS raw_score " + _BASE_SQL +
-            "  AND ic.fts_vector @@ websearch_to_tsquery(ic.fts_config::regconfig, :query) "
+            "AS raw_score "
+            + _BASE_SQL
+            + "  AND ic.fts_vector @@ websearch_to_tsquery(ic.fts_config::regconfig, :query) "
             "ORDER BY raw_score DESC, ic.id "
             "LIMIT :limit"
         )
@@ -95,8 +95,8 @@ class PgRetrievalService:
         sql = (
             f"SELECT {_COLUMN_LIST}, "
             "(1.0 - (ic.embedding <=> CAST(:query_embedding AS vector))) AS raw_score "
-            + _BASE_SQL +
-            "  AND ic.embedding IS NOT NULL "
+            + _BASE_SQL
+            + "  AND ic.embedding IS NOT NULL "
             "ORDER BY ic.embedding <=> CAST(:query_embedding AS vector) ASC, ic.id "
             "LIMIT :limit"
         )
@@ -109,10 +109,16 @@ class PgRetrievalService:
             **params,
             "notebook_id": command.notebook_id,
             "actor_user_id": command.actor_user_id,
+            "allow_pinned_versions": command.source_version_ids is not None,
         }
         if command.source_ids is not None:
             sql = sql.replace("WHERE", "  AND s.id = ANY(:source_ids)\nWHERE", 1)
             params["source_ids"] = list(command.source_ids)
+        if command.source_version_ids is not None:
+            sql = sql.replace(
+                "WHERE", "  AND ic.source_version_id = ANY(:source_version_ids)\nWHERE", 1
+            )
+            params["source_version_ids"] = list(command.source_version_ids)
         limits = self._overfetch_limits(command.top_k)
         for index, limit in enumerate(limits):
             params["limit"] = limit

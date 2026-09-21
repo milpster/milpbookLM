@@ -46,6 +46,7 @@ class RetrievalCommand:
     mode: str
     top_k: int
     source_ids: frozenset[uuid.UUID] | None = None
+    source_version_ids: frozenset[uuid.UUID] | None = None
 
 
 @dataclass(frozen=True, slots=True)
@@ -125,8 +126,9 @@ class RetrieveChunks:
         if command.top_k < 1 or command.top_k > MAX_TOP_K:
             raise ValueError("top_k must be within 1..50")
         if command.mode == RETRIEVER_LEXICAL:
-            rows = self._retrieval.search(command, retriever=RETRIEVER_LEXICAL,
-                                          query_embedding_text=None)
+            rows = self._retrieval.search(
+                command, retriever=RETRIEVER_LEXICAL, query_embedding_text=None
+            )
             return RetrievalOutcome(
                 mode=command.mode,
                 fusion_config_version=FUSION_CONFIG_VERSION,
@@ -146,8 +148,9 @@ class RetrieveChunks:
         return self._fused(command)
 
     def _fused(self, command: RetrievalCommand) -> RetrievalOutcome:
-        lexical = self._retrieval.search(command, retriever=RETRIEVER_LEXICAL,
-                                         query_embedding_text=None)
+        lexical = self._retrieval.search(
+            command, retriever=RETRIEVER_LEXICAL, query_embedding_text=None
+        )
         vector = self._retrieval.search(
             command,
             retriever=RETRIEVER_VECTOR,
