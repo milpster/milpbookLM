@@ -1,0 +1,81 @@
+{
+  "task": "15 (IDX-01) — Chunking, FTS(EN/DE), pgvector embeddings, generations, fusion",
+  "plan": ".omo/plans/milpbooklm-implementation.md",
+  "date": "2026-09-21",
+  "gates": {
+    "ruff": "pass",
+    "mypy": "pass (148 source files, strict)",
+    "import_linter": "4 contracts kept, 0 broken",
+    "pytest": "127 passed (tests/meta tests/architecture tests/unit)"
+  },
+  "schema": {
+    "head": "0005_idx_02",
+    "migrations": [
+      "0004_idx_01 (index_generations + index_chunks, pgvector extension, GIN fts index)",
+      "0005_idx_02 (composite PK (index_generation_id, id); chunk ids are deterministic per node+profile and repeat across generations; prev/next links de-FK'd)"
+    ],
+    "verified": "pg_constraint dump after upgrade: index_chunks_pkey = PRIMARY KEY (index_generation_id, id); uq + prev/next FKs absent"
+  },
+  "environment": {
+    "scratch_pg": "socket /home/srcds/dev/t13-smoke port 29521 db milpbooklm_t13",
+    "embeddings": "local llama-server 127.0.0.1:8010, bge-m3 (1024-dim), deterministic batches",
+    "worker": "w15 (queues=ingestion_indexing+4), live during QA"
+  },
+  "build": {
+    "generations_ready": 9,
+    "chunks_embedded": 9,
+    "fts": "per-row tsvector (english/german, simple fallback), websearch_to_tsquery, GIN",
+    "rebuild": "model-variant rebuild (bge-m3-variant) resumed the previously failed generation in place, atomic swap superseded the prior ready generation, identical chunk ids"
+  },
+  "manual_qa": {
+    "driver": "/home/srcds/dev/t15-smoke/qa_t15.py",
+    "log": ".omo/evidence/task-15-manual-qa.log",
+    "result": "PASS",
+    "checks_total": 13,
+    "checks_passed": 13,
+    "failures": [],
+    "checks": [
+      "lexical_de_hit",
+      "lexical_en_hit",
+      "lexical_case_insensitive_simple",
+      "vector_synonym_hit",
+      "fused_rrf_shape",
+      "foreign_source_id_zero_rows",
+      "access_denied_row_dropped",
+      "deny_logged",
+      "remove_filters_retrieval",
+      "select_restores_retrieval",
+      "non_member_not_found",
+      "rebuild_supersedes_same_chunk_ids",
+      "search_after_rebuild"
+    ],
+    "authz_proof": "unauthorized source id injected into query -> zero rows; post-hydration policy deny logged (WARNING, chunk/source_version/actor); non-member search -> 404 'notebook not found' (enumeration defense)"
+  },
+  "bm25_gate": {
+    "verdict": "rejected (recorded)",
+    "adr": "docs/adr/0001-lexical-ranker-bm25-gate.md",
+    "report": "/home/srcds/dev/t15-smoke/bm25-eval.json",
+    "corpus": "locked prototype corpus: 9 ready-generation chunks (EN+DE), 5 locked queries, mechanical relevance (all query terms casefolded-containment)",
+    "pg_fts": { "mrr_mean": 0.8, "top1_rate": 0.8 },
+    "bm25": { "mrr_mean": 0.8, "top1_rate": 0.8, "params": { "k1": 1.5, "b": 0.75 } },
+    "conclusion": "no material gain at prototype scale; native PG FTS stays the lexical ranker and is intentionally never labeled BM25"
+  },
+  "hnsw_evaluation": {
+    "adr": "docs/adr/0002-pgvector-hnsw-evaluation.md",
+    "report": "/home/srcds/dev/t15-smoke/hnsw-eval.json",
+    "chunk_count": 9,
+    "queries_per_arm": 10,
+    "seqscan": { "ms_median": 0.302, "ms_max": 0.954, "plan": "Sort (planner never used HNSW at 9 rows)" },
+    "hnsw": { "ms_median": 0.156, "ms_max": 0.218, "plan": "Sort (planner never used HNSW at 9 rows)" },
+    "recall_at_10": 1.0,
+    "decision": "no HNSW index at prototype scale; exact seqscan sort; over-fetch/retry handles under-return; reconsider at ~10k+ vectors"
+  },
+  "bugs_found_and_fixed": [
+    "SQLAlchemy text() does not extract :param::cast -> CAST(:param AS type); reusing one named param for text+regconfig cast -> AmbiguousParameter (separate :fts_config_rc)",
+    "over-fetch retry loop compared against the raw cap (500) instead of the computed cap min(cap, top_k*factor) -> silent 500 on every under-full search",
+    "index_chunks PK on id alone collided with deterministic cross-generation chunk ids on rebuild -> composite PK (index_generation_id, id); failed generations now resume in place (create resets failed->building, swap promotes building only)"
+  ],
+  "deviations": [
+    "Direct synchronous llama.cpp HTTP embedding client behind an application port (worker loop is synchronous; T10 orchestrator is design-only at this stage) instead of the async streaming EmbeddingProvider"
+  ]
+}
