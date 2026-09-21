@@ -2,18 +2,33 @@
 
 from __future__ import annotations
 
+import logging
 import uuid
 
 from fastapi import APIRouter, Depends
 from fastapi.responses import JSONResponse
 from milpbooklm_application.audit_actions import AuditAction
-from milpbooklm_application.source_acquisition import SourceCatalog, SourceNotFoundError
+from milpbooklm_application.indexing import (
+    config_to_payload,
+    generation_id_for,
+    idempotency_key_for,
+)
+from milpbooklm_application.job_actor import InitiatingActor
+from milpbooklm_application.source_acquisition import (
+    SourceCatalog,
+    SourceNotFoundError,
+    SourceView,
+)
+from milpbooklm_domain.jobs import CapacityClass
 from milpbooklm_domain.policy import PolicyAction
+from milpbooklm_domain.telemetry import current_context
 from starlette import status
 
 from .deps import ApiDeps, PrincipalDependency
 from .security import Principal
 from .source_http import authorize_notebook, problem, source_payload
+
+logger = logging.getLogger(__name__)
 
 
 def build_source_guide_router(
@@ -109,6 +124,56 @@ def _build_activation_router(
         view = catalog.get(source_id, principal.user.id)
         if view is None:
             return JSONResponse(status_code=404, content={"detail": "source not found"})
+        _enqueue_index_job(deps, principal.user.id, view, catalog, source_id)
         return JSONResponse(status_code=status.HTTP_200_OK, content=source_payload(view))
 
     return router
+
+
+def _enqueue_index_job(
+    deps: ApiDeps,
+    actor_id: uuid.UUID,
+    view: SourceView,
+    catalog: SourceCatalog,
+    source_id: uuid.UUID,
+) -> None:
+    """Enqueue the worker-driven index build (enqueue only; the worker owns the lifecycle)."""
+    if deps.jobs is None or deps.index_config is None:
+        return
+    document_id = catalog.active_document_id(source_id, actor_id)
+    if document_id is None:
+        return
+    config = deps.index_config
+    source_version_id = view.source_version_id
+    notebook_id = view.notebook_id
+    model = config.embedding.model
+    dimension = config.embedding.dimension
+    profile_revision = config.profile.revision
+    context = current_context()
+    deps.jobs.enqueue(
+        kind="ingestion.index",
+        payload={
+            "source_id": str(source_id),
+            "notebook_id": str(notebook_id),
+            "source_version_id": str(source_version_id),
+            "canonical_document_id": str(document_id),
+            "generation_id": str(
+                generation_id_for(source_version_id, model, dimension, profile_revision)
+            ),
+            **config_to_payload(config),
+        },
+        actor=InitiatingActor(
+            user_id=actor_id,
+            request_id=context.request_id if context is not None else None,
+            trace_id=context.trace_id if context is not None else None,
+        ),
+        capacity_class=CapacityClass.INGESTION_INDEXING,
+        notebook_id=notebook_id,
+        capability="source_mutate",
+        idempotency_key=idempotency_key_for(
+            source_version_id, model, dimension, profile_revision
+        ),
+    )
+    logger.info(
+        "index job enqueued: source=%s source_version=%s", source_id, source_version_id
+    )

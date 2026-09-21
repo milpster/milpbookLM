@@ -7,6 +7,7 @@ from dataclasses import dataclass
 
 from fastapi import Request
 from milpbooklm_application.authn import LoginUser, LogoutUser, RegisterUser, RotateSession
+from milpbooklm_application.indexing import IndexBuildConfig
 from milpbooklm_application.job_usecases import JobPorts
 from milpbooklm_application.policy_engine import PolicyEngine
 from milpbooklm_application.ports import (
@@ -17,6 +18,7 @@ from milpbooklm_application.ports import (
     SessionTokenStore,
     UserRepository,
 )
+from milpbooklm_application.retrieval import RetrieveChunks
 
 from .security import Principal, SecuritySettings, SlidingWindowLimiter
 
@@ -40,6 +42,10 @@ class ApiDeps:
     login_limiter: SlidingWindowLimiter
     register_limiter: SlidingWindowLimiter
     jobs: JobPorts | None = None
+    # IDX-01: retrieval (None = search endpoint answers 503) + the build config
+    # used to enqueue index jobs on activation (None = indexing disabled).
+    retrieval: RetrieveChunks | None = None
+    index_config: IndexBuildConfig | None = None
 
 
 PrincipalDependency = Callable[[Request], Awaitable[Principal]]

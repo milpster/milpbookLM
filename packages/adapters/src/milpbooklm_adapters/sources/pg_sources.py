@@ -23,7 +23,11 @@ from sqlalchemy.engine import RowMapping
 
 from milpbooklm_adapters.db.tables.blobs import blob_references
 from milpbooklm_adapters.db.tables.collaboration import notebook_memberships
-from milpbooklm_adapters.db.tables.sources import source_versions, sources
+from milpbooklm_adapters.db.tables.sources import (
+    canonical_documents,
+    source_versions,
+    sources,
+)
 
 from .pg_source_activation import SourceActivationStore
 from .pg_source_guide import SourceGuideStore
@@ -194,6 +198,23 @@ class PgSourceCatalog(SourceCatalog):
     def activate(self, source_id: uuid.UUID, actor_id: uuid.UUID) -> bool:
         """Atomically promote one parsed version with its canonical document."""
         return self._activation.activate(source_id, actor_id)
+
+    def active_document_id(self, source_id: uuid.UUID, actor_id: uuid.UUID) -> uuid.UUID | None:
+        """Return the active canonical document id of an activated source (or None)."""
+        with self._engine.begin() as connection:
+            row = connection.execute(
+                sa.select(canonical_documents.c.id)
+                .join(
+                    source_versions,
+                    source_versions.c.id
+                    == canonical_documents.c.source_version_id,
+                )
+                .where(
+                    source_versions.c.source_id == source_id,
+                    canonical_documents.c.active.is_(True),
+                )
+            ).first()
+        return None if row is None else row[0]
 
     def guide(self, source_id: uuid.UUID, actor_id: uuid.UUID) -> SourceGuideView | None:
         """Return the phase-one deterministic Source Guide for an active source."""

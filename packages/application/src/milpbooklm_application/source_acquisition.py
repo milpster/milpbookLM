@@ -110,6 +110,10 @@ class SourceCatalog(Protocol):
         """Atomically promote one parsed version with its canonical document."""
         ...
 
+    def active_document_id(self, source_id: uuid.UUID, actor_id: uuid.UUID) -> uuid.UUID | None:
+        """Return the active canonical document id of an activated source (or None)."""
+        ...
+
     def guide(self, source_id: uuid.UUID, actor_id: uuid.UUID) -> SourceGuideView | None:
         """Return the phase-one deterministic Source Guide for an active source."""
         ...

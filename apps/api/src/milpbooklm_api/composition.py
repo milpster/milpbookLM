@@ -14,7 +14,9 @@ import sqlalchemy as sa
 from fastapi import FastAPI, HTTPException, Request
 from milpbooklm_adapters.blobs import FilesystemBlobStore, PgBlobRepository
 from milpbooklm_adapters.db.connections import make_engine
+from milpbooklm_adapters.indexing import PgRetrievalService
 from milpbooklm_adapters.jobs import PgJobRepository, PgOutboxDispatcher, PolicyAuthzRevalidator
+from milpbooklm_adapters.models.embedding_client import LlamaCppEmbeddingClient
 from milpbooklm_adapters.notebook_repository import InMemoryNotebookRepository
 from milpbooklm_adapters.security.argon2 import Argon2PasswordHasher
 from milpbooklm_adapters.security.clock import SystemClock
@@ -26,6 +28,11 @@ from milpbooklm_adapters.sources import FilesystemQuarantineStore, PgSourceCatal
 from milpbooklm_application.authn import LoginUser, LogoutUser, RegisterUser, RotateSession
 from milpbooklm_application.capabilities import CapabilityRuntime
 from milpbooklm_application.create_notebook import CreateNotebook
+from milpbooklm_application.indexing import (
+    DEFAULT_EMBEDDING_NORMALIZATION,
+    EmbeddingSpec,
+    IndexBuildConfig,
+)
 from milpbooklm_application.job_capacity import load_capacity_policy
 from milpbooklm_application.job_usecases import (
     CancelJob,
@@ -44,14 +51,17 @@ from milpbooklm_application.ports import (
     SessionTokenStore,
     UserRepository,
 )
+from milpbooklm_application.retrieval import RetrieveChunks
 from milpbooklm_application.source_acquisition import AcquireSource, SourceCatalog
 from milpbooklm_application.structured_logging import configure_structured_logging
 from milpbooklm_domain.capabilities import CapabilityDefinition, DependencyId, FeatureFlag
+from milpbooklm_domain.indexing import STRUCTURAL_CHUNKER_V1
 from starlette import status
 
 from .auth_routes import build_auth_router
 from .capability_registry import load_capability_registry
 from .capability_routes import build_capability_router
+from .config import InstallationConfig
 from .config_loader import load_config
 from .deps import ApiDeps
 from .health_routes import DeploymentHealth, build_health_router
@@ -62,6 +72,7 @@ from .observability import (
     SecurityHeadersMiddleware,
     UnhandledErrorMiddleware,
 )
+from .retrieval_routes import build_retrieval_router
 from .security import (
     CsrfOriginMiddleware,
     Principal,
@@ -94,6 +105,8 @@ def build_app(
     capability_runtime: CapabilityRuntime | None = None,
     source_acquisition: AcquireSource | None = None,
     source_catalog: SourceCatalog | None = None,
+    retrieval: RetrieveChunks | None = None,
+    index_config: IndexBuildConfig | None = None,
 ) -> FastAPI:
     """Build the API app from wired ports (the test/QA seam)."""
     app = FastAPI(title="MilpBook LM API")
@@ -129,6 +142,8 @@ def build_app(
             clock, settings.register_max_attempts, settings.register_window
         ),
         jobs=jobs,
+        retrieval=retrieval,
+        index_config=index_config,
     )
     app.state.deps = deps
 
@@ -156,6 +171,7 @@ def build_app(
     app.include_router(build_capability_router(definitions, runtime, health))
     app.include_router(build_auth_router(deps, principal))
     app.include_router(build_notebook_router(deps, principal))
+    app.include_router(build_retrieval_router(deps, principal))
     if jobs is not None:
         app.include_router(build_job_router(deps, principal, jobs))
     if source_acquisition is not None and source_catalog is not None:
@@ -179,6 +195,27 @@ def build_job_ports(
         complete=CompleteJob(repo, revalidator),
         recover=RecoverExpiredLeases(repo),
     )
+
+
+def _embedding_wiring(
+    installation: InstallationConfig,
+) -> tuple[IndexBuildConfig | None, LlamaCppEmbeddingClient | None]:
+    """Return the IDX-01 embedding wiring (None pair = a lexical-only installation)."""
+    if installation.embedding_base_url is None:
+        return None, None
+    base_url = installation.embedding_base_url
+    model = installation.embedding_model or "bge-m3"
+    dimension = installation.embedding_dimension or 1024
+    config = IndexBuildConfig(
+        profile=STRUCTURAL_CHUNKER_V1,
+        embedding=EmbeddingSpec(
+            model=model,
+            model_ref=base_url,
+            dimension=dimension,
+            normalization=DEFAULT_EMBEDDING_NORMALIZATION,
+        ),
+    )
+    return config, LlamaCppEmbeddingClient(base_url, model)
 
 
 def create_app() -> FastAPI:
@@ -210,6 +247,14 @@ def create_app() -> FastAPI:
         audit=audit,
         jobs=jobs,
     )
+    index_config, embedding_client = _embedding_wiring(installation)
+    retrieval = RetrieveChunks(
+        retrieval=PgRetrievalService(engine),
+        embeddings=embedding_client,
+        expected_dimension=(
+            index_config.embedding.dimension if index_config is not None else None
+        ),
+    )
     return build_app(
         users=users,
         hasher=Argon2PasswordHasher(),
@@ -220,6 +265,8 @@ def create_app() -> FastAPI:
         settings=settings,
         clock=clock,
         jobs=jobs,
+        retrieval=retrieval,
+        index_config=index_config,
         health=DeploymentHealth(
             engine,
             installation.blob_root,
