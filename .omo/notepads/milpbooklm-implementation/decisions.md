@@ -28,3 +28,15 @@ _Auto-scaffolded by /start-work. Append new entries below - never overwrite._
 - D13's dispatch gating is SUPERSEDED by the user's 2026-09-20 directive to adjust execution to the mapped route and keep going ("did you map the direct route ... and adjust our execution accordingly?" — boulder continuation directives concur). One delegated agent at a time still applies.
 - Artifact-path spelling unification (milpbookml → milpbooklm) commissioned 2026-09-20; canonical project spelling is `milpbooklm` in-repo, directory stays `milpbookLM`.
 
+
+## D16 (2026-09-21, user) — No new model acquisitions; local chat = prod llama.cpp config
+- User order when T19 tried to download "Muse Glimmer-30B": "just use the prod config with what we already have!"
+- Local chat selection (MOD-01b slot a) = **Swift-Qwen3.8-27B-Q6_K** served by `/home/srcds/dev/uf3_rocm6.1_llama.cpp/swift_llama_start-q6_f16_f16.sh` on 2×RadeonVII gfx906 (DFlash2 + ngram-mod spec decode, `-ts 35,20,45 -sm layer`, f16/f16 KV, port 8009). Supersedes plan line 287 "Muse Glimmer-30B Q4/Q5"; the T19 ADR records this substitution.
+- NO GGUF downloads without explicit user order; disk at 97% (34GB free) independently forbids it.
+- On-host benchmark evidence = light live probes of the running :8009 (it IS the selected deployment) + the perf journal in the prod script header (E82/E83 lane: pp16384 ~369 / fill120k ~327 / TG ~13.3 t/s). No second model load; GPUs stay owned by the serving instance.
+
+## D17 (2026-09-21, task 19) — MOD-01b reference selections
+- Local chat is Swift-Qwen3.8-27B-Q6_K through the D16 production llama.cpp deployment; the prior Glimmer candidate is rejected for this installation.
+- Local embeddings are bge-m3 Q8_0, CPU-only, dimension 1024. A dedicated reranker is explicitly deferred; degraded/selected prototype behavior is RRF-only fusion.
+- Checked-in fallback order is local llama.cpp → Big Pickle → Muse Spark Standard. Big Pickle lapse/restriction skips directly to Muse Spark Standard; all external dispatch remains disclosure-, policy-, and credential-gated.
+- Credential-free probes left the effective runtime route local-only: Big Pickle direct chat returned HTTP 403 (OpenCode-client restriction); Muse Spark Standard returned HTTP 401 (no credential).

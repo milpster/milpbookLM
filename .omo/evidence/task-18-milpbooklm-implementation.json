@@ -1,0 +1,81 @@
+{
+  "task": "18 (UI-01) — React shell + viewer + a11y + browser harness",
+  "plan": ".omo/plans/milpbooklm-implementation.md",
+  "date": "2026-09-21",
+  "gates": {
+    "ruff": "pass: uv run ruff check . (All checks passed!)",
+    "mypy": "pass: 157 source files",
+    "import_linter": "pass: 4 contracts kept, 0 broken",
+    "pytest": "pass: 127 passed (tests/architecture tests/meta tests/unit)",
+    "biome": "pass: pnpm exec biome check . — 0 errors (5 pre-existing warnings, 4 infos)",
+    "tsc_vite": "pass: pnpm -C apps/web build (tsc --build && vite build, per-route lazy chunks)"
+  },
+  "defects_fixed": [
+    {
+      "id": 1,
+      "file": "apps/web/scripts/seed-dev.sh",
+      "fix": "notebook INSERT no longer sets the invalid custody_state 'normal' (column default 'none' applies) and now sets required created_by_user_id"
+    },
+    {
+      "id": 2,
+      "file": "apps/web/scripts/generate-api-types.sh",
+      "fix": "default MILPBOOKLM_OPENAPI_URL is now http://127.0.0.1:8000/openapi.json (vite proxies only /api; the old default pointed at the web origin and 404'd)"
+    },
+    {
+      "id": 3,
+      "files": [
+        "apps/api/src/milpbooklm_api/notebook_routes.py",
+        "packages/application/src/milpbooklm_application/ports.py (NotebookStore protocol)",
+        "packages/adapters/src/milpbooklm_adapters/security/notebook_store.py (PgNotebookStore, NEW)",
+        "apps/api/src/milpbooklm_api/deps.py (notebook_store field)",
+        "apps/api/src/milpbooklm_api/composition.py (wiring)",
+        "packages/application/src/milpbooklm_application/audit_actions.py (NOTEBOOK_CREATED)",
+        "apps/web/src/api/client.ts + contract.ts + routes/NotebooksRoute.tsx + styles.css"
+      ],
+      "fix": "typed POST /api/v1/notebooks (201, owner membership row in one transaction, notebook.created audit); UI create affordance wired behind the capability registry (renders disabled + reason while notebook_management reports disabled, which is the frozen-registry truth)"
+    }
+  ],
+  "shell_fix_found_in_qa": {
+    "item": "session did not survive a full page reload (AuthState never booted /auth/me; F5 or a deep link dropped the user to the auth screen)",
+    "fix": "state/auth.tsx boots getActor() once on mount (checking flag); App.tsx renders RouteLoading while checking",
+    "evidence": "browser deep link /notebooks/<id> renders the notebook after the fix (chromium + firefox)"
+  },
+  "serving_smoke": {
+    "driver": "/home/srcds/dev/t18-smoke/task18_serving_smoke.py",
+    "log": ".omo/evidence/task-18-manual-qa.log",
+    "runtime": "all traffic through web origin http://localhost:5173 (vite proxy -> API :8000), cookie + CSRF + Origin discipline; live embedding :8010 (bge-m3 CPU), live worker w18, supplied t13 scratch PostgreSQL at /home/srcds/dev/t13-smoke (port 29521, db milpbooklm_t13, schema 0006_rag_01b); MILPBOOKLM_CHAT_PROVIDER=fake",
+    "result": "PASS: 13/13 checks — register, login (mb_session + csrf), capability registry (notebook_management=disabled/compiled_support_missing), POST /notebooks 201 with owner membership, notebook list, paste, worker parse (job succeeded), activate, worker index (1 ready chunk), conversation create, SSE 25 token events then terminal, answer persisted with 1 citation, citation jump /api/v1/source-versions/{vid}/nodes/{nid} 200",
+    "note": "browser chat streaming is capability-gated: grounded_chat reports disabled in the frozen registry, so the UI honestly shows 'Chat unavailable' + reason; the same SSE pipeline is proven green end-to-end through the web origin by the smoke above"
+  },
+  "browser_pass": {
+    "driver": "/home/srcds/dev/t18-smoke/task18_browser_pass.mjs",
+    "log": "/home/srcds/dev/t18-smoke/browser-pass.log",
+    "screenshots": "/home/srcds/dev/t18-smoke/screenshots/ (chromium + firefox: notebooks, notebook sources, chat state)",
+    "result": "PASS: chromium AND firefox — login form renders notebooks shell; create affordance disabled with reason 'Creation is not exposed by this prototype API: compiled_support_missing'; in-page notebook create (browser cookies + session CSRF) 201; deep-linked notebook route renders title; chat tab shows capability-gated empty state; 0 pageerror events"
+  },
+  "ui_route_map": {
+    "auth": "any path while unauthenticated -> AuthRoute (login/register modes, segmented fieldset)",
+    "notebooks": "/notebooks -> NotebooksRoute (capability-gated create form, list with membership)",
+    "notebook": "/notebooks/{notebookId} -> NotebookRoute (Sources/Chat segmented tabs, Sources: SourcePanel, Chat: ChatPanel)",
+    "viewer": "/viewer/{versionId}/{nodeId} -> ViewerRoute (authorized locator; html/pdf/audio/prototype states)",
+    "settings": "/settings -> SettingsRoute"
+  },
+  "response_shapes": {
+    "notebook": "{notebook_id, title, custody_state, membership}",
+    "create_notebook": "201 notebook body; 422 invalid_title for blank/overlong; 503 notebook_creation_unavailable when the store is not wired",
+    "capabilities": "{capabilities: [{id, name, classification, state, reason}]}",
+    "paste_source": "{source_id, job_id, ...} (task 17 shapes unchanged)",
+    "sse": "event: token then exactly one event: terminal (message_terminal from task 17 evidence); REST state authoritative after reconnect"
+  },
+  "deferred": [
+    {
+      "item": "real-model streaming through the browser chat UI",
+      "reason": "grounded_chat capability is frozen disabled (compiled_support_missing) and :8009 was out of scope; UI affordance, SSE client, and pipeline are all in place and proven against the fake provider through the web origin"
+    },
+    {
+      "item": "enabling notebook creation in the UI",
+      "reason": "requires flipping the frozen capabilities registry seed (guide-fingerprinted); the REST route works independently and is exercised by the smoke; flipping belongs to a capability-gate task, not UI-01"
+    }
+  ],
+  "cleanup": "embedding :8010, API :8000, worker w18, and web :5173 all killed by pidfile after QA; ports verified closed"
+}

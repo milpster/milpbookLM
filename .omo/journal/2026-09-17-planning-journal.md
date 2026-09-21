@@ -251,3 +251,12 @@ Session: 2026-09-17, Prometheus (ulw-plan), intent=CLEAR (user asked to be inter
 - Notable honest-limitation surfaced by QA: the capabilities registry is a frozen spec seed, so the UI create-notebook affordance is disabled-by-design with the registry reason shown; the REST route works. Registry seeding is wave-2 gate work.
 - Remaining plan: 19 (MOD-01b ADR pack), 20 (PHASE-GATE), then wave-2 hardening — all post-prototype-route. Wave-2 deferral ledger now spans T8–T18 test batteries, E2E/CI harness, real-model passes, registry seeding, HNSW-at-scale, purge flows (T24), etc.
 - HALT: user ordered a stop after the cleanup agent finished. No further dispatches until the user says go.
+
+## Process log (cont. 22 — T19 close-out, 2026-09-21)
+
+- [~] T19 marked `- [~]` (worker `ses_f3aaddf7...`, commit `b1ea2b3`). MOD-01b complete under D16: ADRs 0003-0005 (six-field records), corpora v1 (5 kinds × 20 DE + 20 EN), EVAL-GATE-001 harness, typed routing config + test. All verified first-hand by orchestrator: harness PASS (recall 1.0/1.0/1.0 @1024d), gates green (pytest 128).
+- D16 born this session: user stopped a Glimmer-30B download ("just use the prod config with what we already have") — local chat selection = Swift-Qwen3.8-27B-Q6_K on the prod gfx906 stack; ADR 0003 records the substitution. Zero acquisitions; disk at 97% independently forbids them.
+- External probes honest: Big Pickle 403 (free tier client-restricted), Muse Spark 401 (no creds) → degraded local-only routing recorded per plan; never faked.
+- Session ops: user freed the GPUs and authorized bringing up llama.cpp — orchestrator now runs the prod config on :8009 (PID file scratch/llama-8009.pid); one crash (HIP graph abort) recovered by restart + verified with a real completion. Orchestrator self-inflicted a session-host kill by misreading a post-compaction restart as an orphan (lesson recorded in learnings: verify ses ownership against run-continuation churn before killing). A 20h-wedged serena MCP server (95% CPU) was the actual stale process.
+- Aborted dispatches CAN leave a spawned session + WIP (twice today); resume-by-task_id (user: "subagent needs a resume") carries them home. PROGRESS.md-in-scratch now standard for crash-resilient resumes.
+- NEXT: T20 Phase-1 gate (blocked-by 12..19 — all now done/verified-partial). Wants the real rootless deployment + real local models; T8 podman drill remains user-sudo-gated — gate may need the user for the deployment leg or run evidence on the scratch stack.

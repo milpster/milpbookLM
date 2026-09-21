@@ -210,3 +210,15 @@ _Auto-scaffolded by /start-work. Append new entries below - never overwrite._
 ## Storage convention (2026-09-21)
 
 ALL agent scratch (drivers, fixtures, DB clusters, logs, screenshots) lives under `/home/srcds/dev/milpbookLM/scratch/` exclusively — nothing outside the repo. Scratch DB socket is `<repo>/scratch/t13-smoke`, port 29521. DSNs use `host=/home/srcds/dev/milpbookLM/scratch/t13-smoke`. The eight former top-level dirs (`t13-smoke`, `t14-atlas`, `t14-smoke`, `t15-atlas`, `t15-smoke`, `t16-smoke`, `t17-smoke`, `t18-smoke`) were moved into `scratch/` on 2026-09-21; the t13-smoke PostgreSQL (db `milpbooklm_t13`) survives the move and stays running as the shared QA database. Scratch is git-ignored — never commit it.
+
+## Process (2026-09-21, post-compact)
+1. **Verify session ownership BEFORE killing opencode host PIDs**: cross-check the `-s ses_*` argument against `.omo/run-continuation/*` (constantly-churning file = the LIVE main session) and against dispatched task session ids. I killed my own session host by mistaking a fresh post-compaction restart (17min elapsed, 87% CPU during codegraph re-index) for an orphaned dispatch. Atlas survived only via host respawn.
+2. An aborted task() dispatch leaves NO session process (abort happens before spawn) — confirm orphan existence via scratch/ dirs and download artifacts before assuming one runs.
+3. A wedged serena MCP server (`start-mcp-server --project-from-cwd`) can spin 95% CPU for 20h; `ps --sort=-%cpu` finds it; killing it costs only serena tools (respawnable), not the session.
+
+## T19 (2026-09-21)
+
+1. The live Swift endpoint exposes build identity in `system_fingerprint` (`b11380-969bce4d2`) and server-side prompt/TG timings in non-streaming responses. One discarded warmup plus 15 kept sequential calls stayed inside D16's light-probe ceiling; a separate SSE request supplied first-byte timing without touching the serving process.
+2. Reasoning tokens share the completion budget in this production recipe. At `max_tokens=128`, the German unanswerability probe consumed the budget entirely in reasoning and emitted empty visible content while the English equivalent answered. Quality evidence must retain this as a failure; an empty visible answer can never be accepted as successful abstention.
+3. Big Pickle reachability and usability are distinct: `/models` was public and advertised `big-pickle`, but direct chat returned HTTP 403 because the free tier is restricted to the OpenCode client. Muse Spark Standard was network-reachable but returned HTTP 401 without credentials. The honest operational state is therefore degraded local-only routing, not failed task acceptance.
+4. Corpus v1 locks 20 German and 20 English judgments for each of embedding recall, answerability, contradictions, citation entailment, and chat quality. CPU bge-m3 produced 1024-dimensional vectors and recall@3 = 1.0 overall/DE/EN against the fixed 0.95/0.90/0.90 thresholds.

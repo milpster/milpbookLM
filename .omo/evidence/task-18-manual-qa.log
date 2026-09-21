@@ -1,0 +1,14 @@
+{"check": "register_through_web_origin", "ok": true, "detail": "user_id=01a0c4d7-18d7-4f0d-9aa5-33292f21197e"}
+{"check": "login_sets_session_and_csrf", "ok": true, "detail": "mb_session + csrf_token"}
+{"check": "capability_registry_reports_notebook_management", "ok": true, "detail": "state=disabled reason=compiled_support_missing"}
+{"check": "create_notebook_route_201_owner_membership", "ok": true, "detail": "notebook_id=01a0c4d7-191c-4b04-86f4-cdf98c607ee7 custody=none"}
+{"check": "notebook_list_includes_created", "ok": true, "detail": "count=1"}
+{"check": "paste_source_enqueues_parse", "ok": true, "detail": "source_id=d7f9e96a-7b2d-4b7f-9484-1ff55550fe3d job_id=01a0c4d7-194b-43e9-8227-2d061e4a5160"}
+{"check": "live_worker_parsed_pasted_source", "ok": true, "detail": "source_id=d7f9e96a-7b2d-4b7f-9484-1ff55550fe3d"}
+{"check": "activate_source", "ok": true, "detail": "status=200"}
+{"check": "live_worker_indexed_pasted_source", "ok": true, "detail": "ready_chunks=1"}
+{"check": "create_conversation", "ok": true, "detail": "conversation_id=f2391b7e-35bf-4506-bada-5cad842b14dd"}
+{"check": "sse_token_events_then_terminal", "ok": true, "detail": "token_events=25"}
+{"check": "answer_persisted_with_citations", "ok": true, "detail": "citations=1 first=Task 18 RAG evidence"}
+{"check": "citation_jump_url_resolves_200", "ok": true, "detail": "version=a6064859-cc04-46aa-b9a6-24b65f9595d1 node=c0e22ca1-683d-56ca-9680-2f5e50dab424"}
+{"check": "task_18_serving_smoke_complete", "ok": true, "detail": "checks=13"}
