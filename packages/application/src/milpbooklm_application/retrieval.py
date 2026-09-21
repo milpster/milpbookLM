@@ -124,7 +124,7 @@ class RetrieveChunks:
             raise ValueError(f"unsupported retrieval mode: {command.mode}")
         if command.top_k < 1 or command.top_k > MAX_TOP_K:
             raise ValueError("top_k must be within 1..50")
-        if command.mode is RETRIEVER_LEXICAL:
+        if command.mode == RETRIEVER_LEXICAL:
             rows = self._retrieval.search(command, retriever=RETRIEVER_LEXICAL,
                                           query_embedding_text=None)
             return RetrievalOutcome(
@@ -132,7 +132,7 @@ class RetrieveChunks:
                 fusion_config_version=FUSION_CONFIG_VERSION,
                 results=self._single_retriever(rows, RETRIEVER_LEXICAL),
             )
-        if command.mode is RETRIEVER_VECTOR:
+        if command.mode == RETRIEVER_VECTOR:
             rows = self._retrieval.search(
                 command,
                 retriever=RETRIEVER_VECTOR,
