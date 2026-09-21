@@ -13,8 +13,13 @@ import os
 import sqlalchemy as sa
 from fastapi import FastAPI, HTTPException, Request
 from milpbooklm_adapters.blobs import FilesystemBlobStore, PgBlobRepository
+from milpbooklm_adapters.chat import PgConversationStore
 from milpbooklm_adapters.db.connections import make_engine
 from milpbooklm_adapters.grounding import PgGroundingStore
+from milpbooklm_adapters.grounding_completion import (
+    FakeGroundingCompletionProvider,
+    LlamaCppCompletionProvider,
+)
 from milpbooklm_adapters.indexing import PgRetrievalService
 from milpbooklm_adapters.jobs import PgJobRepository, PgOutboxDispatcher, PolicyAuthzRevalidator
 from milpbooklm_adapters.models.embedding_client import LlamaCppEmbeddingClient
@@ -28,7 +33,9 @@ from milpbooklm_adapters.security.session_store import PgSessionTokenStore
 from milpbooklm_adapters.sources import FilesystemQuarantineStore, PgSourceCatalog
 from milpbooklm_application.authn import LoginUser, LogoutUser, RegisterUser, RotateSession
 from milpbooklm_application.capabilities import CapabilityRuntime
+from milpbooklm_application.chat import GenerateChatTurn, GenerateNotebookOverview
 from milpbooklm_application.create_notebook import CreateNotebook
+from milpbooklm_application.grounding import GenerateGroundedAnswer
 from milpbooklm_application.indexing import (
     DEFAULT_EMBEDDING_NORMALIZATION,
     EmbeddingSpec,
@@ -64,10 +71,12 @@ from .capability_registry import load_capability_registry
 from .capability_routes import build_capability_router
 from .config import InstallationConfig
 from .config_loader import load_config
+from .conversation_routes import build_conversation_router
 from .deps import ApiDeps
 from .grounding_routes import build_grounding_router
 from .health_routes import DeploymentHealth, build_health_router
 from .job_routes import build_job_router
+from .notebook_overview_routes import build_notebook_overview_router
 from .notebook_routes import build_notebook_router
 from .observability import (
     CorrelationMiddleware,
@@ -110,6 +119,8 @@ def build_app(
     retrieval: RetrieveChunks | None = None,
     index_config: IndexBuildConfig | None = None,
     grounding: PgGroundingStore | None = None,
+    conversations: PgConversationStore | None = None,
+    completion: LlamaCppCompletionProvider | FakeGroundingCompletionProvider | None = None,
 ) -> FastAPI:
     """Build the API app from wired ports (the test/QA seam)."""
     app = FastAPI(title="MilpBook LM API")
@@ -125,6 +136,18 @@ def build_app(
     app.add_middleware(SecurityHeadersMiddleware)
     app.add_middleware(CorrelationMiddleware)
     app.add_middleware(UnhandledErrorMiddleware)
+    chat_turn = (
+        GenerateChatTurn(
+            conversations,
+            GenerateGroundedAnswer(
+                retrieval=retrieval,
+                completion=completion or FakeGroundingCompletionProvider(),
+                store=grounding,
+            ),
+        )
+        if conversations is not None and retrieval is not None and grounding is not None
+        else None
+    )
     deps = ApiDeps(
         users=users,
         sessions=sessions,
@@ -148,6 +171,13 @@ def build_app(
         retrieval=retrieval,
         index_config=index_config,
         grounding=grounding,
+        conversations=conversations,
+        chat_turn=chat_turn,
+        notebook_overview=(
+            GenerateNotebookOverview(conversations, chat_turn)
+            if conversations is not None and chat_turn is not None
+            else None
+        ),
     )
     app.state.deps = deps
 
@@ -177,6 +207,8 @@ def build_app(
     app.include_router(build_notebook_router(deps, principal))
     app.include_router(build_retrieval_router(deps, principal))
     app.include_router(build_grounding_router(deps, principal))
+    app.include_router(build_conversation_router(deps, principal))
+    app.include_router(build_notebook_overview_router(deps, principal))
     if jobs is not None:
         app.include_router(build_job_router(deps, principal, jobs))
     if source_acquisition is not None and source_catalog is not None:
@@ -259,6 +291,7 @@ def create_app() -> FastAPI:
         expected_dimension=(index_config.embedding.dimension if index_config is not None else None),
     )
     grounding = PgGroundingStore(engine)
+    conversations = PgConversationStore(engine)
     return build_app(
         users=users,
         hasher=Argon2PasswordHasher(),
@@ -272,6 +305,8 @@ def create_app() -> FastAPI:
         retrieval=retrieval,
         index_config=index_config,
         grounding=grounding,
+        conversations=conversations,
+        completion=LlamaCppCompletionProvider(),
         health=DeploymentHealth(
             engine,
             installation.blob_root,

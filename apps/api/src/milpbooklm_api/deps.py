@@ -7,6 +7,11 @@ from dataclasses import dataclass
 
 from fastapi import Request
 from milpbooklm_application.authn import LoginUser, LogoutUser, RegisterUser, RotateSession
+from milpbooklm_application.chat import (
+    ConversationStore,
+    GenerateChatTurn,
+    GenerateNotebookOverview,
+)
 from milpbooklm_application.grounding import GroundingStore
 from milpbooklm_application.indexing import IndexBuildConfig
 from milpbooklm_application.job_usecases import JobPorts
@@ -48,6 +53,9 @@ class ApiDeps:
     retrieval: RetrieveChunks | None = None
     index_config: IndexBuildConfig | None = None
     grounding: GroundingStore | None = None
+    conversations: ConversationStore | None = None
+    chat_turn: GenerateChatTurn | None = None
+    notebook_overview: GenerateNotebookOverview | None = None
 
 
 PrincipalDependency = Callable[[Request], Awaitable[Principal]]
