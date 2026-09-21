@@ -1,0 +1,41 @@
+{
+  "gate": "EVAL-GATE-001-v1",
+  "status": "pass",
+  "corpus_version": "v1",
+  "corpus_sha256": {
+    "answerability.json": "b609befee8a3aa20862d0871f93775079022092b27e5c465e41565aee14313cb",
+    "citation-entailment.json": "64769633b7ef2efafd5f1ee8cec693cdaab47fc545c266489aab3098fe8d031f",
+    "contradictions.json": "8d2a60cc8b8e680583a3f65ee62ae0430c01b43a43430c1af5bdd8d241dd3637",
+    "embedding-recall.json": "9fa2f406edfd5d1787a7e82f879deb949a7ce5abee6371304aca58ae2711401d",
+    "judgments.json": "b9141f8265aedbf3129ef186b373d1588f93fa9aab2f5fb04c65ecba55fd50af"
+  },
+  "counts": {
+    "answerability": {
+      "de": 20,
+      "en": 20
+    },
+    "citation-entailment": {
+      "de": 20,
+      "en": 20
+    },
+    "contradictions": {
+      "de": 20,
+      "en": 20
+    },
+    "judgments": {
+      "de": 20,
+      "en": 20
+    },
+    "embedding-recall": {
+      "de": 20,
+      "en": 20
+    }
+  },
+  "embedding_dimension": 1024,
+  "recall_at_k": {
+    "overall": 1.0,
+    "de": 1.0,
+    "en": 1.0
+  },
+  "locked_judgment_score": 1.0
+}

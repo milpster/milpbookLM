@@ -1,0 +1,35 @@
+Task 19 MOD-01b manual QA — 2026-09-21
+
+Local chat surface
+- Existing service only; no restart, reconfiguration, model load, or llama-bench.
+- One discarded warmup plus 16 short calls total (15 non-streaming kept runs and one SSE sample), temperature 0, max_tokens <= 128.
+- GET /v1/models advertised /home/srcds/ai/ai/Swift-Qwen3.8-27B-Q6_K.gguf, Q6_K, 27,320,697,856 parameters, context 227072.
+- Fingerprint: b11380-969bce4d2 (llama.cpp build sha 969bce4d2fc5b14faed90f047b05adac8f41ef86).
+- Kept mean TG 32.2163 tokens/s (16.0586..67.9209); mean short-call total latency 3.7977 s; SSE first byte 0.140839 s.
+- DE/EN rubric: factuality-with-citation 5/6, language quality 5/6, refusal 1/2. German unanswerable prompt exhausted the 128-token reasoning budget and emitted no visible answer; recorded as failure.
+
+Embedding / EVAL-GATE-001
+- Started only /home/srcds/dev/uf3_rocm6.1_llama.cpp/build/bin/llama-server with existing /home/srcds/ai/ai/bge-m3-Q8_0.gguf, --embedding -ngl 0, loopback :8010, context 8192, threads 4.
+- `rtk uv run python tests/evaluation/run_eval_gate.py --embedding-url http://127.0.0.1:8010/v1 --report tests/evaluation/report-v1.json`: exit 0.
+- Result: PASS; 20 DE + 20 EN per required kind; embedding dimension 1024; recall@3 overall/DE/EN 1.0/1.0/1.0.
+- CPU server stopped with TERM using only recorded PID 3356299 after command ownership check.
+
+External reachability
+- Big Pickle /models: HTTP 200, big-pickle advertised. Direct chat: HTTP 403, exact provider message says free tier can only be used from within OpenCode.
+- Muse Spark Standard /models and /chat/completions: HTTP 401 invalid_api_key; no credential present.
+- Effective runtime degradation: local-only. Configured future order remains local -> Big Pickle -> Muse Spark Standard; Big Pickle lapse skips to Muse.
+
+Routing surface
+- `rtk uv run pytest tests/unit/test_config_loader.py -q`: 14 passed, including the one new order test.
+- Typed startup loader consumed checked-in model-routing-v1.json and produced llama_cpp_local, big_pickle, muse_spark_standard in order.
+
+Repository gates
+- `rtk uv run ruff check .`: exit 0, all checks passed.
+- `rtk uv run mypy`: exit 0, no issues in 157 source files.
+- `rtk uv run import-linter lint`: exit 0, 4 kept / 0 broken.
+- `rtk uv run pytest tests/meta tests/architecture tests/unit -q`: exit 0, 128 passed, 2 dependency deprecation warnings.
+
+Deferred honestly
+- Credentialed external quality runs: unavailable because no credentials were present and Big Pickle rejected direct free-tier use.
+- Dedicated reranker: explicitly deferred; selected degraded behavior is RRF only.
+- Model redistribution: blocked until the local derivative artifact has a reviewed provenance/license manifest; on-host use only.

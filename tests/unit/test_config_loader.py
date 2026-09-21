@@ -44,6 +44,12 @@ def test_installation_loads_from_env() -> None:
     assert then.trusted_proxy_peers == ("10.0.0.0/8", "192.168.1.5")
 
 
+def test_model_routing_uses_locked_local_first_order() -> None:
+    when = load_installation(VALID_ENV)
+    then = tuple(route.provider_id for route in when.model_routing.providers)
+    assert then == ("llama_cpp_local", "big_pickle", "muse_spark_standard")
+
+
 def test_file_secret_resolves_and_strips_single_trailing_newline(tmp_path: Path) -> None:
     secret_file = tmp_path / "secret.key"
     secret_file.write_text("file-backed-secret\n", encoding="utf-8")

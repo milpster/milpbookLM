@@ -37,6 +37,29 @@ class ChatProvider(StrEnum):
     FAKE = "fake"
 
 
+class ModelRoute(BaseModel):
+    """One ordered provider route loaded from the checked-in selection record."""
+
+    model_config = ConfigDict(frozen=True, extra="forbid")
+
+    provider_id: str
+    model: str
+    external: bool
+    privacy_class: str
+    disclosure_required: bool
+    availability: str
+    lapse_behavior: str | None = None
+
+
+class ModelRoutingConfig(BaseModel):
+    """Versioned ordinary-chat fallback order consumed by composition."""
+
+    model_config = ConfigDict(frozen=True, extra="forbid")
+
+    version: str
+    providers: tuple[ModelRoute, ...]
+
+
 class InstallationConfig(BaseModel):
     """
     Installation scope: deployment-wide values, loaded from the environment at startup.
@@ -59,6 +82,7 @@ class InstallationConfig(BaseModel):
     enabled_capability_flags: tuple[str, ...] = ()
     configured_provider_capabilities: tuple[str, ...] = ()
     chat_provider: ChatProvider = ChatProvider.LLAMA_CPP
+    model_routing: ModelRoutingConfig
     # IDX-01: optional local embedding endpoint; when unset, vector retrieval is
     # unavailable (the API answers an explicit problem, never a silent failure).
     embedding_base_url: str | None = None

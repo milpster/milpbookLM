@@ -1,0 +1,35 @@
+{
+  "task": "19. MOD-01b - Model selection ADR pack + locked quality fixtures",
+  "date": "2026-09-21",
+  "status": "complete",
+  "decision": "D16: local chat is Swift-Qwen3.8-27B-Q6_K through the existing production llama.cpp deployment; no downloads",
+  "deliverables": [
+    "ADR 0003 local chat selection with Glimmer-to-Swift substitution and on-host evidence",
+    "ADR 0004 bge-m3 Q8_0 embeddings plus explicit reranker deferral and RRF-only degradation",
+    "ADR 0005 Big Pickle then Muse Spark Standard external fallbacks with privacy/disclosure/lapse rules",
+    "corpora v1: 20 German and 20 English items for judgments, answerability, contradictions, citation entailment, and embedding recall",
+    "EVAL-GATE-001 v1 harness, thresholds, report, and benchmark artifact",
+    "typed app-loadable local-to-Big-Pickle-to-Muse routing record plus one unit test"
+  ],
+  "commands": [
+    {"command": "light :8009 probes (1 warmup discarded, 16 short calls total, max_tokens <= 128)", "exit": 0, "result": "fingerprint b11380-969bce4d2; 15 kept mean TG 32.2163 t/s; DE/EN rubric recorded honestly"},
+    {"command": "Big Pickle and Muse Spark Standard credential-free endpoint probes", "exit": 0, "result": "Big Pickle chat 403 client restriction; Muse Spark Standard 401 no credential; effective local-only"},
+    {"command": "rtk uv run python tests/evaluation/run_eval_gate.py --embedding-url http://127.0.0.1:8010/v1 --report tests/evaluation/report-v1.json", "exit": 0, "result": "PASS, dimension 1024, recall@3 overall/DE/EN 1.0/1.0/1.0"},
+    {"command": "rtk uv run ruff check .", "exit": 0},
+    {"command": "rtk uv run mypy", "exit": 0, "result": "157 source files"},
+    {"command": "rtk uv run import-linter lint", "exit": 0, "result": "4 kept, 0 broken"},
+    {"command": "rtk uv run pytest tests/meta tests/architecture tests/unit -q", "exit": 0, "result": "128 passed, 2 warnings"}
+  ],
+  "deferred": [
+    "credentialed external quality runs: credentials absent / direct Big Pickle free-tier use rejected",
+    "dedicated reranker: RRF-only selected until a representative locked-corpus win",
+    "model redistribution pending derivative provenance/license manifest"
+  ],
+  "safety": {
+    "models_downloaded": 0,
+    "gpu_server_restarted_or_reconfigured": false,
+    "llama_bench_run": false,
+    "embedding_server_pid": 3356299,
+    "embedding_server_cleanup": "TERM after exact command ownership check"
+  }
+}

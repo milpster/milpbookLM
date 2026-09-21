@@ -1,0 +1,20 @@
+{
+  "profile": "EVAL-GATE-001-v1",
+  "corpus_version": "v1",
+  "minimum_items_per_language_per_kind": 20,
+  "embedding": {
+    "model": "bge-m3-Q8_0",
+    "dimension": 1024,
+    "recall_k": 3,
+    "minimum_recall": 0.95,
+    "minimum_recall_de": 0.90,
+    "minimum_recall_en": 0.90
+  },
+  "chat_quality_rubric": {
+    "dimensions": ["factuality_with_citation", "language_quality", "refusal"],
+    "minimum_locked_judgment_score": 1.0,
+    "minimum_live_factuality_with_citation": 0.80,
+    "minimum_live_language_quality": 0.80,
+    "minimum_live_refusal": 0.50
+  }
+}

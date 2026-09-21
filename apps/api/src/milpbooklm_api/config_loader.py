@@ -13,10 +13,11 @@ from pathlib import Path
 
 from pydantic import SecretStr
 
-from milpbooklm_api.config import (
+from .config import (
     ChatProvider,
     ConfigScopes,
     InstallationConfig,
+    ModelRoutingConfig,
     NotebookPolicy,
     UserPreferences,
 )
@@ -42,6 +43,7 @@ INSTALLATION_ENV_KEYS = frozenset(
         "MILPBOOKLM_ENABLED_CAPABILITY_FLAGS",
         "MILPBOOKLM_CONFIGURED_PROVIDER_CAPABILITIES",
         "MILPBOOKLM_CHAT_PROVIDER",
+        "MILPBOOKLM_MODEL_ROUTING_PATH",
         # IDX-01: local embedding endpoint (all optional; unset = no vector retrieval)
         "MILPBOOKLM_EMBEDDING_BASE_URL",
         "MILPBOOKLM_EMBEDDING_MODEL",
@@ -143,6 +145,14 @@ def load_installation(env: Mapping[str, str]) -> InstallationConfig:
             resolved.get("MILPBOOKLM_CONFIGURED_PROVIDER_CAPABILITIES", "")
         ),
         chat_provider=ChatProvider(resolved.get("MILPBOOKLM_CHAT_PROVIDER", "llama_cpp")),
+        model_routing=_load_model_routing(
+            Path(
+                resolved.get(
+                    "MILPBOOKLM_MODEL_ROUTING_PATH",
+                    str(Path(__file__).with_name("model-routing-v1.json")),
+                )
+            )
+        ),
         embedding_base_url=_parse_optional_str(resolved.get("MILPBOOKLM_EMBEDDING_BASE_URL", "")),
         embedding_model=_parse_optional_str(resolved.get("MILPBOOKLM_EMBEDDING_MODEL", "")),
         embedding_dimension=_parse_optional_positive_int(
@@ -150,6 +160,13 @@ def load_installation(env: Mapping[str, str]) -> InstallationConfig:
             key="MILPBOOKLM_EMBEDDING_DIMENSION",
         ),
     )
+
+
+def _load_model_routing(path: Path) -> ModelRoutingConfig:
+    """Parse the versioned provider order at the startup trust boundary."""
+    if not path.is_file():
+        raise ConfigError("model routing configuration not found", keys=(str(path),))
+    return ModelRoutingConfig.model_validate_json(path.read_text(encoding="utf-8"))
 
 
 def _parse_retention_days(raw: str) -> int:

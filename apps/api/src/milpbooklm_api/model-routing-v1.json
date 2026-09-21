@@ -1,0 +1,30 @@
+{
+  "version": "v1",
+  "providers": [
+    {
+      "provider_id": "llama_cpp_local",
+      "model": "Swift-Qwen3.8-27B-Q6_K",
+      "external": false,
+      "privacy_class": "local",
+      "disclosure_required": false,
+      "availability": "selected"
+    },
+    {
+      "provider_id": "big_pickle",
+      "model": "big-pickle",
+      "external": true,
+      "privacy_class": "restricted_unknown_training_use",
+      "disclosure_required": true,
+      "availability": "credential_or_host_client_required",
+      "lapse_behavior": "skip_to_muse_spark_standard"
+    },
+    {
+      "provider_id": "muse_spark_standard",
+      "model": "muse-spark",
+      "external": true,
+      "privacy_class": "external_non_training_tier",
+      "disclosure_required": true,
+      "availability": "credential_required"
+    }
+  ]
+}

@@ -1,0 +1,47 @@
+{
+  "version": "v1",
+  "date": "2026-09-21",
+  "local_chat": {
+    "model": "Swift-Qwen3.8-27B-Q6_K",
+    "model_sha256": "7f4de8abd5446c08b0f975a1b38e43d02639f4ae9ecdd2ddfd5c5b0f612bda59",
+    "llama_cpp_build_sha": "969bce4d2fc5b14faed90f047b05adac8f41ef86",
+    "system_fingerprint": "b11380-969bce4d2",
+    "endpoint": "http://127.0.0.1:8009/v1",
+    "hardware": "2 x AMD Radeon VII (gfx906 silicon; runtime reports gfx900 under HSA override)",
+    "rocm_userspace": "6.1.0 launcher path; rocminfo HIP version 7.15.0-0000000, runtime 1.21",
+    "context": 227000,
+    "quantization": "Q6_K",
+    "decoding": "temperature=0, max_tokens<=128, DFlash2 plus ngram-mod, f16 K/V",
+    "warmups_discarded": 1,
+    "kept_runs": 15,
+    "completion_tokens": 1172,
+    "tokens_per_second": {"minimum": 16.058595919826892, "maximum": 67.92094002580995, "mean": 32.21630021772127},
+    "non_streaming_total_latency_seconds": {"minimum": 1.327495, "maximum": 8.798419, "mean": 3.7977276666666673},
+    "streaming_first_byte_seconds": 0.140839,
+    "visible_output_sha256": "fee53faa78066b4c1f75c11d2284f6ee1b24c9029631d853c69deaa301c2fa29",
+    "live_vram_bytes": {"radeon_vii_0_used": 17052934144, "radeon_vii_1_used": 17116512256},
+    "production_journal_lane": {"pp16384_tokens_per_second": 369, "fill120k_tokens_per_second": 327, "tg_tokens_per_second": 13.3, "canonical_output_sha": "pass"},
+    "quality_rubric": {
+      "sample_count": 6,
+      "languages": ["de", "en"],
+      "factuality_with_citation": 0.8333333333333334,
+      "language_quality": 0.8333333333333334,
+      "refusal": 0.5,
+      "finding": "German unanswerable case exhausted the 128-token budget in reasoning and emitted no visible answer; retained as a known weakness."
+    }
+  },
+  "embedding": {
+    "model": "bge-m3-Q8_0",
+    "model_sha256": "950f4a8e5e19477a6d3c26d2f162233c20002c601f75e4b002e3239997821167",
+    "endpoint": "http://127.0.0.1:8010/v1",
+    "hardware": "CPU, 4 threads, -ngl 0",
+    "dimension": 1024,
+    "judgments": 40,
+    "recall_at_3": {"overall": 1.0, "de": 1.0, "en": 1.0}
+  },
+  "external_reachability": {
+    "big_pickle": {"models_http": 200, "model_advertised": true, "chat_http": 403, "outcome": "unavailable outside OpenCode free-tier client"},
+    "muse_spark_standard": {"models_http": 401, "chat_http": 401, "outcome": "endpoint reachable; no credential present"},
+    "effective_degraded_route": ["llama_cpp_local"]
+  }
+}

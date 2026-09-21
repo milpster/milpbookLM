@@ -1,0 +1,24 @@
+2026-09-21 Big Pickle models probe
+command: curl --max-time 15 https://opencode.ai/zen/v1/models
+outcome: HTTP/2 200; response advertised model id "big-pickle"; curl_exit=0
+
+2026-09-21 Big Pickle chat probe (no credential present)
+command: curl --max-time 15 -H 'Content-Type: application/json' -d '{"model":"big-pickle","messages":[{"role":"user","content":"reachability probe"}],"max_tokens":1}' https://opencode.ai/zen/v1/chat/completions
+outcome: HTTP/2 403
+body: {"type":"error","error":{"type":"FreeTierError","message":"Error from provider (Console): OpenCode's free tier can only be used from within OpenCode"}}
+curl_exit=0
+
+2026-09-21 Muse Spark Standard models probe (no credential present)
+command: curl --max-time 15 https://api.meta.ai/v1/models
+outcome: HTTP/2 401
+body: {"error":{"code":"invalid_api_key","message":"Unauthorized","param":null,"type":"authentication_error"}}
+curl_exit=0
+
+2026-09-21 Muse Spark Standard chat probe (no credential present)
+command: curl --max-time 15 -H 'Content-Type: application/json' -d '{"model":"muse-spark","messages":[{"role":"user","content":"reachability probe"}],"max_tokens":1}' https://api.meta.ai/v1/chat/completions
+outcome: HTTP/2 401
+body: {"error":{"code":"invalid_api_key","message":"Unauthorized","param":null,"type":"authentication_error"}}
+curl_exit=0
+
+Effective runtime route after probes: llama_cpp_local only.
+Configured retry order remains: llama_cpp_local -> big_pickle -> muse_spark_standard.
