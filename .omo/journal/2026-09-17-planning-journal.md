@@ -227,3 +227,10 @@ Session: 2026-09-17, Prometheus (ulw-plan), intent=CLEAR (user asked to be inter
 - BM25 gate honestly REJECTED (ADR-0001: PG FTS parity on locked corpus, stays unlabeled); HNSW honestly NOT ENABLED at 9-row prototype scale (ADR-0002: planner picks seqscan, recall 1.0, revisit ~10k vectors).
 - Known prototype gap (recorded, non-blocking): pasted-text language = 'und' → fts_config 'simple' fallback; EN/DE configs engage when language is set (PDFs with detected language or future language detection).
 - NEXT: T16 RAG-01a (retrieval pipeline → answer contract + citation validator). CP3 approach; needs the chat model — the GPU llama-server on :8009 (Swift-Qwen3.8-27B) is the natural completion endpoint, already serving.
+
+## Process log (cont. 19 — T16 close-out, 2026-09-21)
+
+- [~] T16 marked `- [~]` (worker `ses_f3c10c345ffe3R1jkY0E3DISzA`, commits `33351e3`+`2742446`; two prior sessions stalled early — the fresh-dispatch takeover pattern worked again, 18 min). Grounding layer complete: manifest freeze → pinned hybrid retrieval → quota/budget assembly → structured provider contract → 5-check citation validator → atomic publish / explicit abstain → pinned citation jump with unavailable-(purged) state.
+- Atlas re-ran the worker's QA driver first-hand (fake-contract): valid publish atomic (+1 row), invented id → zero rows, abstain → no row, cross-notebook rejected, purged jump/publish correct. Gates green (mypy now 152 files, pytest 127).
+- **GPU llama-server :8009 is DOWN** (connection refused; confirmed during worker QA and twice by Atlas). It serves real-model completions AND this orchestration's subagent routing (recent workers rerouted via gpt-5.6-terra upstream and still completed). Real-model grounded smoke deferred — fold into T17 verification once the user restarts it. Orchestrator must not touch that server (standing rule).
+- NEXT: T17 RAG-01b (conversations, streaming, chat config/lifecycle) — build on the grounding seams; needs :8009 up for real streaming chat QA. Then T18 (UI-01) = CP4.
