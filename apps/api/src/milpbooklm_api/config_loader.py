@@ -35,6 +35,10 @@ INSTALLATION_ENV_KEYS = frozenset(
         "MILPBOOKLM_PREREQUISITES_PATH",
         "MILPBOOKLM_ENABLED_CAPABILITY_FLAGS",
         "MILPBOOKLM_CONFIGURED_PROVIDER_CAPABILITIES",
+        # IDX-01: local embedding endpoint (all optional; unset = no vector retrieval)
+        "MILPBOOKLM_EMBEDDING_BASE_URL",
+        "MILPBOOKLM_EMBEDDING_MODEL",
+        "MILPBOOKLM_EMBEDDING_DIMENSION",
     }
 )
 
@@ -131,6 +135,12 @@ def load_installation(env: Mapping[str, str]) -> InstallationConfig:
         configured_provider_capabilities=_parse_csv(
             resolved.get("MILPBOOKLM_CONFIGURED_PROVIDER_CAPABILITIES", "")
         ),
+        embedding_base_url=_parse_optional_str(resolved.get("MILPBOOKLM_EMBEDDING_BASE_URL", "")),
+        embedding_model=_parse_optional_str(resolved.get("MILPBOOKLM_EMBEDDING_MODEL", "")),
+        embedding_dimension=_parse_optional_positive_int(
+            resolved.get("MILPBOOKLM_EMBEDDING_DIMENSION", ""),
+            key="MILPBOOKLM_EMBEDDING_DIMENSION",
+        ),
     )
 
 
@@ -169,6 +179,24 @@ def _parse_positive_int(raw: str, *, key: str, default: int) -> int:
 
 def _parse_csv(raw: str) -> tuple[str, ...]:
     return tuple(value.strip() for value in raw.split(",") if value.strip())
+
+
+def _parse_optional_str(raw: str) -> str | None:
+    value = raw.strip()
+    return value or None
+
+
+def _parse_optional_positive_int(raw: str, *, key: str) -> int | None:
+    value = raw.strip()
+    if not value:
+        return None
+    try:
+        parsed = int(value)
+    except ValueError as exc:
+        raise ConfigError(f"{key} must be a positive integer", keys=(key,)) from exc
+    if parsed <= 0:
+        raise ConfigError(f"{key} must be a positive integer", keys=(key,))
+    return parsed
 
 
 def load_user_preferences(data: str | bytes | Mapping[str, object]) -> UserPreferences:

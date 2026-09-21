@@ -51,6 +51,11 @@ class InstallationConfig(BaseModel):
     prerequisites_file: Path = Path("/run/milpbooklm/prerequisites.json")
     enabled_capability_flags: tuple[str, ...] = ()
     configured_provider_capabilities: tuple[str, ...] = ()
+    # IDX-01: optional local embedding endpoint; when unset, vector retrieval is
+    # unavailable (the API answers an explicit problem, never a silent failure).
+    embedding_base_url: str | None = None
+    embedding_model: str | None = None
+    embedding_dimension: int | None = Field(default=None, gt=0)
 
 
 class UserPreferences(BaseModel):
