@@ -245,3 +245,8 @@ ALL agent scratch (drivers, fixtures, DB clusters, logs, screenshots) lives unde
 4. **A module named after its library (parsers/pptx.py importing `pptx`) trips basedpyright's implicit-relative-import heuristic** and is a reader footgun even though Python 3 absolute-import semantics keep runtime correct (proven by child smokes). Renamed to `docx_parser.py`/`pptx_parser.py` matching `csv_parser.py`.
 5. **httpx over plain http silently drops the Secure mb_session cookie from the jar** (same class as the TestClient finding in FND-04): API-level QA drivers must present `Cookie: mb_session=...` explicitly and use the API's configured trust origin (`http://localhost:5173`, not `127.0.0.1:8000`) as the Origin header or CSRF rejects with `origin_rejected`.
 6. **list-invariance vs JsonValue**: mypy strict rejects `extra["header"] = some_list[str]` (list invariance); `list[JsonValue](values)` satisfies both mypy and ruff (which flags the `[x for x in y]` workaround as C416).
+
+## Process (2026-09-21, T21 verification)
+1. pidfile kills can miss daemonized children: start-api.sh pidfile records the nohup/setsid wrapper; uvicorn survives as an orphan still holding :8000 (stale rate-limiter state persisted across a fake restart). To REALLY restart a listener: find the port PID via `ss -tlnp | grep ":PORT "` and kill that.
+2. Register/login limiters are per-client-IP in-memory sliding windows (`register:{ip}`, `login:{ip+account}`) - a busy QA evening exhausts them; real API restart resets.
+3. API surface: uploads POST /api/v1/sources/import?notebook_id=... (router prefix /api/v1/sources, notebook_id is a QUERY param); jobs GET /api/v1/jobs/{id}; canonical gate dirs (tests/meta|architecture|unit) miss tests/fixtures suites - run both.

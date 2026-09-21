@@ -301,7 +301,7 @@ Blocks column = DIRECT dependants only (tasks listing X in their Depends on); a 
   QA scenarios: happy — full journey on live stack (evidence phase-1-gate.json + E2E traces); failure — a capability lacking evidence blocks gate (evidence meta output). Evidence <attemptDir>/task-20-milpbooklm-implementation.json
   Commit: Y | chore(release): Phase-1 gate evidence bundle
 
-- [ ] 21. ING-02a — Markdown, CSV/XLSX, DOCX/PPTX families
+- [~] 21. ING-02a — Markdown, CSV/XLSX, DOCX/PPTX families
   What to do / Must NOT do: Per REFERENCE-DEPENDENCIES matrix: markdown/text streaming decoders; CSV python parser; XLSX openpyxl read-only/data-only (+isolated LibreOffice only for explicit recalc/render; formulas vs cached values stored distinctly, no arbitrary workbook evaluation, macros never executed); DOCX python-docx + isolated LO/PDF rendition where layout evidence needed (external refs + macros disabled); PPTX python-pptx (slide/shape locators + speaker notes separate). Each adapter declares media types/sniffing/limits/image digest/canonical schema version/locator guarantees; explicit failure states (unsupported formulas/macros etc.). Goldens incl. hostile office docs. MUST NOT: return success-empty on failed parse; execute macros/external references.
   Micro-index: 21.1 markdown/CSV (21.1.1 decoders+BOM bound; 21.1.2 csv dialect handling) · 21.2 XLSX (21.2.1 values+formulas distinct; 21.2.2 sheet/range locators) · 21.3 DOCX/PPTX (21.3.1 structural parse; 21.3.2 LO rendition isolation; 21.3.3 notes/locators) · 21.4 goldens+states.
   Parallelization: Wave 2 | Blocked by: 14,15 | Blocks: 24, 25 (gate)
