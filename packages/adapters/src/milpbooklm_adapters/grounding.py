@@ -51,7 +51,12 @@ class PgGroundingStore:
                     notebook_id=request.notebook_id,
                     created_by_user_id=request.actor_user_id,
                     op_kind="ordinary_chat",
-                    config_snapshot={"source_only": True, "question": normalized_question},
+                    config_snapshot={
+                        "source_only": True,
+                        "question": normalized_question,
+                        "chat": request.chat_config_snapshot or {},
+                        "instructions": request.instructions_snapshot,
+                    },
                     context_snapshot=[str(value) for value in request.context_message_ids],
                     retrieval_version="grounding-v1",
                     retrieval_settings={"reranker": "absent"},

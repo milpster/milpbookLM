@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 import uuid
+from collections.abc import Callable, Generator
 from dataclasses import dataclass
 from typing import Final, Protocol
 
@@ -69,6 +70,8 @@ class GroundingRequest:
     context_message_ids: tuple[uuid.UUID, ...] = ()
     selected_source_ids: frozenset[uuid.UUID] | None = None
     selected_note_revision_ids: tuple[uuid.UUID, ...] = ()
+    chat_config_snapshot: dict[str, str] | None = None
+    instructions_snapshot: str = ""
     token_budget: int = DEFAULT_CONTEXT_TOKEN_BUDGET
 
 
@@ -83,11 +86,27 @@ class GroundedAnswer:
     insufficient_evidence: bool
 
 
+@dataclass(frozen=True, slots=True)
+class PreparedGroundedAnswer:
+    """Retrieved evidence held transiently until validated publication."""
+
+    request: GroundingRequest
+    manifest: FrozenManifest
+    evidence: tuple[Evidence, ...]
+    retrieval_trace: str
+
+
 class CompletionProvider(Protocol):
     """A completion boundary that receives only server-issued evidence identities."""
 
     def complete(self, question: str, evidence: tuple[Evidence, ...]) -> AnswerDraft:
         """Return structured spans citing evidence IDs only."""
+        ...
+
+    def stream(
+        self, question: str, evidence: tuple[Evidence, ...]
+    ) -> Generator[str, None, AnswerDraft]:
+        """Yield best-effort tokens and return the completed structured answer."""
         ...
 
 
@@ -144,8 +163,46 @@ class GenerateGroundedAnswer:
         """Freeze intent, retrieve/fuse, assemble, generate, validate, and publish."""
         normalized_question = self._normalize(request.question)
         manifest = self._store.freeze(request=request, normalized_question=normalized_question)
+        return self.generate(request, manifest)
+
+    def generate(self, request: GroundingRequest, manifest: FrozenManifest) -> GroundedAnswer:
+        """Generate against an already-frozen manifest without creating a second snapshot."""
+        prepared = self.prepare(request, manifest)
+        if not prepared.evidence:
+            return self._store.abstain(manifest=manifest, retrieval_trace=prepared.retrieval_trace)
+        return self._publish(prepared)
+
+    def stream_generate(
+        self,
+        request: GroundingRequest,
+        manifest: FrozenManifest,
+        cancelled: Callable[[], bool],
+    ) -> Generator[str, None, GroundedAnswer | None]:
+        """Present provider tokens, then publish only the completed validated draft."""
+        prepared = self.prepare(request, manifest)
+        if not prepared.evidence:
+            return self._store.abstain(manifest=manifest, retrieval_trace=prepared.retrieval_trace)
+        generation = self._completion.stream(request.question, prepared.evidence)
+        while True:
+            try:
+                token = next(generation)
+            except StopIteration as completed:
+                draft = completed.value
+                break
+            if cancelled():
+                return None
+            yield token
+        if cancelled():
+            return None
+        return self._publish(prepared, draft)
+
+    def prepare(
+        self, request: GroundingRequest, manifest: FrozenManifest
+    ) -> PreparedGroundedAnswer:
+        """Perform the grounded retrieval phase before token presentation begins."""
+        normalized_question = self._normalize(request.question)
         if not manifest.source_version_ids:
-            return self._store.abstain(manifest=manifest, retrieval_trace="no-selected-sources")
+            return PreparedGroundedAnswer(request, manifest, (), "no-selected-sources")
         outcome = self._retrieval(
             RetrievalCommand(
                 actor_user_id=request.actor_user_id,
@@ -160,19 +217,36 @@ class GenerateGroundedAnswer:
         )
         evidence = self._assemble(outcome.results, request.token_budget)
         trace = f"{outcome.fusion_config_version}:reranker=absent"
-        if not evidence:
-            return self._store.abstain(manifest=manifest, retrieval_trace=trace)
-        draft = self._completion.complete(request.question, evidence)
-        if draft.insufficient_evidence:
-            if draft.spans:
+        return PreparedGroundedAnswer(request, manifest, evidence, trace)
+
+    def _publish(
+        self, prepared: PreparedGroundedAnswer, draft: AnswerDraft | None = None
+    ) -> GroundedAnswer:
+        """Validate and atomically persist the completed structured answer."""
+        completed_draft = (
+            self._completion.complete(prepared.request.question, prepared.evidence)
+            if draft is None
+            else draft
+        )
+        if completed_draft.insufficient_evidence:
+            if completed_draft.spans:
                 raise GroundingError("an insufficiency draft must not contain factual spans")
-            return self._store.abstain(manifest=manifest, retrieval_trace=trace)
+            return self._store.abstain(
+                manifest=prepared.manifest, retrieval_trace=prepared.retrieval_trace
+            )
         return self._store.publish(
+            request=prepared.request,
+            manifest=prepared.manifest,
+            evidence=prepared.evidence,
+            draft=completed_draft,
+            retrieval_trace=prepared.retrieval_trace,
+        )
+
+    def freeze(self, request: GroundingRequest) -> FrozenManifest:
+        """Expose the immutable pre-turn manifest needed by conversation history."""
+        return self._store.freeze(
             request=request,
-            manifest=manifest,
-            evidence=evidence,
-            draft=draft,
-            retrieval_trace=trace,
+            normalized_question=self._normalize(request.question),
         )
 
     @staticmethod

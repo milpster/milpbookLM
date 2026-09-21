@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+from collections.abc import Generator
 from dataclasses import dataclass
 from enum import StrEnum
 from typing import Final
@@ -9,6 +10,8 @@ from typing import Final
 import httpx
 from milpbooklm_application.grounding import AnswerDraft, AnswerSpan, Evidence
 from pydantic import BaseModel, ConfigDict
+
+from milpbooklm_adapters.models.openai_schema import ChatChunkPayload
 
 LLAMA_CPP_COMPLETIONS_URL: Final = "http://127.0.0.1:8009/v1"
 LLAMA_CPP_MODEL: Final = "/home/srcds/ai/ai/Swift-Qwen3.8-27B-Q6_K.gguf"
@@ -35,16 +38,39 @@ class FakeGroundingCompletionProvider:
 
     def complete(self, question: str, evidence: tuple[Evidence, ...]) -> AnswerDraft:
         """Return the selected deterministic response for the supplied evidence IDs."""
-        del question
         match self._scenario:
             case FakeCompletionScenario.VALID:
                 if not evidence:
                     return AnswerDraft((), insufficient_evidence=True)
+                if question.startswith("Suggest three grounded starting questions"):
+                    evidence_id = evidence[0].id
+                    label = evidence[0].label
+                    return AnswerDraft(
+                        (
+                            AnswerSpan(f"What is the main argument in {label}?", (evidence_id,)),
+                            AnswerSpan(
+                                f"Which evidence in {label} is most important?", (evidence_id,)
+                            ),
+                            AnswerSpan(
+                                f"What should I investigate next in {label}?", (evidence_id,)
+                            ),
+                        )
+                    )
                 return AnswerDraft((AnswerSpan(evidence[0].text, (evidence[0].id,)),))
             case FakeCompletionScenario.INVENTED_EVIDENCE:
                 return AnswerDraft((AnswerSpan("unsupported claim", ("invented-evidence-id",)),))
             case FakeCompletionScenario.INSUFFICIENT:
                 return AnswerDraft((), insufficient_evidence=True)
+
+    def stream(
+        self, question: str, evidence: tuple[Evidence, ...]
+    ) -> Generator[str, None, AnswerDraft]:
+        """Yield deterministic answer text as best-effort word chunks."""
+        draft = self.complete(question, evidence)
+        for span in draft.spans:
+            for token in span.text.split(" "):
+                yield f"{token} "
+        return draft
 
 
 class _SpanPayload(BaseModel):
@@ -109,6 +135,40 @@ class LlamaCppCompletionProvider:
         except ValueError as error:
             raise GroundingCompletionError(
                 "completion response is not an answer contract"
+            ) from error
+        return AnswerDraft(
+            spans=tuple(AnswerSpan(span.text, span.evidence_ids) for span in parsed.spans),
+            insufficient_evidence=parsed.insufficient_evidence,
+        )
+
+    def stream(
+        self, question: str, evidence: tuple[Evidence, ...]
+    ) -> Generator[str, None, AnswerDraft]:
+        """Stream local provider deltas and return their completed structured draft."""
+        payload = self._payload(question, evidence)
+        payload["stream"] = True
+        fragments: list[str] = []
+        with (
+            httpx.Client(base_url=self.base_url, timeout=120.0) as client,
+            client.stream("POST", "/chat/completions", json=payload) as response,
+        ):
+            response.raise_for_status()
+            for line in response.iter_lines():
+                if not line.startswith("data: "):
+                    continue
+                data = line.removeprefix("data: ")
+                if data == "[DONE]":
+                    break
+                chunk = ChatChunkPayload.model_validate_json(data)
+                for choice in chunk.choices:
+                    if choice.delta.content is not None:
+                        fragments.append(choice.delta.content)
+                        yield choice.delta.content
+        try:
+            parsed = _AnswerPayload.model_validate_json("".join(fragments))
+        except ValueError as error:
+            raise GroundingCompletionError(
+                "streamed completion is not an answer contract"
             ) from error
         return AnswerDraft(
             spans=tuple(AnswerSpan(span.text, span.evidence_ids) for span in parsed.spans),
