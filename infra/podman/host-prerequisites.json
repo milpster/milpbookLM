@@ -2,5 +2,16 @@
   "schema_version": 1,
   "ready": false,
   "execution_enabled": false,
-  "checks": [{"name":"podman","status":"fail","detail":"not_installed"},{"name":"podman_compose","status":"fail","detail":"version_1.6.0_required"},{"name":"subordinate_uids","status":"pass","detail":"range_present"},{"name":"subordinate_gids","status":"pass","detail":"range_present"},{"name":"unprivileged_user_namespaces","status":"pass","detail":"enabled"},{"name":"cgroup_v2_controllers","status":"pass","detail":"memory_pids_cpu_io"},{"name":"cgroup_v2_delegation","status":"fail","detail":"user_unit_drop_in_not_active"},{"name":"bubblewrap","status":"pass","detail":"version_0.11.0"},{"name":"filesystem_atomic_finalize","status":"pass","detail":"hardlink_supported"},{"name":"host_mac","status":"fail","detail":"apparmor_disabled"}]
+  "checks": [
+    { "name": "podman", "status": "fail", "detail": "not_installed" },
+    { "name": "podman_compose", "status": "fail", "detail": "version_1.6.0_required" },
+    { "name": "subordinate_uids", "status": "pass", "detail": "range_present" },
+    { "name": "subordinate_gids", "status": "pass", "detail": "range_present" },
+    { "name": "unprivileged_user_namespaces", "status": "pass", "detail": "enabled" },
+    { "name": "cgroup_v2_controllers", "status": "pass", "detail": "memory_pids_cpu_io" },
+    { "name": "cgroup_v2_delegation", "status": "fail", "detail": "user_unit_drop_in_not_active" },
+    { "name": "bubblewrap", "status": "pass", "detail": "version_0.11.0" },
+    { "name": "filesystem_atomic_finalize", "status": "pass", "detail": "hardlink_supported" },
+    { "name": "host_mac", "status": "fail", "detail": "apparmor_disabled" }
+  ]
 }
