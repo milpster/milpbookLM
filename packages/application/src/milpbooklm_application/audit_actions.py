@@ -39,6 +39,7 @@ class AuditAction(StrEnum):
 
     ACQUISITION_SUCCEEDED = "source.acquisition.succeeded"
     ACQUISITION_REJECTED = "source.acquisition.rejected"
+    SOURCE_ACTIVATED = "source.activated"
     SOURCE_SELECTED = "source.selected"
     SOURCE_REMOVED = "source.removed"
     SOURCE_RENAMED = "source.renamed"

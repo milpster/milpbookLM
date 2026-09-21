@@ -3,10 +3,12 @@ Immutability and lifecycle triggers for content-bearing tables (FND-03).
 
 Content versions are immutable (ch05 "Mandatory invariants"): a SourceVersion never changes
 bytes/canonical document/checksum after activation; canonical documents/nodes/locators,
-note revisions, artifact versions, manifests, study snapshots and run evidence snapshots are
-immutable once created; messages and audit events admit only their explicit privacy/append
-paths. Applied after create_all in the baseline revision; drop_all removes them with the
-tables, so downgrade is clean.
+provenance edges (immutable endpoints, ch07), note revisions, artifact versions, manifests,
+study snapshots and run evidence snapshots are immutable once created; messages and audit
+events admit only their explicit privacy/append paths. The canonical_documents guard admits
+one narrow exception: flipping active/activated_at (the atomic active-document swap); every
+content field of that table stays immutable. Applied after create_all in the baseline
+revision; drop_all removes them with the tables, so downgrade is clean.
 """
 
 from __future__ import annotations
@@ -15,6 +17,18 @@ TRIGGER_FUNCTIONS: tuple[str, ...] = (
     """
     CREATE OR REPLACE FUNCTION milpbooklm_immutability_violation() RETURNS trigger AS $$
     BEGIN
+      IF TG_TABLE_NAME = 'canonical_documents'
+         AND NEW.id IS NOT DISTINCT FROM OLD.id
+         AND NEW.source_version_id IS NOT DISTINCT FROM OLD.source_version_id
+         AND NEW.canonical_schema_version IS NOT DISTINCT FROM OLD.canonical_schema_version
+         AND NEW.parser_identity IS NOT DISTINCT FROM OLD.parser_identity
+         AND NEW.parser_version IS NOT DISTINCT FROM OLD.parser_version
+         AND NEW.parser_profile IS NOT DISTINCT FROM OLD.parser_profile
+         AND NEW.tool_versions IS NOT DISTINCT FROM OLD.tool_versions
+         AND NEW.contract_json IS NOT DISTINCT FROM OLD.contract_json
+         AND NEW.created_at IS NOT DISTINCT FROM OLD.created_at THEN
+        RETURN NEW;
+      END IF;
       RAISE EXCEPTION 'milpbooklm: % is immutable', TG_TABLE_NAME;
     END;
     $$ LANGUAGE plpgsql
@@ -88,6 +102,8 @@ _TRIGGER_SPECS: tuple[tuple[str, str, str, str], ...] = (
     ("trg_canonical_nodes_immutable", "BEFORE UPDATE OR DELETE", "canonical_nodes",
      "milpbooklm_immutability_violation()"),
     ("trg_canonical_locators_immutable", "BEFORE UPDATE OR DELETE", "canonical_locators",
+     "milpbooklm_immutability_violation()"),
+    ("trg_provenance_edges_immutable", "BEFORE UPDATE OR DELETE", "provenance_edges",
      "milpbooklm_immutability_violation()"),
     ("trg_note_revisions_immutable", "BEFORE UPDATE OR DELETE", "note_revisions",
      "milpbooklm_immutability_violation()"),

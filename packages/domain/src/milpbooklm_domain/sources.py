@@ -42,6 +42,15 @@ class Availability(StrEnum):
     DELETED_TOMBSTONED = "deleted_tombstoned"
 
 
+class RestrictionType(StrEnum):
+    """The closed deny/reuse/export policy set (source_restrictions, ch05)."""
+
+    ACCESS_DENIED = "access_denied"
+    EXPORT_DENIED = "export_denied"
+    SHARE_DENIED = "share_denied"
+    REUSE_DENIED = "reuse_denied"
+
+
 @dataclass(frozen=True, slots=True)
 class SourceVersion:
     """Immutable snapshot of a source's payload while it is retained."""

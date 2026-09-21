@@ -17,6 +17,7 @@ from starlette import status
 
 from .deps import ApiDeps, PrincipalDependency
 from .security import Principal
+from .source_guide_routes import build_source_guide_router
 from .source_http import RenameSourceRequest, authorize_notebook, problem, source_payload
 
 
@@ -27,6 +28,7 @@ def build_source_lifecycle_router(
 ) -> APIRouter:
     """Compose source metadata routes before selection and purge routes."""
     router = APIRouter()
+    router.include_router(build_source_guide_router(deps, principal_dependency, catalog))
     router.include_router(_build_metadata_router(deps, principal_dependency, catalog))
     router.include_router(_build_selection_router(deps, principal_dependency, catalog))
     return router

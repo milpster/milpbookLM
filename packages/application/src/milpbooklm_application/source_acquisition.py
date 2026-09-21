@@ -20,6 +20,7 @@ from .blob_store import BlobContentMismatchError, BlobStore
 from .job_actor import InitiatingActor
 from .job_usecases import JobPayload, JobPorts
 from .ports import AuditLog
+from .provenance import EffectiveRestrictions
 
 IMPORTER_VERSION: Final = "ing-01a-v1"
 
@@ -49,6 +50,17 @@ class SourceView:
     version_status: str
     etag: str
     blob_id: uuid.UUID
+
+
+@dataclass(frozen=True, slots=True)
+class SourceGuideView:
+    """Deterministic phase-one guide derived from persisted source metadata."""
+
+    source_id: uuid.UUID
+    source_version_id: uuid.UUID
+    summary: str
+    labels: tuple[str, ...]
+    restrictions: tuple[str, ...]
 
 
 @dataclass(frozen=True, slots=True)
@@ -92,6 +104,20 @@ class SourceCatalog(Protocol):
         self, source_id: uuid.UUID, actor_id: uuid.UUID, title: str, etag: str
     ) -> SourceView:
         """CAS-update display metadata without touching source bytes."""
+        ...
+
+    def activate(self, source_id: uuid.UUID, actor_id: uuid.UUID) -> bool:
+        """Atomically promote one parsed version with its canonical document."""
+        ...
+
+    def guide(self, source_id: uuid.UUID, actor_id: uuid.UUID) -> SourceGuideView | None:
+        """Return the phase-one deterministic Source Guide for an active source."""
+        ...
+
+    def effective_restrictions(
+        self, source_id: uuid.UUID, actor_id: uuid.UUID
+    ) -> EffectiveRestrictions:
+        """Effective deny/reuse/export state across content-bearing ancestors."""
         ...
 
     def set_selected(

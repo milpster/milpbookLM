@@ -6,11 +6,13 @@ import uuid
 from typing import Final
 
 import sqlalchemy as sa
+from milpbooklm_application.provenance import EffectiveRestrictions
 from milpbooklm_application.source_acquisition import (
     IMPORTER_VERSION,
     AcquireSourceCommand,
     SourceCatalog,
     SourceConflictError,
+    SourceGuideView,
     SourceNotFoundError,
     SourceView,
 )
@@ -23,6 +25,9 @@ from milpbooklm_adapters.db.tables.blobs import blob_references
 from milpbooklm_adapters.db.tables.collaboration import notebook_memberships
 from milpbooklm_adapters.db.tables.sources import source_versions, sources
 
+from .pg_source_activation import SourceActivationStore
+from .pg_source_guide import SourceGuideStore
+
 _SOURCE_TYPES: Final = {
     "application/pdf": SourceType.PDF,
     "text/plain": SourceType.PLAIN_TEXT,
@@ -33,8 +38,10 @@ class PgSourceCatalog(SourceCatalog):
     """Persist source ownership separately from globally deduplicated blobs."""
 
     def __init__(self, engine: sa.engine.Engine) -> None:
-        """Wire the PostgreSQL engine."""
+        """Wire the PostgreSQL engine, the activation store, and the guide store."""
         self._engine = engine
+        self._activation = SourceActivationStore(engine)
+        self._guide = SourceGuideStore(engine)
 
     def acquire(self, command: AcquireSourceCommand, blob: BlobObject) -> tuple[SourceView, bool]:
         """Create or return the notebook-local source for this acquisition identity."""
@@ -183,6 +190,20 @@ class PgSourceCatalog(SourceCatalog):
                 self._select_view().where(sources.c.id == source_id)
             ).mappings().one()
         return self._view(row)
+
+    def activate(self, source_id: uuid.UUID, actor_id: uuid.UUID) -> bool:
+        """Atomically promote one parsed version with its canonical document."""
+        return self._activation.activate(source_id, actor_id)
+
+    def guide(self, source_id: uuid.UUID, actor_id: uuid.UUID) -> SourceGuideView | None:
+        """Return the phase-one deterministic Source Guide for an active source."""
+        return self._guide.guide(source_id, actor_id)
+
+    def effective_restrictions(
+        self, source_id: uuid.UUID, actor_id: uuid.UUID
+    ) -> EffectiveRestrictions:
+        """Effective deny/reuse/export state across content-bearing ancestors."""
+        return self._guide.effective_restrictions(source_id, actor_id)
 
     @staticmethod
     def _source_type(blob: BlobObject) -> SourceType:

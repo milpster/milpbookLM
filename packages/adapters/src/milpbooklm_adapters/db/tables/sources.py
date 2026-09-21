@@ -129,6 +129,37 @@ source_restrictions = sa.Table(
     ),
 )
 
+provenance_edges = sa.Table(
+    "provenance_edges",
+    METADATA,
+    uuid_pk(),
+    sa.Column("from_type", sa.Text, nullable=False),
+    sa.Column("from_id", sa.Uuid, nullable=False),
+    sa.Column("from_version_id", sa.Uuid, nullable=True),
+    sa.Column("edge_type", sa.Text, nullable=False),
+    sa.Column("to_type", sa.Text, nullable=False),
+    sa.Column("to_id", sa.Uuid, nullable=False),
+    sa.Column("to_version_id", sa.Uuid, nullable=True),
+    sa.Column("locator", JSONB, nullable=True),
+    sa.Column("transform_identity", sa.Text, nullable=True),
+    sa.Column("transform_version", sa.Text, nullable=True),
+    sa.Column("confidence", sa.Numeric, nullable=True),
+    created_at(),
+    sa.UniqueConstraint(
+        "from_type", "from_id", "from_version_id", "edge_type", "to_type", "to_id",
+        "to_version_id", "locator", "transform_identity", "transform_version",
+        name="uq_provenance_edges_identity", postgresql_nulls_not_distinct=True,
+    ),
+    sa.CheckConstraint(
+        "edge_type IN ('derived_from', 'quotes', 'summarizes', 'transforms', "
+        "'generated_from', 'contains')", name="ck_provenance_edges_type",
+    ),
+    sa.CheckConstraint(
+        "confidence IS NULL OR (confidence >= 0 AND confidence <= 1)",
+        name="ck_provenance_edges_confidence",
+    ),
+)
+
 canonical_documents = sa.Table(
     "canonical_documents",
     METADATA,
