@@ -1,0 +1,72 @@
+{
+  "task": "17 (RAG-01b) — Ordinary chat surface",
+  "plan": ".omo/plans/milpbooklm-implementation.md",
+  "date": "2026-09-21",
+  "gates": {
+    "ruff": "pass: rtk uv run ruff check .",
+    "mypy": "pass: 156 source files",
+    "import_linter": "pass: 4 contracts kept, 0 broken",
+    "pytest": "pass: 127 passed (tests/meta tests/architecture tests/unit)"
+  },
+  "migration": {
+    "existing_scratch": "PASS: /home/srcds/dev/t13-smoke upgraded 0005_idx_02 -> 0006_rag_01b",
+    "fresh_cluster": "PASS: PostgreSQL 17 UTF8/C trust cluster at /home/srcds/dev/t17-smoke/fresh-pg, roles.sql + uuidv7 shim + alembic upgrade head",
+    "idempotency": "PASS: a second alembic upgrade head was a no-op at 0006_rag_01b",
+    "prerequisite_fix": "0005 constraint drops now use IF EXISTS because live metadata already creates the final composite index_chunks key on fresh installs"
+  },
+  "manual_qa": {
+    "driver": "/home/srcds/dev/t17-smoke/task17_manual_qa.py",
+    "log": ".omo/evidence/task-17-manual-qa.log",
+    "runtime": "TestClient https://testserver + fake streaming completion + live CPU bge-m3 :8010 + live worker w17 + supplied t13 scratch PostgreSQL",
+    "result": "PASS: paste/index, conversation lifecycle, streaming/persistence/resync, cancellation, DE/EN config, manifest-pinned instructions and selected note revision, grounded overview, privacy 404, tool-free/local-only trace",
+    "cleanup": "embedding server :8010, worker w17, and fresh migration cluster stopped after QA"
+  },
+  "response_shapes_for_task_18": {
+    "conversation_state": {
+      "id": "uuid string",
+      "notebook_id": "uuid string",
+      "config": {
+        "style": "standard | learning | custom",
+        "length": "shorter | default | longer",
+        "output_language": "DE | EN"
+      },
+      "instructions": "string",
+      "messages": "array of {id, role, content, manifest_id, citations}"
+    },
+    "message_terminal": {
+      "answer_message_id": "uuid string | null",
+      "manifest_id": "uuid string",
+      "insufficient_evidence": "boolean",
+      "state": "authoritative conversation_state",
+      "tool_trace": [],
+      "disclosure": null,
+      "provider_dispatch": {
+        "locality": "local",
+        "external_dispatches": [],
+        "disclosure_events": []
+      }
+    },
+    "sse": "event: token with {token}; then exactly one event: terminal with message_terminal, or event: cancelled with {}. REST state is authoritative after reconnect.",
+    "reset": "returns a new empty conversation_state with a new id; the old private history is retained but no longer open/addressable",
+    "cancel": "{cancelled: true}",
+    "overview": {
+      "conversation_id": "private overview conversation uuid",
+      "summary": "{message_id, manifest_id, content, citations, insufficient_evidence}",
+      "suggested_questions": "array of {question, citations}",
+      "tool_trace": [],
+      "disclosure": null,
+      "provider_dispatch": "same local-only disclosure seam as message_terminal"
+    },
+    "privacy": "foreign conversation and non-member notebook overview requests return 404"
+  },
+  "deferred": [
+    {
+      "item": "live OpenAI-compatible real-model streaming QA",
+      "reason": "127.0.0.1:8009 is down; per task instruction it was not touched or restarted. The streaming client remains wired and fake-provider streaming was fully exercised."
+    },
+    {
+      "item": "browser Chromium/Firefox E2E-001 and visual disclosure banner",
+      "reason": "Task 18 owns the React UI and browser E2E harness; task 17 documents the stable response and disclosure shapes consumed by it."
+    }
+  ]
+}
