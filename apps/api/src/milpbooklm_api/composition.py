@@ -14,6 +14,7 @@ import sqlalchemy as sa
 from fastapi import FastAPI, HTTPException, Request
 from milpbooklm_adapters.blobs import FilesystemBlobStore, PgBlobRepository
 from milpbooklm_adapters.db.connections import make_engine
+from milpbooklm_adapters.grounding import PgGroundingStore
 from milpbooklm_adapters.indexing import PgRetrievalService
 from milpbooklm_adapters.jobs import PgJobRepository, PgOutboxDispatcher, PolicyAuthzRevalidator
 from milpbooklm_adapters.models.embedding_client import LlamaCppEmbeddingClient
@@ -64,6 +65,7 @@ from .capability_routes import build_capability_router
 from .config import InstallationConfig
 from .config_loader import load_config
 from .deps import ApiDeps
+from .grounding_routes import build_grounding_router
 from .health_routes import DeploymentHealth, build_health_router
 from .job_routes import build_job_router
 from .notebook_routes import build_notebook_router
@@ -107,6 +109,7 @@ def build_app(
     source_catalog: SourceCatalog | None = None,
     retrieval: RetrieveChunks | None = None,
     index_config: IndexBuildConfig | None = None,
+    grounding: PgGroundingStore | None = None,
 ) -> FastAPI:
     """Build the API app from wired ports (the test/QA seam)."""
     app = FastAPI(title="MilpBook LM API")
@@ -144,6 +147,7 @@ def build_app(
         jobs=jobs,
         retrieval=retrieval,
         index_config=index_config,
+        grounding=grounding,
     )
     app.state.deps = deps
 
@@ -172,6 +176,7 @@ def build_app(
     app.include_router(build_auth_router(deps, principal))
     app.include_router(build_notebook_router(deps, principal))
     app.include_router(build_retrieval_router(deps, principal))
+    app.include_router(build_grounding_router(deps, principal))
     if jobs is not None:
         app.include_router(build_job_router(deps, principal, jobs))
     if source_acquisition is not None and source_catalog is not None:
@@ -251,10 +256,9 @@ def create_app() -> FastAPI:
     retrieval = RetrieveChunks(
         retrieval=PgRetrievalService(engine),
         embeddings=embedding_client,
-        expected_dimension=(
-            index_config.embedding.dimension if index_config is not None else None
-        ),
+        expected_dimension=(index_config.embedding.dimension if index_config is not None else None),
     )
+    grounding = PgGroundingStore(engine)
     return build_app(
         users=users,
         hasher=Argon2PasswordHasher(),
@@ -267,6 +271,7 @@ def create_app() -> FastAPI:
         jobs=jobs,
         retrieval=retrieval,
         index_config=index_config,
+        grounding=grounding,
         health=DeploymentHealth(
             engine,
             installation.blob_root,

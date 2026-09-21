@@ -7,6 +7,7 @@ from dataclasses import dataclass
 
 from fastapi import Request
 from milpbooklm_application.authn import LoginUser, LogoutUser, RegisterUser, RotateSession
+from milpbooklm_application.grounding import GroundingStore
 from milpbooklm_application.indexing import IndexBuildConfig
 from milpbooklm_application.job_usecases import JobPorts
 from milpbooklm_application.policy_engine import PolicyEngine
@@ -46,6 +47,7 @@ class ApiDeps:
     # used to enqueue index jobs on activation (None = indexing disabled).
     retrieval: RetrieveChunks | None = None
     index_config: IndexBuildConfig | None = None
+    grounding: GroundingStore | None = None
 
 
 PrincipalDependency = Callable[[Request], Awaitable[Principal]]

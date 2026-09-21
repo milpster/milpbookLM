@@ -1,0 +1,216 @@
+"""Grounded-answer orchestration: retrieve, assemble, validate, then publish."""
+
+from __future__ import annotations
+
+import uuid
+from dataclasses import dataclass
+from typing import Final, Protocol
+
+from milpbooklm_application.retrieval import RetrievalCommand, RetrieveChunks, RetrievedChunk
+
+DEFAULT_CANDIDATE_COUNT = 30
+DEFAULT_CONTEXT_TOKEN_BUDGET = 2_000
+DEFAULT_PER_SOURCE_QUOTA = 2
+LLAMA_CPP_MODEL: Final = "/home/srcds/ai/ai/Swift-Qwen3.8-27B-Q6_K.gguf"
+
+
+class GroundingError(RuntimeError):
+    """A grounded draft cannot be published."""
+
+
+@dataclass(frozen=True, slots=True)
+class FrozenManifest:
+    """The immutable retrieval scope captured before query execution."""
+
+    id: uuid.UUID
+    source_version_ids: frozenset[uuid.UUID]
+
+
+@dataclass(frozen=True, slots=True)
+class Evidence:
+    """Server-owned evidence identity exposed to a completion provider."""
+
+    id: str
+    chunk_id: uuid.UUID
+    source_id: uuid.UUID
+    source_version_id: uuid.UUID
+    canonical_node_id: uuid.UUID
+    char_start: int
+    char_end: int
+    label: str
+    text: str
+    token_count: int
+
+
+@dataclass(frozen=True, slots=True)
+class AnswerSpan:
+    """One claim-sized answer span and the evidence IDs that support it."""
+
+    text: str
+    evidence_ids: tuple[str, ...]
+
+
+@dataclass(frozen=True, slots=True)
+class AnswerDraft:
+    """Provider output contract. Labels, URLs and locators are intentionally absent."""
+
+    spans: tuple[AnswerSpan, ...]
+    insufficient_evidence: bool = False
+
+
+@dataclass(frozen=True, slots=True)
+class GroundingRequest:
+    """One source-only grounded answer request, before the T17 HTTP surface exists."""
+
+    actor_user_id: uuid.UUID
+    notebook_id: uuid.UUID
+    conversation_id: uuid.UUID
+    question: str
+    context_message_ids: tuple[uuid.UUID, ...] = ()
+    selected_source_ids: frozenset[uuid.UUID] | None = None
+    selected_note_revision_ids: tuple[uuid.UUID, ...] = ()
+    token_budget: int = DEFAULT_CONTEXT_TOKEN_BUDGET
+
+
+@dataclass(frozen=True, slots=True)
+class GroundedAnswer:
+    """Published answer metadata suitable for the future chat surface."""
+
+    message_id: uuid.UUID | None
+    manifest_id: uuid.UUID
+    spans: tuple[AnswerSpan, ...]
+    citations: tuple[Evidence, ...]
+    insufficient_evidence: bool
+
+
+class CompletionProvider(Protocol):
+    """A completion boundary that receives only server-issued evidence identities."""
+
+    def complete(self, question: str, evidence: tuple[Evidence, ...]) -> AnswerDraft:
+        """Return structured spans citing evidence IDs only."""
+        ...
+
+
+class GroundingStore(Protocol):
+    """Persistence and deterministic citation validation boundary."""
+
+    def freeze(self, *, request: GroundingRequest, normalized_question: str) -> FrozenManifest:
+        """Persist the immutable actor, context, and source-version selection."""
+        ...
+
+    def publish(
+        self,
+        *,
+        request: GroundingRequest,
+        manifest: FrozenManifest,
+        evidence: tuple[Evidence, ...],
+        draft: AnswerDraft,
+        retrieval_trace: str,
+    ) -> GroundedAnswer:
+        """Freeze manifest, validate citations, and atomically publish the answer."""
+        ...
+
+    def abstain(self, *, manifest: FrozenManifest, retrieval_trace: str) -> GroundedAnswer:
+        """Freeze an insufficiency manifest without publishing unsupported claims."""
+        ...
+
+    def jump(
+        self,
+        *,
+        actor_user_id: uuid.UUID,
+        source_version_id: uuid.UUID,
+        canonical_node_id: uuid.UUID,
+    ) -> dict[str, str]:
+        """Resolve a pinned evidence locator under current authorization."""
+        ...
+
+
+class GenerateGroundedAnswer:
+    """The six-step source-only pipeline built on T15 hybrid retrieval."""
+
+    def __init__(
+        self,
+        *,
+        retrieval: RetrieveChunks,
+        completion: CompletionProvider,
+        store: GroundingStore,
+    ) -> None:
+        """Wire reusable retrieval, a provider seam, and atomic publication."""
+        self._retrieval = retrieval
+        self._completion = completion
+        self._store = store
+
+    def __call__(self, request: GroundingRequest) -> GroundedAnswer:
+        """Freeze intent, retrieve/fuse, assemble, generate, validate, and publish."""
+        normalized_question = self._normalize(request.question)
+        manifest = self._store.freeze(request=request, normalized_question=normalized_question)
+        if not manifest.source_version_ids:
+            return self._store.abstain(manifest=manifest, retrieval_trace="no-selected-sources")
+        outcome = self._retrieval(
+            RetrievalCommand(
+                actor_user_id=request.actor_user_id,
+                notebook_id=request.notebook_id,
+                query=normalized_question,
+                language=None,
+                mode="fused",
+                top_k=DEFAULT_CANDIDATE_COUNT,
+                source_ids=request.selected_source_ids,
+                source_version_ids=manifest.source_version_ids,
+            )
+        )
+        evidence = self._assemble(outcome.results, request.token_budget)
+        trace = f"{outcome.fusion_config_version}:reranker=absent"
+        if not evidence:
+            return self._store.abstain(manifest=manifest, retrieval_trace=trace)
+        draft = self._completion.complete(request.question, evidence)
+        if draft.insufficient_evidence:
+            if draft.spans:
+                raise GroundingError("an insufficiency draft must not contain factual spans")
+            return self._store.abstain(manifest=manifest, retrieval_trace=trace)
+        return self._store.publish(
+            request=request,
+            manifest=manifest,
+            evidence=evidence,
+            draft=draft,
+            retrieval_trace=trace,
+        )
+
+    @staticmethod
+    def _normalize(question: str) -> str:
+        """Use deterministic whitespace normalization rather than an unrecorded sub-call."""
+        normalized = " ".join(question.split())
+        if not normalized:
+            raise GroundingError("question must not be blank")
+        return normalized
+
+    @staticmethod
+    def _assemble(results: tuple[RetrievedChunk, ...], token_budget: int) -> tuple[Evidence, ...]:
+        """Apply stable rank ordering, per-source quota, diversity, and token budget."""
+        if token_budget < 1:
+            raise GroundingError("token budget must be positive")
+        selected: list[Evidence] = []
+        per_source: dict[uuid.UUID, int] = {}
+        used_tokens = 0
+        for entry in results:
+            row = entry.row
+            count = per_source.get(row.source_id, 0)
+            if count >= DEFAULT_PER_SOURCE_QUOTA:
+                continue
+            if used_tokens + row.token_count > token_budget:
+                continue
+            evidence = Evidence(
+                id=f"e{len(selected) + 1}",
+                chunk_id=row.chunk_id,
+                source_id=row.source_id,
+                source_version_id=row.source_version_id,
+                canonical_node_id=row.canonical_node_id,
+                char_start=row.char_start,
+                char_end=row.char_end,
+                label=row.source_title,
+                text=row.text,
+                token_count=row.token_count,
+            )
+            selected.append(evidence)
+            per_source[row.source_id] = count + 1
+            used_tokens += row.token_count
+        return tuple(selected)

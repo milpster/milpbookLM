@@ -1,0 +1,29 @@
+{
+  "task": "16 (RAG-01a) — Retrieval pipeline, answer contract, citation validator",
+  "plan": ".omo/plans/milpbooklm-implementation.md",
+  "date": "2026-09-21",
+  "gates": {
+    "ruff": "pass",
+    "mypy": "pass (152 source files, strict)",
+    "import_linter": "4 contracts kept, 0 broken",
+    "pytest": "127 passed (tests/meta tests/architecture tests/unit)"
+  },
+  "persistence": {
+    "migration": "not needed: existing generation_input_manifests, generation_manifest_items, and messages.citations provide the required immutable and atomic storage",
+    "transaction": "validator runs before assistant-message insert; any failure rolls back message and citations"
+  },
+  "manual_qa": {
+    "driver": "/home/srcds/dev/t16-smoke/task16_manual_qa.py",
+    "log": ".omo/evidence/task-16-manual-qa.log",
+    "fake_provider": "PASS: valid citation published atomically; invented ID, cross-notebook evidence, and purged evidence rejected with no message row; insufficiency abstained",
+    "embedding_server": "PASS: local bge-m3 on CPU, 127.0.0.1:8010",
+    "real_model": "BLOCKED: GET http://127.0.0.1:8009/v1/models refused connection; service deliberately left untouched"
+  },
+  "implementation": [
+    "manifest freezes actor, notebook, context, selected note revisions, and selected authorized source versions before T15 retrieval",
+    "T15 lexical/vector retrieval accepts explicit pinned historical source versions only for frozen grounding scopes",
+    "completion contract permits only span text plus opaque evidence IDs; labels, URLs, and locators are resolved by PostgreSQL",
+    "citation validator verifies existence, manifest membership, current membership/restriction authorization, locator coverage, and span/evidence association",
+    "citation jump endpoint returns explicit unavailable (purged) without a dead link"
+  ]
+}
