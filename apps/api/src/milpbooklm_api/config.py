@@ -30,6 +30,13 @@ class ResponseLength(StrEnum):
     LONGER = "longer"
 
 
+class ChatProvider(StrEnum):
+    """Supported installation-level ordinary-chat providers."""
+
+    LLAMA_CPP = "llama_cpp"
+    FAKE = "fake"
+
+
 class InstallationConfig(BaseModel):
     """
     Installation scope: deployment-wide values, loaded from the environment at startup.
@@ -51,6 +58,7 @@ class InstallationConfig(BaseModel):
     prerequisites_file: Path = Path("/run/milpbooklm/prerequisites.json")
     enabled_capability_flags: tuple[str, ...] = ()
     configured_provider_capabilities: tuple[str, ...] = ()
+    chat_provider: ChatProvider = ChatProvider.LLAMA_CPP
     # IDX-01: optional local embedding endpoint; when unset, vector retrieval is
     # unavailable (the API answers an explicit problem, never a silent failure).
     embedding_base_url: str | None = None

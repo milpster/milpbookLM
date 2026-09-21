@@ -21,6 +21,7 @@ from milpbooklm_application.ports import (
     Clock,
     NotebookCustodyStore,
     NotebookReader,
+    NotebookStore,
     SessionTokenStore,
     UserRepository,
 )
@@ -47,6 +48,8 @@ class ApiDeps:
     clock: Clock
     login_limiter: SlidingWindowLimiter
     register_limiter: SlidingWindowLimiter
+    # UI-01: notebook creation (None = the create endpoint answers 503).
+    notebook_store: NotebookStore | None = None
     jobs: JobPorts | None = None
     # IDX-01: retrieval (None = search endpoint answers 503) + the build config
     # used to enqueue index jobs on activation (None = indexing disabled).

@@ -237,3 +237,11 @@ class NotebookReader(Protocol):
     ) -> NotebookView | None:
         """One notebook + the user's role (None = no membership); the engine decides."""
         ...
+
+
+class NotebookStore(Protocol):
+    """Membership-scoped notebook creation (the ch05 owner-membership invariant)."""
+
+    def create(self, *, title: str, actor_id: uuid.UUID) -> NotebookView:
+        """Create a private notebook with the actor as sole owner; return its view."""
+        ...

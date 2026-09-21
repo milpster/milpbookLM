@@ -30,6 +30,9 @@ class AuditAction(StrEnum):
     CREDENTIAL_STORED = "credential.stored"
     CREDENTIAL_ROTATED = "credential.rotated"
 
+    # Notebook lifecycle (implemented: UI-01 creation route).
+    NOTEBOOK_CREATED = "notebook.created"
+
     # Seams for later features (named, not yet emitted by any code path):
     # membership/shared-link changes, purge, export, and consequential tool actions.
     MEMBERSHIP_CHANGED = "membership.changed"

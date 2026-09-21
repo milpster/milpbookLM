@@ -12,12 +12,15 @@ import uuid
 
 from fastapi import APIRouter, Depends
 from fastapi.responses import JSONResponse
+from milpbooklm_application.audit_actions import AuditAction
 from milpbooklm_application.policy_engine import NotebookAccess
 from milpbooklm_domain.policy import PolicyAction
+from pydantic import BaseModel, ConfigDict, Field
 from starlette import status
 
 from .deps import ApiDeps, PrincipalDependency
 from .security import Principal
+from .source_http import problem
 
 
 def _not_found() -> JSONResponse:
@@ -44,8 +47,16 @@ def _view_payload(
     }
 
 
-def build_notebook_router(deps: ApiDeps, principal: PrincipalDependency) -> APIRouter:
-    """Build the /api/v1/notebooks router over the wired dependencies."""
+class CreateNotebookRequest(BaseModel):
+    """One notebook creation command (title only; sharing is a later COL-01 surface)."""
+
+    model_config = ConfigDict(frozen=True)
+
+    title: str = Field(min_length=1, max_length=300)
+
+
+def _build_read_router(deps: ApiDeps, principal: PrincipalDependency) -> APIRouter:
+    """Query-layer read surface (list + one notebook with the handler object check)."""
     router = APIRouter(prefix="/api/v1/notebooks", tags=["notebooks"])
 
     @router.get("")
@@ -82,6 +93,45 @@ def build_notebook_router(deps: ApiDeps, principal: PrincipalDependency) -> APIR
             view.membership.value if view.membership is not None else None,
         )
 
+    return router
+
+
+def _build_mutation_router(deps: ApiDeps, principal: PrincipalDependency) -> APIRouter:
+    """Write surface (create + the NOTE_MUTATE demonstration draft)."""
+    router = APIRouter(prefix="/api/v1/notebooks", tags=["notebooks"])
+
+    @router.post("", response_model=None, status_code=status.HTTP_201_CREATED)
+    async def create_notebook(
+        body: CreateNotebookRequest,
+        principal: Principal = Depends(principal),
+    ) -> JSONResponse:
+        """Create a private notebook owned by the actor (ch05 owner-membership invariant)."""
+        if deps.notebook_store is None:
+            return problem(
+                "notebook_creation_unavailable",
+                "notebook creation is not configured for this installation",
+                status.HTTP_503_SERVICE_UNAVAILABLE,
+            )
+        title = body.title.strip()
+        if not title:
+            return problem("invalid_title", "notebook title must be non-empty", 422)
+        view = deps.notebook_store.create(title=title, actor_id=principal.user.id)
+        deps.audit.record(
+            actor_id=principal.user.id,
+            action=AuditAction.NOTEBOOK_CREATED.value,
+            subject_kind="notebook",
+            subject_id=view.notebook_id,
+        )
+        return JSONResponse(
+            status_code=status.HTTP_201_CREATED,
+            content=_view_payload(
+                view.notebook_id,
+                view.title,
+                view.custody_state,
+                view.membership.value if view.membership is not None else None,
+            ),
+        )
+
     @router.post("/{notebook_id}/note-draft", response_model=None)
     async def note_draft(
         notebook_id: uuid.UUID, principal: Principal = Depends(principal)
@@ -96,4 +146,12 @@ def build_notebook_router(deps: ApiDeps, principal: PrincipalDependency) -> APIR
             return _denied(decision.reason.value)
         return {"ok": True}
 
+    return router
+
+
+def build_notebook_router(deps: ApiDeps, principal: PrincipalDependency) -> APIRouter:
+    """Build the /api/v1/notebooks router over the wired dependencies."""
+    router = APIRouter()
+    router.include_router(_build_read_router(deps, principal))
+    router.include_router(_build_mutation_router(deps, principal))
     return router

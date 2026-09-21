@@ -1,0 +1,200 @@
+import { useMutation, useQueryClient } from "@tanstack/react-query";
+import type { FormEvent, ReactNode } from "react";
+import { useState } from "react";
+import {
+  isApiError,
+  pasteSource,
+  removeSource,
+  renameSource,
+  selectSource,
+  uploadSource,
+} from "../api/client";
+import { queryKeys } from "../api/query-keys";
+import type { Source } from "../api/schemas";
+import { useJobs } from "../state/jobs";
+
+type Props = { readonly actorId: string; readonly notebookId: string };
+
+export function SourcePanel({ actorId, notebookId }: Props): ReactNode {
+  const queryClient = useQueryClient();
+  const { watch } = useJobs();
+  const key = queryKeys.sources(actorId, notebookId);
+  const sources = queryClient.getQueryData<readonly Source[]>(key) ?? [];
+  const [error, setError] = useState("");
+  const addSource = (source: Source): void => {
+    queryClient.setQueryData<readonly Source[]>(key, (current = []) => [
+      source,
+      ...current.filter((item) => item.source_id !== source.source_id),
+    ]);
+    if (source.job_id !== undefined) watch(source.job_id);
+  };
+  const paste = useMutation({
+    mutationFn: pasteSource,
+    onSuccess: addSource,
+    onError: () => setError("Paste import failed."),
+  });
+  const upload = useMutation({
+    mutationFn: ({ file }: { readonly file: File }) => uploadSource(notebookId, file),
+    onSuccess: addSource,
+    onError: () => setError("Upload failed."),
+  });
+  const lifecycle = useMutation({
+    mutationFn: ({
+      source,
+      action,
+    }: {
+      readonly source: Source;
+      readonly action: "select" | "remove";
+    }) => (action === "select" ? selectSource(source.source_id) : removeSource(source.source_id)),
+    onSuccess: addSource,
+  });
+  const rename = useMutation({
+    mutationFn: ({ source, title }: { readonly source: Source; readonly title: string }) =>
+      renameSource(source, title),
+    onMutate: ({ source, title }) => {
+      const previous = queryClient.getQueryData<readonly Source[]>(key) ?? [];
+      queryClient.setQueryData<readonly Source[]>(
+        key,
+        previous.map((item) =>
+          item.source_id === source.source_id ? { ...item, display_title: title } : item,
+        ),
+      );
+      return { previous };
+    },
+    onError: (caught, _variables, context) => {
+      if (context !== undefined) queryClient.setQueryData(key, context.previous);
+      setError(
+        isApiError(caught) && caught.response.status === 412
+          ? "Rename conflicted with a newer version. The previous title was restored."
+          : "Rename failed. The previous title was restored.",
+      );
+    },
+    onSuccess: addSource,
+  });
+  const submitPaste = (event: FormEvent<HTMLFormElement>): void => {
+    event.preventDefault();
+    setError("");
+    const data = new FormData(event.currentTarget);
+    paste.mutate({
+      notebook_id: notebookId,
+      title: String(data.get("title") ?? ""),
+      text: String(data.get("text") ?? ""),
+    });
+    event.currentTarget.reset();
+  };
+  return (
+    <div className="split-content">
+      <section className="panel-stack" aria-labelledby="add-source-title">
+        <h2 id="add-source-title">Add source</h2>
+        <form className="form-stack" onSubmit={submitPaste}>
+          <label>
+            Title
+            <input name="title" required maxLength={300} />
+          </label>
+          <label>
+            Text
+            <textarea name="text" required rows={8} />
+          </label>
+          <button className="primary" disabled={paste.isPending} type="submit">
+            {paste.isPending ? "Adding..." : "Paste text"}
+          </button>
+        </form>
+        <label className="file-field">
+          Upload source
+          <input
+            type="file"
+            onChange={(event) => {
+              const file = event.target.files?.[0];
+              if (file !== undefined) upload.mutate({ file });
+            }}
+          />
+        </label>
+        {error === "" ? null : (
+          <p className="notice error" role="alert">
+            {error}
+          </p>
+        )}
+      </section>
+      <section className="panel-stack" aria-labelledby="source-list-title">
+        <div>
+          <h2 id="source-list-title">Sources</h2>
+          <p className="muted">
+            This prototype session lists newly added sources. The current API has no source-list
+            route.
+          </p>
+        </div>
+        {sources.length === 0 ? (
+          <div className="empty-state">
+            <h3>No sources in this session</h3>
+            <p>Paste text or upload a file to begin.</p>
+          </div>
+        ) : null}
+        <div className="resource-list">
+          {sources.map((source) => (
+            <SourceRow
+              key={source.source_id}
+              source={source}
+              onRename={(title) => rename.mutate({ source, title })}
+              onLifecycle={(action) => lifecycle.mutate({ source, action })}
+            />
+          ))}
+        </div>
+      </section>
+    </div>
+  );
+}
+
+function SourceRow({
+  source,
+  onRename,
+  onLifecycle,
+}: {
+  readonly source: Source;
+  readonly onRename: (title: string) => void;
+  readonly onLifecycle: (action: "select" | "remove") => void;
+}): ReactNode {
+  const [editing, setEditing] = useState(false);
+  return (
+    <article className="resource-row">
+      <div className="row-main">
+        <h3>{source.display_title}</h3>
+        <p className="resource-meta">
+          {source.pipeline_status} | {source.availability}
+        </p>
+      </div>
+      <div className="action-cluster">
+        {editing ? (
+          <form
+            onSubmit={(event) => {
+              event.preventDefault();
+              const title = String(new FormData(event.currentTarget).get("title") ?? "");
+              onRename(title);
+              setEditing(false);
+            }}
+          >
+            <label className="sr-only" htmlFor={`rename-${source.source_id}`}>
+              New title
+            </label>
+            <input
+              id={`rename-${source.source_id}`}
+              name="title"
+              defaultValue={source.display_title}
+              required
+            />
+            <button type="submit">Save</button>
+          </form>
+        ) : (
+          <button type="button" onClick={() => setEditing(true)}>
+            Rename
+          </button>
+        )}
+        <button
+          type="button"
+          onClick={() => onLifecycle(source.availability === "active" ? "remove" : "select")}
+        >
+          {source.availability === "active" ? "Remove" : "Select"}
+        </button>
+      </div>
+    </article>
+  );
+}

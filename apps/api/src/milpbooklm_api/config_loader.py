@@ -13,7 +13,13 @@ from pathlib import Path
 
 from pydantic import SecretStr
 
-from milpbooklm_api.config import ConfigScopes, InstallationConfig, NotebookPolicy, UserPreferences
+from milpbooklm_api.config import (
+    ChatProvider,
+    ConfigScopes,
+    InstallationConfig,
+    NotebookPolicy,
+    UserPreferences,
+)
 
 ENV_PREFIX = "MILPBOOKLM_"
 FILE_SUFFIX = "_FILE"
@@ -35,6 +41,7 @@ INSTALLATION_ENV_KEYS = frozenset(
         "MILPBOOKLM_PREREQUISITES_PATH",
         "MILPBOOKLM_ENABLED_CAPABILITY_FLAGS",
         "MILPBOOKLM_CONFIGURED_PROVIDER_CAPABILITIES",
+        "MILPBOOKLM_CHAT_PROVIDER",
         # IDX-01: local embedding endpoint (all optional; unset = no vector retrieval)
         "MILPBOOKLM_EMBEDDING_BASE_URL",
         "MILPBOOKLM_EMBEDDING_MODEL",
@@ -135,6 +142,7 @@ def load_installation(env: Mapping[str, str]) -> InstallationConfig:
         configured_provider_capabilities=_parse_csv(
             resolved.get("MILPBOOKLM_CONFIGURED_PROVIDER_CAPABILITIES", "")
         ),
+        chat_provider=ChatProvider(resolved.get("MILPBOOKLM_CHAT_PROVIDER", "llama_cpp")),
         embedding_base_url=_parse_optional_str(resolved.get("MILPBOOKLM_EMBEDDING_BASE_URL", "")),
         embedding_model=_parse_optional_str(resolved.get("MILPBOOKLM_EMBEDDING_MODEL", "")),
         embedding_dimension=_parse_optional_positive_int(

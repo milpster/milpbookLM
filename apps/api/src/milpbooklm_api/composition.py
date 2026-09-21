@@ -28,6 +28,7 @@ from milpbooklm_adapters.security.argon2 import Argon2PasswordHasher
 from milpbooklm_adapters.security.clock import SystemClock
 from milpbooklm_adapters.security.custody_store import PgNotebookCustodyStore
 from milpbooklm_adapters.security.notebook_reader import PgNotebookReader
+from milpbooklm_adapters.security.notebook_store import PgNotebookStore
 from milpbooklm_adapters.security.pg_identity import PgAuditLog, PgUserRepository
 from milpbooklm_adapters.security.session_store import PgSessionTokenStore
 from milpbooklm_adapters.sources import FilesystemQuarantineStore, PgSourceCatalog
@@ -55,6 +56,7 @@ from milpbooklm_application.ports import (
     Clock,
     NotebookCustodyStore,
     NotebookReader,
+    NotebookStore,
     PasswordHasher,
     SessionTokenStore,
     UserRepository,
@@ -69,7 +71,7 @@ from starlette import status
 from .auth_routes import build_auth_router
 from .capability_registry import load_capability_registry
 from .capability_routes import build_capability_router
-from .config import InstallationConfig
+from .config import ChatProvider, InstallationConfig
 from .config_loader import load_config
 from .conversation_routes import build_conversation_router
 from .deps import ApiDeps
@@ -100,6 +102,16 @@ def build_create_notebook() -> tuple[CreateNotebook, InMemoryNotebookRepository]
     return CreateNotebook(), repository
 
 
+def _completion_provider(
+    provider: ChatProvider,
+) -> LlamaCppCompletionProvider | FakeGroundingCompletionProvider:
+    match provider:
+        case ChatProvider.LLAMA_CPP:
+            return LlamaCppCompletionProvider()
+        case ChatProvider.FAKE:
+            return FakeGroundingCompletionProvider()
+
+
 def build_app(
     *,
     users: UserRepository,
@@ -108,6 +120,7 @@ def build_app(
     custody: NotebookCustodyStore,
     audit: AuditLog,
     notebooks: NotebookReader,
+    notebook_store: NotebookStore | None = None,
     settings: SecuritySettings,
     clock: Clock,
     jobs: JobPorts | None = None,
@@ -158,6 +171,7 @@ def build_app(
         custody=custody,
         audit=audit,
         notebooks=notebooks,
+        notebook_store=notebook_store,
         engine=PolicyEngine(),
         settings=settings,
         clock=clock,
@@ -299,6 +313,7 @@ def create_app() -> FastAPI:
         custody=PgNotebookCustodyStore(engine),
         audit=audit,
         notebooks=notebooks,
+        notebook_store=PgNotebookStore(engine),
         settings=settings,
         clock=clock,
         jobs=jobs,
@@ -306,7 +321,7 @@ def create_app() -> FastAPI:
         index_config=index_config,
         grounding=grounding,
         conversations=conversations,
-        completion=LlamaCppCompletionProvider(),
+        completion=_completion_provider(installation.chat_provider),
         health=DeploymentHealth(
             engine,
             installation.blob_root,
