@@ -42,6 +42,15 @@ _SOURCE_TYPES: Final = {
     "application/vnd.openxmlformats-officedocument.presentationml.presentation": SourceType.PPTX,
     "application/epub+zip": SourceType.EPUB,
     "text/html": SourceType.WEB_URL,
+    "image/png": SourceType.IMAGE,
+    "image/jpeg": SourceType.IMAGE,
+    "image/gif": SourceType.IMAGE,
+    "image/webp": SourceType.IMAGE,
+    "image/bmp": SourceType.IMAGE,
+    "audio/x-wav": SourceType.AUDIO,
+    "audio/mpeg": SourceType.AUDIO,
+    "video/mp4": SourceType.VIDEO,
+    "video/webm": SourceType.VIDEO,
 }
 
 
@@ -104,6 +113,61 @@ class PgSourceCatalog(SourceCatalog):
                     referrer_id=version_id,
                 )
                 .on_conflict_do_nothing()
+            )
+            row = connection.execute(
+                self._select_view().where(sources.c.id == source_id)
+            ).mappings().one()
+        return self._view(row), True
+
+    def acquire_unavailable(
+        self,
+        command: AcquireSourceCommand,
+        *,
+        origin: str,
+        source_type: SourceType,
+        reason: str,
+    ) -> tuple[SourceView, bool]:
+        """Persist a blob-less source version in an explicit unavailable state."""
+        import hashlib  # noqa: PLC0415 - content identity for the URL-only version
+
+        with self._engine.begin() as connection:
+            connection.execute(
+                sa.text("SELECT pg_advisory_xact_lock(hashtextextended(:identity, 0))"),
+                {"identity": f"{command.notebook_id}:{origin}"},
+            )
+            existing = connection.execute(
+                self._select_view().where(
+                    sources.c.notebook_id == command.notebook_id,
+                    sources.c.origin == origin,
+                )
+            ).mappings().first()
+            if existing is not None:
+                return self._view(existing), False
+            source_id = uuid.uuid4()
+            version_id = uuid.uuid4()
+            connection.execute(
+                sa.insert(sources).values(
+                    id=source_id,
+                    notebook_id=command.notebook_id,
+                    type=source_type.value,
+                    origin=origin,
+                    display_title=command.display_title,
+                    availability=Availability.ACTIVE.value,
+                    created_by_user_id=command.actor_id,
+                )
+            )
+            connection.execute(
+                sa.insert(source_versions).values(
+                    id=version_id,
+                    source_id=source_id,
+                    version_number=1,
+                    original_blob_id=None,
+                    content_sha256=hashlib.sha256(origin.encode("utf-8")).hexdigest(),
+                    content_size_bytes=None,
+                    status="parse_failed",
+                    parse_error_code=reason,
+                    created_by_user_id=command.actor_id,
+                )
             )
             row = connection.execute(
                 self._select_view().where(sources.c.id == source_id)

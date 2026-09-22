@@ -31,6 +31,9 @@ dependencies = [
     "ebooklib>=0.18,<0.20",
     "lxml>=5.0,<7",
     "selectolax>=0.3,<1",
+    # REFERENCE-DEPENDENCIES parser matrix (ING-02c Images/OCR row): bounded
+    # metadata/normalization BEFORE decode; Tesseract runs as isolated CLI.
+    "pillow>=12.0,<13",
 ]
 
 [dependency-groups]

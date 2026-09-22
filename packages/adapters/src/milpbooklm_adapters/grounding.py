@@ -14,6 +14,7 @@ from milpbooklm_application.grounding import (
     GroundingError,
     GroundingRequest,
 )
+from milpbooklm_contracts.canonical_document import BBOX_COORDINATE_COUNT
 
 from milpbooklm_adapters.db.tables.collaboration import notebook_memberships
 from milpbooklm_adapters.db.tables.conversation import messages
@@ -106,7 +107,7 @@ class PgGroundingStore:
         actor_user_id: uuid.UUID,
         source_version_id: uuid.UUID,
         canonical_node_id: uuid.UUID,
-    ) -> dict[str, str | int]:
+    ) -> dict[str, str | int | tuple[float, ...]]:
         """Resolve a historical version under current authorization or report purge state."""
         with self._engine.begin() as connection:
             row = (
@@ -119,6 +120,9 @@ class PgGroundingStore:
                         canonical_locators.c.page,
                         canonical_locators.c.char_start,
                         canonical_locators.c.char_end,
+                        canonical_locators.c.time_ms_start,
+                        canonical_locators.c.time_ms_end,
+                        canonical_locators.c.bbox,
                     )
                     .join(source_versions, source_versions.c.source_id == sources.c.id)
                     .join(
@@ -145,7 +149,7 @@ class PgGroundingStore:
                 return {"state": "unavailable (purged)"}
             if not self._can_read(connection, actor_user_id, source_version_id, row["notebook_id"]):
                 raise GroundingError("citation is no longer authorized")
-        payload: dict[str, str | int] = {
+        payload: dict[str, str | int | tuple[float, ...]] = {
             "state": "available",
             "source_version_id": str(source_version_id),
             "node_id": str(canonical_node_id),
@@ -155,10 +159,13 @@ class PgGroundingStore:
         media_type = contract.get("mime_type")
         if isinstance(media_type, str):
             payload["media_type"] = media_type
-        for field in ("page", "char_start", "char_end"):
+        for field in ("page", "char_start", "char_end", "time_ms_start", "time_ms_end"):
             value = row[field]
             if isinstance(value, int):
                 payload[field] = value
+        bbox = row["bbox"]
+        if isinstance(bbox, list) and len(bbox) == BBOX_COORDINATE_COUNT:
+            payload["bbox"] = tuple(value for value in bbox if isinstance(value, (int, float)))
         return payload
 
     def _selected_versions(

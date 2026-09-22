@@ -41,6 +41,29 @@ def test_html_identified_by_document_structure() -> None:
     assert sniff_media_type(payload) is IdentifiedMedia.HTML
 
 
+def test_image_families_identified_by_magic() -> None:
+    assert sniff_media_type(b"\x89PNG\r\n\x1a\n" + b"\x00" * 32) is IdentifiedMedia.IMAGE_PNG
+    assert sniff_media_type(b"\xff\xd8\xff\xe0" + b"\x00" * 32) is IdentifiedMedia.IMAGE_JPEG
+    assert sniff_media_type(b"GIF89a" + b"\x00" * 32) is IdentifiedMedia.IMAGE_GIF
+    assert sniff_media_type(b"GIF87a" + b"\x00" * 32) is IdentifiedMedia.IMAGE_GIF
+    assert sniff_media_type(b"BM" + b"\x00" * 32) is IdentifiedMedia.IMAGE_BMP
+    assert (
+        sniff_media_type(b"RIFF\x00\x00\x00\x00WEBP" + b"\x00" * 24)
+        is IdentifiedMedia.IMAGE_WEBP
+    )
+
+
+def test_audio_video_families_identified_by_magic() -> None:
+    assert sniff_media_type(b"RIFF\x00\x00\x00\x00WAVE" + b"\x00" * 24) is (
+        IdentifiedMedia.AUDIO_WAV
+    )
+    assert sniff_media_type(b"ID3\x03\x00\x00\x00" + b"\x00" * 24) is IdentifiedMedia.AUDIO_MP3
+    assert sniff_media_type(b"\x00\x00\x00\x18ftypisom" + b"\x00" * 24) is (
+        IdentifiedMedia.VIDEO_MP4
+    )
+    assert sniff_media_type(b"\x1a\x45\xdf\xa3" + b"\x00" * 32) is IdentifiedMedia.VIDEO_WEBM
+
+
 def test_boms_are_handled_and_binary_rejected() -> None:
     assert sniff_media_type("name,city\r\nAnna,Berlin\r\n".encode("utf-16")) is (
         IdentifiedMedia.CSV
@@ -72,6 +95,9 @@ def test_committed_golden_fixtures_sniff_to_their_families() -> None:
         "golden-pptx.pptx": IdentifiedMedia.PPTX,
         "golden-html.html": IdentifiedMedia.HTML,
         "golden-epub.epub": IdentifiedMedia.EPUB,
+        "golden-image.png": IdentifiedMedia.IMAGE_PNG,
+        "golden-audio.wav": IdentifiedMedia.AUDIO_WAV,
+        "golden-video.mp4": IdentifiedMedia.VIDEO_MP4,
     }
     for name, expected in expectations.items():
         assert sniff_media_type((FIXTURES / name).read_bytes()) is expected, name

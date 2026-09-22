@@ -1,15 +1,17 @@
-"""VER-INGEST-GOLDEN-001 (ING-02a): versioned canonical/locator goldens + hostile corpus.
+"""VER-INGEST-GOLDEN-001 (ING-02a/02c): versioned canonical/locator goldens + hostile corpus.
 
-Oracle: every ING-02a family parses through the REAL isolated child into a
-canonical document that byte-equals its committed golden (fixed source-version
-UUID), and the hostile office corpus (macros, external references, archive
-bombs, corruption) is rejected with explicit failure states — never a
-success-empty document, never macro/external-reference execution.
+Oracle: every family parses through the REAL isolated child into a canonical
+document that byte-equals its committed golden (fixed source-version UUID),
+and the hostile corpus (macros, external references, archive bombs,
+corruption, image bombs/oversizes, over-duration audio) is rejected with
+explicit failure states — never a success-empty document, never a fabricated
+transcript.
 """
 
 from __future__ import annotations
 
 import json
+import os
 import uuid
 from pathlib import Path
 
@@ -25,6 +27,13 @@ from tests._evidence import write_evidence
 FIXTURES = Path(__file__).resolve().parent
 GOLDENS = FIXTURES / "goldens"
 SOURCE_VERSION_ID = uuid.UUID("00000000-0000-5000-8000-000000000211")
+GOLDEN_MEDIA_DURATION_MS = 500
+
+# OCR traineddata (D5: deu+eng) lives in the task scratch area; the isolated
+# child only inherits TESSDATA_PREFIX from this environment.
+os.environ.setdefault(
+    "TESSDATA_PREFIX", str(FIXTURES.parents[2] / "scratch" / "t23-ocr" / "tessdata")
+)
 
 XLSX_TYPE = "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet"
 DOCX_TYPE = "application/vnd.openxmlformats-officedocument.wordprocessingml.document"
@@ -45,6 +54,9 @@ GOLDENS_UNDER_TEST = {
     "golden-pptx.pptx": PPTX_TYPE,
     "golden-html.html": HTML_TYPE,
     "golden-epub.epub": EPUB_TYPE,
+    "golden-image.png": "image/png",
+    "golden-audio.wav": "audio/x-wav",
+    "golden-video.mp4": "video/mp4",
 }
 
 HOSTILE_CORPUS = {
@@ -56,6 +68,10 @@ HOSTILE_CORPUS = {
     "hostile-corrupt.epub": (EPUB_TYPE, "corrupt"),
     "hostile-entity.epub": (EPUB_TYPE, "policy_blocked"),
     "hostile-external.epub": (EPUB_TYPE, "policy_blocked"),
+    "hostile-bomb-image.png": ("image/png", "too_large"),
+    "hostile-oversized-image.png": ("image/png", "too_large"),
+    "hostile-corrupt-image.png": ("image/png", "corrupt"),
+    "hostile-overduration-audio.wav": ("audio/x-wav", "too_large"),
 }
 
 
@@ -120,7 +136,7 @@ def test_office_locators_carry_sheet_slide_row_col_guarantees() -> None:
     assert cell.locator.path == ("document", "sheet", "Daten", "cell", "B2")
 
 
-def test_hostile_office_corpus_rejected_with_explicit_states() -> None:
+def test_hostile_corpus_rejected_with_explicit_states() -> None:
     outcomes: dict[str, str] = {}
     for fixture_name, (media_type, expected) in sorted(HOSTILE_CORPUS.items()):
         result = IsolatedParser().parse(
@@ -131,6 +147,66 @@ def test_hostile_office_corpus_rejected_with_explicit_states() -> None:
         assert result.detail, f"{fixture_name}: failure carries no detail"
         outcomes[fixture_name] = result.state
     assert set(outcomes.values()) <= {"policy_blocked", "too_large", "corrupt"}
+
+
+def test_ocr_golden_carries_german_english_text_with_region_bboxes() -> None:
+    result = IsolatedParser().parse(
+        SOURCE_VERSION_ID, "image/png", (FIXTURES / "golden-image.png").read_bytes()
+    )
+    assert isinstance(result, ParseSuccess)
+    ocr_lines = [
+        node for node in result.document.nodes if node.kind.value == "paragraph"
+    ]
+    texts = [node.text for node in ocr_lines if node.text is not None]
+    assert any("Vierteljahresbericht" in text for text in texts)
+    assert any("Umsatz" in text for text in texts)
+    assert any("Quarterly report" in text for text in texts)
+    assert all(node.authority.value == "ocr" for node in ocr_lines)
+    assert all(node.locator.bbox is not None for node in ocr_lines)
+    first_bbox = ocr_lines[0].locator.bbox
+    assert first_bbox is not None
+    left, top, right, bottom = first_bbox
+    assert right > left
+    assert bottom > top
+
+
+def test_media_goldens_carry_ms_time_range_locators() -> None:
+    for fixture_name, (media_type, streams) in {
+        "golden-audio.wav": ("audio/x-wav", 1),
+        "golden-video.mp4": ("video/mp4", 2),
+    }.items():
+        result = IsolatedParser().parse(
+            SOURCE_VERSION_ID, media_type, (FIXTURES / fixture_name).read_bytes()
+        )
+        assert isinstance(result, ParseSuccess), fixture_name
+        attachment = next(
+            node for node in result.document.nodes if node.kind.value == "attachment"
+        )
+        locator = attachment.locator
+        assert locator.extra_fields["time_ms_start"] == 0
+        assert locator.extra_fields["time_ms_end"] == GOLDEN_MEDIA_DURATION_MS
+        assert result.document.metadata["duration_ms"] == GOLDEN_MEDIA_DURATION_MS
+        stream_entries = locator.extra_fields["streams"]
+        assert isinstance(stream_entries, list)
+        assert len(stream_entries) == streams
+
+
+def test_media_without_stt_reports_honest_unavailable_transcript() -> None:
+    for fixture_name, media_type in {
+        "golden-audio.wav": "audio/x-wav",
+        "golden-video.mp4": "video/mp4",
+    }.items():
+        result = IsolatedParser().parse(
+            SOURCE_VERSION_ID, media_type, (FIXTURES / fixture_name).read_bytes()
+        )
+        assert isinstance(result, ParseSuccess), fixture_name
+        assert result.document.metadata["transcript_status"] == "unavailable"
+        transcript_nodes = [
+            node
+            for node in result.document.nodes
+            if node.kind.value in ("transcript_segment", "speaker_turn")
+        ]
+        assert transcript_nodes == []
 
 
 def test_web_snapshot_locators_pin_url_capture_dom_and_heading_paths() -> None:
@@ -175,7 +251,9 @@ def test_evidence_record_written() -> None:
             "locator_guarantees": (
                 "markdown: char spans over NFC/LF text; csv: row/col structural; "
                 "xlsx: sheet name + A1 cell refs + row/col; docx: block/row/col; "
-                "pptx: slide/shape/paragraph with separate notes stream"
+                "pptx: slide/shape/paragraph with separate notes stream; "
+                "image: per-line pixel bbox with OCR authority; "
+                "audio/video: ms-precision time_range extent"
             ),
             "formula_policy": (
                 "cached values as text, formulas as distinct extra field; never evaluated"

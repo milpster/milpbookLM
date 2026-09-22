@@ -37,6 +37,16 @@ class WebUrlRequest(BaseModel):
     url: str = Field(min_length=1, max_length=2048)
 
 
+class PublicVideoRequest(BaseModel):
+    """Public-video URL import boundary (transcript-backed sources only)."""
+
+    model_config = ConfigDict(frozen=True)
+
+    notebook_id: uuid.UUID
+    title: str = Field(min_length=1, max_length=300)
+    url: str = Field(min_length=1, max_length=2048)
+
+
 class RenameSourceRequest(BaseModel):
     """Metadata-only source rename boundary."""
 

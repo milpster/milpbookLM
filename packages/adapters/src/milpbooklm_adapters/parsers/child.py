@@ -88,10 +88,32 @@ def main() -> int:
     )
 
 
-def _parse(request: _ParseRequest) -> dict[str, JsonValue]:  # noqa: PLR0911
+def _parse(request: _ParseRequest) -> dict[str, JsonValue]:
     """Dispatch one payload to its parser and map typed failures to states."""
+    parse = _load_parsers().get(request.media_type)
+    if parse is None and request.media_type != "text/html":
+        return {"state": "unsupported", "detail": "unsupported media type"}
+    try:
+        document = _parse_document(request, parse)
+    except Exception as exc:
+        return _map_failure(exc)
+    return {"state": "succeeded", "document": document.to_json()}
+
+
+def _failure_table() -> tuple[
+    tuple[tuple[type[Exception], ...], str, str | None], ...
+]:
+    """Ordered (exception-types, state, detail) map; None detail echoes the message."""
     from milpbooklm_adapters.parsers.csv_parser import CsvTooLargeError  # noqa: PLC0415
     from milpbooklm_adapters.parsers.html import HtmlCorruptError  # noqa: PLC0415
+    from milpbooklm_adapters.parsers.media_limits import (  # noqa: PLC0415
+        ImageCorruptError,
+        ImageTooLargeError,
+        MediaCorruptError,
+        MediaTooLargeError,
+        MediaUnsupportedError,
+        OcrEmptyError,
+    )
     from milpbooklm_adapters.parsers.office import (  # noqa: PLC0415
         OfficeCorruptError,
         OfficePolicyError,
@@ -102,28 +124,38 @@ def _parse(request: _ParseRequest) -> dict[str, JsonValue]:  # noqa: PLR0911
         PdfEncryptedError,
     )
 
-    parse = _load_parsers().get(request.media_type)
-    if parse is None and request.media_type != "text/html":
-        return {"state": "unsupported", "detail": "unsupported media type"}
-    try:
-        document = _parse_document(request, parse)
-    except UnicodeDecodeError:
-        return {"state": "corrupt", "detail": "text is not decodable UTF-8/UTF-16"}
-    except CsvError:
-        return {"state": "corrupt", "detail": "CSV structure cannot be parsed"}
-    except PdfEncryptedError:
-        return {"state": "encrypted", "detail": "PDF is encrypted"}
-    except PdfCorruptError:
-        return {"state": "corrupt", "detail": "PDF is malformed"}
-    except OfficePolicyError as exc:
-        return {"state": "policy_blocked", "detail": str(exc)}
-    except (OfficeTooLargeError, CsvTooLargeError) as exc:
-        return {"state": "too_large", "detail": str(exc)}
-    except (OfficeCorruptError, HtmlCorruptError):
-        return {"state": "corrupt", "detail": "document is malformed"}
-    except Exception as exc:
-        return {"state": "internal", "detail": type(exc).__name__}
-    return {"state": "succeeded", "document": document.to_json()}
+    return (
+        ((PdfEncryptedError,), "encrypted", "PDF is encrypted"),
+        (
+            (
+                PdfCorruptError,
+                OfficeCorruptError,
+                HtmlCorruptError,
+                ImageCorruptError,
+                MediaCorruptError,
+            ),
+            "corrupt",
+            "document is malformed",
+        ),
+        ((OfficePolicyError,), "policy_blocked", None),
+        (
+            (OfficeTooLargeError, CsvTooLargeError, ImageTooLargeError, MediaTooLargeError),
+            "too_large",
+            None,
+        ),
+        ((MediaUnsupportedError,), "unsupported", None),
+        ((OcrEmptyError,), "no_content", "OCR produced no text"),
+        ((CsvError,), "corrupt", "CSV structure cannot be parsed"),
+        ((UnicodeDecodeError,), "corrupt", "text is not decodable UTF-8/UTF-16"),
+    )
+
+
+def _map_failure(exc: Exception) -> dict[str, JsonValue]:
+    """Map a typed parser failure to a stable source-version state."""
+    for types, state, detail in _failure_table():
+        if isinstance(exc, types):
+            return {"state": state, "detail": str(exc) if detail is None else detail}
+    return {"state": "internal", "detail": type(exc).__name__}
 
 
 def _parse_document(
@@ -149,10 +181,14 @@ def _parse_document(
 
 def _load_parsers() -> dict[str, Callable[[uuid.UUID, bytes], CanonicalDocument]]:
     """Import every parser behind the installed network guard and index them."""
+    from functools import partial  # noqa: PLC0415
+
     from milpbooklm_adapters.parsers.csv_parser import parse_csv  # noqa: PLC0415
     from milpbooklm_adapters.parsers.docx_parser import parse_docx  # noqa: PLC0415
     from milpbooklm_adapters.parsers.epub import parse_epub  # noqa: PLC0415
+    from milpbooklm_adapters.parsers.image import parse_image  # noqa: PLC0415
     from milpbooklm_adapters.parsers.markdown import parse_markdown  # noqa: PLC0415
+    from milpbooklm_adapters.parsers.media import parse_media  # noqa: PLC0415
     from milpbooklm_adapters.parsers.pdf import parse_pdf  # noqa: PLC0415
     from milpbooklm_adapters.parsers.pptx_parser import parse_pptx  # noqa: PLC0415
     from milpbooklm_adapters.parsers.text import parse_text  # noqa: PLC0415
@@ -167,6 +203,15 @@ def _load_parsers() -> dict[str, Callable[[uuid.UUID, bytes], CanonicalDocument]
         "application/vnd.openxmlformats-officedocument.wordprocessingml.document": parse_docx,
         "application/vnd.openxmlformats-officedocument.presentationml.presentation": parse_pptx,
         "application/epub+zip": parse_epub,
+        "image/png": parse_image,
+        "image/jpeg": parse_image,
+        "image/gif": parse_image,
+        "image/webp": parse_image,
+        "image/bmp": parse_image,
+        "audio/x-wav": partial(parse_media, media_type="audio/x-wav"),
+        "audio/mpeg": partial(parse_media, media_type="audio/mpeg"),
+        "video/mp4": partial(parse_media, media_type="video/mp4"),
+        "video/webm": partial(parse_media, media_type="video/webm"),
     }
 
 

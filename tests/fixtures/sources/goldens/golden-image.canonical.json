@@ -1,0 +1,115 @@
+{
+ "schema_version": "1",
+ "document_id": "e908c1ef-0ece-5918-b519-d72e10167063",
+ "source_version_id": "00000000-0000-5000-8000-000000000211",
+ "mime_type": "image/png",
+ "parser": {
+  "identity": "milpbooklm.image-ocr",
+  "version": "1",
+  "profile": "tesseract-ocr-deu-eng-v1",
+  "tool_versions": [
+   "tesseract=5.5.0",
+   "pillow=12.3.0"
+  ]
+ },
+ "languages": [
+  "de",
+  "en"
+ ],
+ "metadata": {
+  "ocr_languages": "deu+eng",
+  "ocr_lines": 3
+ },
+ "root_node_ids": [
+  "fc48dffc-1d1c-53b8-9916-70744c6a98b9"
+ ],
+ "nodes": [
+  {
+   "node_id": "fc48dffc-1d1c-53b8-9916-70744c6a98b9",
+   "kind": "document",
+   "structural_identity": "document",
+   "parent_id": null,
+   "child_order": 0,
+   "text": null,
+   "locator": {
+    "width_px": 900,
+    "height_px": 220,
+    "format": "PNG",
+    "path": [
+     "document"
+    ]
+   },
+   "authority": "source_authored",
+   "language": null
+  },
+  {
+   "node_id": "18c54e45-dede-5a23-a368-962b66826275",
+   "kind": "paragraph",
+   "structural_identity": "ocr-line:1",
+   "parent_id": "fc48dffc-1d1c-53b8-9916-70744c6a98b9",
+   "child_order": 1,
+   "text": "Vierteljahresbericht 2026",
+   "locator": {
+    "path": [
+     "document",
+     "ocr-line",
+     "1"
+    ],
+    "bbox": [
+     30.0,
+     25.0,
+     460.0,
+     54.0
+    ]
+   },
+   "authority": "ocr",
+   "language": null
+  },
+  {
+   "node_id": "305465bb-9bf9-5bcc-809c-a765efb6b5bc",
+   "kind": "paragraph",
+   "structural_identity": "ocr-line:2",
+   "parent_id": "fc48dffc-1d1c-53b8-9916-70744c6a98b9",
+   "child_order": 2,
+   "text": "Der Umsatz stieg im dritten Quartal.",
+   "locator": {
+    "path": [
+     "document",
+     "ocr-line",
+     "2"
+    ],
+    "bbox": [
+     33.0,
+     85.0,
+     645.0,
+     114.0
+    ]
+   },
+   "authority": "ocr",
+   "language": null
+  },
+  {
+   "node_id": "57afb01b-aa39-52de-b6b9-fa1ad84421db",
+   "kind": "paragraph",
+   "structural_identity": "ocr-line:3",
+   "parent_id": "fc48dffc-1d1c-53b8-9916-70744c6a98b9",
+   "child_order": 3,
+   "text": "Quarterly report results",
+   "locator": {
+    "path": [
+     "document",
+     "ocr-line",
+     "3"
+    ],
+    "bbox": [
+     32.0,
+     155.0,
+     433.0,
+     184.0
+    ]
+   },
+   "authority": "ocr",
+   "language": null
+  }
+ ]
+}

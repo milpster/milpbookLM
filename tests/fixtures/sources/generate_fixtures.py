@@ -58,6 +58,11 @@ def main() -> int:
         _regenerate_t22_goldens()
         print("task 22 fixtures + goldens written")
         return 0
+    if sys.argv[1:] == ["t23"]:
+        _write_t23_fixtures()
+        _regenerate_t23_goldens()
+        print("task 23 fixtures + goldens written")
+        return 0
     _write("golden-markdown.md", _markdown_fixture())
     _write("golden-csv.csv", _csv_fixture())
     _write("golden-csv-utf16le.csv", _utf16_csv_fixture())
@@ -293,6 +298,102 @@ def _forge_member_size(data: bytes, member: str, size: int) -> bytes:
             struct.pack_into("<I", raw, offset + 24, size)
             return bytes(raw)
         offset += 46 + name_length + extra_length + comment_length
+
+
+def _write_t23_fixtures() -> None:
+    _write("golden-image.png", _ocr_image_fixture())
+    _write("golden-audio.wav", _ffmpeg_fixture("audio", "golden-audio.wav"))
+    _write("golden-video.mp4", _ffmpeg_fixture("video", "golden-video.mp4"))
+    _write("hostile-bomb-image.png", _forge_png_pixels(_ocr_image_fixture(), 10_000, 10_000))
+    _write("hostile-oversized-image.png", _forge_png_pixels(_ocr_image_fixture(), 70_000, 100))
+    _write("hostile-corrupt-image.png", b"\x89PNG\r\n\x1a\n" + b"\xde\xad\xbe\xef" * 64)
+    _write("hostile-overduration-audio.wav", _overduration_wav_fixture())
+
+
+def _ocr_image_fixture() -> bytes:
+    """Pillow-drawn image with known German and English text (deterministic)."""
+    from PIL import Image, ImageDraw, ImageFont
+
+    font = ImageFont.truetype(
+        "/usr/share/fonts/truetype/dejavu/DejaVuSans-Bold.ttf", 30
+    )
+    image = Image.new("RGB", (900, 220), "white")
+    draw = ImageDraw.Draw(image)
+    draw.text((30, 20), "Vierteljahresbericht 2026", fill="black", font=font)
+    draw.text((30, 80), "Der Umsatz stieg im dritten Quartal.", fill="black", font=font)
+    draw.text((30, 150), "Quarterly report results", fill="black", font=font)
+    buffer = io.BytesIO()
+    image.save(buffer, format="PNG")
+    return buffer.getvalue()
+
+
+def _ffmpeg_fixture(kind: str, name: str) -> bytes:
+    """Generate a deterministic tiny lavfi media fixture through the ffmpeg CLI."""
+    import subprocess
+
+    if kind == "audio":
+        argv = [
+            "ffmpeg", "-hide_banner", "-loglevel", "error", "-y",
+            "-f", "lavfi", "-i", "sine=frequency=440:duration=0.5:sample_rate=16000",
+            "-c:a", "pcm_s16le", "-f", "wav", str(FIXTURES / name),
+        ]
+    else:
+        argv = [
+            "ffmpeg", "-hide_banner", "-loglevel", "error", "-y",
+            "-f", "lavfi", "-i", "testsrc=duration=0.5:size=64x64:rate=10",
+            "-f", "lavfi", "-i", "sine=frequency=440:duration=0.5:sample_rate=16000",
+            "-c:v", "libx264", "-preset", "veryfast", "-c:a", "aac",
+            "-f", "mp4", str(FIXTURES / name),
+        ]
+    process = subprocess.run(argv, capture_output=True, timeout=60, check=False)
+    if process.returncode != 0:
+        raise SystemExit(f"ffmpeg fixture failed: {process.stderr.decode(errors='replace')[:200]}")
+    return (FIXTURES / name).read_bytes()
+
+
+def _forge_png_pixels(data: bytes, width: int, height: int) -> bytes:
+    """Overwrite the PNG IHDR dimension fields (declared-size bomb, no decode)."""
+    import zlib
+
+    raw = bytearray(data)
+    if raw[12:16] != b"IHDR":
+        raise SystemExit("fixture generation failed: IHDR chunk not found")
+    struct.pack_into(">I", raw, 16, width)
+    struct.pack_into(">I", raw, 20, height)
+    struct.pack_into(">I", raw, 29, zlib.crc32(bytes(raw[12:29])) & 0xFFFFFFFF)
+    return bytes(raw)
+
+
+def _overduration_wav_fixture() -> bytes:
+    """A genuinely 10 hour WAV (over the 6h cap) that stays tiny via an 8 Hz rate."""
+    import subprocess
+
+    target = FIXTURES / "hostile-overduration-audio.wav"
+    argv = [
+        "ffmpeg", "-hide_banner", "-loglevel", "error", "-y",
+        "-f", "lavfi", "-i", "sine=frequency=1:duration=36000:sample_rate=8",
+        "-c:a", "pcm_s16le", "-f", "wav", str(target),
+    ]
+    process = subprocess.run(argv, capture_output=True, timeout=120, check=False)
+    if process.returncode != 0:
+        raise SystemExit(f"ffmpeg fixture failed: {process.stderr.decode(errors='replace')[:200]}")
+    return target.read_bytes()
+
+
+def _regenerate_t23_goldens() -> None:
+    parser = IsolatedParser()
+    inputs = {
+        "golden-image.png": "image/png",
+        "golden-audio.wav": "audio/x-wav",
+        "golden-video.mp4": "video/mp4",
+    }
+    GOLDENS.mkdir(parents=True, exist_ok=True)
+    for name, media_type in inputs.items():
+        result = parser.parse(SOURCE_VERSION_ID, media_type, (FIXTURES / name).read_bytes())
+        if not isinstance(result, ParseSuccess):
+            raise SystemExit(f"golden regeneration failed for {name}: {result}")
+        golden_path = GOLDENS / f"{Path(name).stem}.canonical.json"
+        golden_path.write_text(json.dumps(result.document.to_json(), indent=1) + "\n")
 
 
 def _regenerate_goldens() -> None:

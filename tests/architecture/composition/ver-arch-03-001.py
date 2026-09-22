@@ -57,6 +57,7 @@ ALLOWED_ADAPTER_IMPORTS = {
     "ebooklib",
     "selectolax",
     "lxml",
+    "PIL",
 } | set(sys.stdlib_module_names)
 
 

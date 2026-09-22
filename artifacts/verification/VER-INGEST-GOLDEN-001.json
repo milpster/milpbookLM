@@ -4,23 +4,36 @@
   "task": "FND-01",
   "test_path": "tests/fixtures/sources/ver-ingest-golden-001.py",
   "result": "passed",
-  "timestamp": "2026-09-21T21:09:29.174489+00:00",
+  "timestamp": "2026-09-22T08:05:36.517237+00:00",
   "checks": {
     "golden_families": [
+      "golden-audio.wav",
       "golden-csv-utf16le.csv",
       "golden-csv.csv",
       "golden-docx.docx",
+      "golden-epub.epub",
+      "golden-html.html",
+      "golden-image.png",
       "golden-markdown.md",
       "golden-pptx.pptx",
+      "golden-video.mp4",
       "golden-xlsx.xlsx"
     ],
-    "locator_guarantees": "markdown: char spans over NFC/LF text; csv: row/col structural; xlsx: sheet name + A1 cell refs + row/col; docx: block/row/col; pptx: slide/shape/paragraph with separate notes stream",
+    "locator_guarantees": "markdown: char spans over NFC/LF text; csv: row/col structural; xlsx: sheet name + A1 cell refs + row/col; docx: block/row/col; pptx: slide/shape/paragraph with separate notes stream; image: per-line pixel bbox with OCR authority; audio/video: ms-precision time_range extent",
     "formula_policy": "cached values as text, formulas as distinct extra field; never evaluated",
     "hostile_corpus": {
+      "hostile-bomb-image.png": "too_large",
+      "hostile-bomb.epub": "too_large",
       "hostile-bomb.xlsx": "too_large",
+      "hostile-corrupt-image.png": "corrupt",
+      "hostile-corrupt.epub": "corrupt",
       "hostile-corrupt.xlsx": "corrupt",
+      "hostile-entity.epub": "policy_blocked",
+      "hostile-external.epub": "policy_blocked",
       "hostile-extref.docx": "policy_blocked",
-      "hostile-macro.xlsx": "policy_blocked"
+      "hostile-macro.xlsx": "policy_blocked",
+      "hostile-overduration-audio.wav": "too_large",
+      "hostile-oversized-image.png": "too_large"
     },
     "macro_execution": "none - vbaProject.bin and external links are rejected before any parser library loads"
   },

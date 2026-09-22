@@ -1,0 +1,69 @@
+# T23 manual QA log - ING-02c images+OCR / A-V probe / public-video (STT deferred per D16)
+# 2026-09-22, Sisyphus Worker, live stack: PG :29521 / API :8000 / bge :8010 / web :5173 (vite :5173 + llama :8009 user-managed, untouched)
+#
+# Pre-drive: stale API (uvicorn pid 2545174, started 02:36:19) and stale worker (pids 2545065/2545175, worker-id t22-w1,
+# started 02:36:19) both predate HEAD a01d202 (03:14:31) AND the task-23 working tree -> killed by explicit PID,
+# relaunched via scratch/t20-gate/start-api.sh and start-worker.sh. Worker additionally launched with
+# TESSDATA_PREFIX=scratch/t23-ocr/tessdata (design requirement; system tessdata lacks deu) and verified in /proc/<pid>/environ.
+# Recipe: Origin http://localhost:5173 + mb_session cookie + x-csrf-token from login body; uploads POST /api/v1/sources/import?notebook_id=...;
+# poll GET /api/v1/jobs/{id} to terminal state (T21 learnings).
+#
+# RESULTS (all green):
+# [1] image  : POST /sources/import golden-image.png -> 201 source_type=image; parse job succeeded (canonical persisted);
+#              activate 200; search 'Vierteljahresbericht' -> rank-1 = image source, OCR text verbatim (DE+EN lines).
+#              DB proof: 3 paragraph locators kind=bbox (e.g. [30,25,460,54]) authority_class=ocr; source_version status=active.
+# [2] audio  : POST /sources/import golden-audio.wav -> 201 source_type=audio; parse job succeeded;
+#              source_version status=parsed (probed, NOT activated); attachment node locator kind=time_range 0..500ms;
+#              doc metadata: duration_ms=500 container=wav track_count=1 transcript_status=unavailable
+#              transcript_reason=stt_not_deployed_on_host (honest no-transcript state; STT deferred).
+# [3] video  : public-video POST /sources/public-video -> 201 source_type=youtube pipeline_status=parse_failed
+#              transcript_state=transcript_unavailable transcript_reason=no_compliant_adapter_without_credentials
+#              (explicit unavailable state; no transcript fabrication, no download).
+#
+# Full drive trace (curl responses + job views):
+[09:58:55] === T23 QA drive start (API restarted fresh: limiter budget reset) ===
+[09:58:55] register: HTTP 201 {"user_id":"01a0c820-01be-4138-b400-7c4bd1f5e8a3"}
+[09:58:56] login: HTTP 200 {"user_id":"01a0c820-01be-4138-b400-7c4bd1f5e8a3","csrf_token":"MPu46mBI37kNKSnD88QZP1nGTiBPomO7TCqYmToC8BY="}
+[09:58:56] notebook: HTTP 201 {"notebook_id":"01a0c820-0253-44e3-bafe-9121e6bfa6ee","title":"T23 QA media","custody_state":"none","membership":"owner"}
+[09:58:56] image import: HTTP 201 {"source_id":"68749fd2-6618-4add-83db-0983401a54b2","source_version_id":"9f762bfb-ce26-4029-993d-882584c54369","notebook_id":"01a0c820-0253-44e3-bafe-9121e6bfa6ee","source_type":"image","display_title":"Uploaded source","availability":"active","content_sha256":"973ed69190e97bd55c9e05c56579567c5df9e6dbaaecc0c7d973c2cbe7cc982e","content_size_bytes":15723,"status":"quarantined_identified","pipeline_status":"activating","etag":"0","job_id":"01a0c820-02e0-4cc5-bdef-0ab616fb1187"}
+[09:58:57] image parse job: {"job_id":"01a0c820-02e0-4cc5-bdef-0ab616fb1187","kind":"ingestion.parse","capacity_class":"ingestion_indexing","state":"succeeded","waiting_reason":null,"priority":0,"attempts":1,"max_attempts":3,"progress":{"phase":"parsed","fraction":1.0,"status":"canonical document persisted"},"result_ref":"canonical-document:58b2946d-10df-5924-af97-623e5994a5a4","error_code":null,"cancel_reason":null,"enqueued_at":"2026-09-22T09:58:56.218607+02:00","started_at":"2026-09-22T09:58:56.484671+02:00","finished_at":"2026-09-22T09:58:56.822621+02:00"}
+[09:58:57] image activate: HTTP 200 {"source_id":"68749fd2-6618-4add-83db-0983401a54b2","source_version_id":"9f762bfb-ce26-4029-993d-882584c54369","notebook_id":"01a0c820-0253-44e3-bafe-9121e6bfa6ee","source_type":"image","display_title":"Uploaded source","availability":"active","content_sha256":"973ed69190e97bd55c9e05c56579567c5df9e6dbaaecc0c7d973c2cbe7cc982e","content_size_bytes":15723,"status":"quarantined_identified","pipeline_status":"active","etag":"1"}
+[09:59:00] search Vierteljahresbericht: HTTP 200
+hits: 1
+rank1 rank: 1 source_id: 68749fd2-6618-4add-83db-0983401a54b2
+rank1 is image source: True
+rank1 text: Vierteljahresbericht 2026
+Der Umsatz stieg im dritten Quartal.
+Quarterly report results
+rank1 has ocr text: True
+  #1 source=68749fd2-6618-4add-83db-0983401a54b2 score=0.0328 text='Vierteljahresbericht 2026\nDer Umsatz stieg im dritten Quarta'
+[09:59:00] IMG_SRC=68749fd2-6618-4add-83db-0983401a54b2
+[09:59:00] audio import: HTTP 201 {"source_id":"e1046b5a-fcde-4741-b7cd-34fa7c2164ac","source_version_id":"83907947-585a-404d-8547-228535739b3e","notebook_id":"01a0c820-0253-44e3-bafe-9121e6bfa6ee","source_type":"audio","display_title":"Uploaded source","availability":"active","content_sha256":"be41593e1042146ce2939210f9b727005fb26c5d901a8f2feb0c752901e33c1c","content_size_bytes":16078,"status":"quarantined_identified","pipeline_status":"activating","etag":"0","job_id":"01a0c820-14b8-4d36-b981-7cb6568331e6"}
+[09:59:02] audio parse job: {"job_id":"01a0c820-14b8-4d36-b981-7cb6568331e6","kind":"ingestion.parse","capacity_class":"ingestion_indexing","state":"succeeded","waiting_reason":null,"priority":0,"attempts":1,"max_attempts":3,"progress":{"phase":"parsed","fraction":1.0,"status":"canonical document persisted"},"result_ref":"canonical-document:e69e3331-0569-56f2-b089-eede17eaee3d","error_code":null,"cancel_reason":null,"enqueued_at":"2026-09-22T09:59:00.790581+02:00","started_at":"2026-09-22T09:59:01.250243+02:00","finished_at":"2026-09-22T09:59:01.501915+02:00"}
+[09:59:02] AUD_SRC=e1046b5a-fcde-4741-b7cd-34fa7c2164ac
+[09:59:02] public-video: HTTP 201 {"source_id":"e9436b48-7d6d-4fcc-be5b-90f5891d275f","source_version_id":"5ad433a4-f68e-4de4-af0c-1e95ce57b1a5","notebook_id":"01a0c820-0253-44e3-bafe-9121e6bfa6ee","source_type":"youtube","display_title":"Public video QA","availability":"active","content_sha256":"882145f3b52983c1bd85d6f14189aa779bf94a7b97665ce823f3822c2739fdda","content_size_bytes":null,"status":"quarantined_identified","pipeline_status":"parse_failed","etag":"0","transcript_state":"transcript_unavailable","transcript_reason":"no_compliant_adapter_without_credentials"}
+[09:59:02] === drive done ===
+
+--- canonical locators (PG proof) ---
+ locator_kind | time_ms_start | time_ms_end |            bbox             | node_type  | structural_identity | authority_class |                                         node_text                                          
+--------------+---------------+-------------+-----------------------------+------------+---------------------+-----------------+--------------------------------------------------------------------------------------------
+ char_range   |               |             | null                        | document   | document            | source_authored | 
+ bbox         |               |             | [30.0, 25.0, 460.0, 54.0]   | paragraph  | ocr-line:1          | ocr             | Vierteljahresbericht 2026
+ bbox         |               |             | [33.0, 85.0, 645.0, 114.0]  | paragraph  | ocr-line:2          | ocr             | Der Umsatz stieg im dritten Quartal.
+ bbox         |               |             | [32.0, 155.0, 433.0, 184.0] | paragraph  | ocr-line:3          | ocr             | Quarterly report results
+ char_range   |               |             | null                        | document   | document            | source_authored | 
+ time_range   |             0 |         500 | null                        | attachment | attachment:1        | source_authored | Media attachment: wav container, 500 ms duration, 1 track(s). Transcript status: unavailab
+(6 rows)
+
+                  id                  |                                                                    metadata                                                                     
+--------------------------------------+-------------------------------------------------------------------------------------------------------------------------------------------------
+ 58b2946d-10df-5924-af97-623e5994a5a4 | {"ocr_lines": 3, "ocr_languages": "deu+eng"}
+ e69e3331-0569-56f2-b089-eede17eaee3d | {"container": "wav", "duration_ms": 500, "track_count": 1, "transcript_reason": "stt_not_deployed_on_host", "transcript_status": "unavailable"}
+(2 rows)
+
+                  id                  | status | parse_error_code 
+--------------------------------------+--------+------------------
+ 9f762bfb-ce26-4029-993d-882584c54369 | active | 
+ 83907947-585a-404d-8547-228535739b3e | parsed | 
+(2 rows)
+

@@ -1,0 +1,44 @@
+{
+  "task": "23. ING-02c - Images+OCR (Tesseract deu+eng) and audio/video STT (whisper.cpp) + public-video transcripts",
+  "status": "complete_stt_deferred",
+  "deliverables": [
+    "packages/adapters/.../parsers/image.py: bounded image ingestion - Pillow header dimension/pixel caps enforced BEFORE decode, isolated Tesseract CLI child (deu+eng via TESSDATA_PREFIX, 15s/1MB caps), one OCR-authority paragraph per line with bbox region locators",
+    "packages/adapters/.../parsers/media.py: bounded ffprobe JSON child (10s/1MB), container allowlist + duration/track limits, ATTACHMENT node with ms time_range locator, honest transcript_status=unavailable (stt_not_deployed_on_host)",
+    "packages/adapters/.../parsers/media_limits.py: declared caps + typed errors (ImageTooLarge/Corrupt, MediaTooLarge/Corrupt/Unsupported, OcrEmpty)",
+    "packages/application/.../public_video.py: AcquirePublicVideo use case - compliant-adapter-only, URL safety, explicit transcript_unavailable source-version state, attempt audited, no download",
+    "apps/api: POST /api/v1/sources/public-video thin route + wiring (composition, source_http, source_import_routes, source_routes)",
+    "domain/acquisition.py: IdentifiedMedia +9 (image/audio/video MIMEs)",
+    "parsers wiring: sniffing.py byte magics; child.py dispatch + new states incl. no_content; isolation.py state literals + TESSDATA_PREFIX env forwarding; pg_canonical.py time_ms_start/end + time_range kind; pg_sources.py _SOURCE_TYPES +9; application/source_acquisition.py acquire_unavailable",
+    "adapters/grounding.py: citation jump exposes time_ms_start/end + bbox (tuple[float, ...]) when present",
+    "fixtures: golden-image.png / golden-audio.wav / golden-video.mp4 + 3 canonical goldens; hostile-bomb-image / hostile-oversized-image / hostile-corrupt-image / hostile-overduration-audio",
+    "tests: unit/test_public_video.py, unit/test_media_sniffing.py media matrix, ver-ingest-golden-001.py extended (3 media goldens + hostile states + ms/region locator asserts), generate_fixtures.py + t23 section",
+    "packages/adapters/pyproject.toml: Pillow added as explicit direct dep (in matrix + already in tree via pdfplumber); uv.lock updated"
+  ],
+  "gate_fixes_trivia_only": [
+    "ruff --fix: 3 import-trivia (duplicate 'from PIL import Image' in image.py; import sorting in test_public_video.py)",
+    "mypy: aligned jump return annotations to dict[str, str | int | tuple[float, ...]] in GroundingStore protocol + PgGroundingStore.jump + local payload (contract bbox is tuple[float, ...])",
+    "tests: FakeAudit(entries=[]) -> FakeAudit() (4 sites); added 'PIL' to ver-arch-03-001 ALLOWED_ADAPTER_IMPORTS (declared dep)"
+  ],
+  "verification": [
+    {"command": "uv run ruff check .", "exit": 0, "result": "All checks passed!"},
+    {"command": "uv run mypy", "exit": 0, "result": "Success: no issues found in 178 source files (baseline 174; +4 new modules)"},
+    {"command": "uv run import-linter lint", "exit": 0, "result": "Contracts: 4 kept, 0 broken (243 files, 1262 dependencies)"},
+    {"command": "uv run pytest tests/meta tests/architecture tests/unit -q", "exit": 0, "result": "160 passed (baseline 154; +6)"},
+    {"command": "uv run pytest tests/fixtures/sources tests/unit/test_public_video.py tests/unit/test_media_sniffing.py -q", "exit": 0, "result": "25 passed"},
+    {"command": "uv run pytest tests/fixtures/sources/ver-ingest-golden-001.py -q", "exit": 0, "result": "11 passed; regenerated VER-INGEST-GOLDEN-001.json now covers golden-image/audio/video + 4 hostile media states + updated locator guarantees"},
+    {"command": "live QA drive (scratch/t23-ocr/qa-drive.sh, fresh API+worker on current code)", "exit": 0, "result": "image upload 201 -> parse succeeded -> activate -> search 'Vierteljahresbericht' rank-1 = image source (OCR text 'Vierteljahresbericht 2026 / Der Umsatz stieg im dritten Quartal. / Quarterly report results'); DB proof: 3 bbox-located paragraphs authority=ocr, source_version active. tiny wav upload 201 -> parse succeeded -> source_version parsed (probed); attachment node time_range 0-500ms; doc metadata transcript_status=unavailable, transcript_reason=stt_not_deployed_on_host, duration_ms=500, container=wav. public-video import 201 -> transcript_state=transcript_unavailable, transcript_reason=no_compliant_adapter_without_credentials, pipeline_status=parse_failed (honest, no fabricated transcript). Full trace: .omo/evidence/task-23-manual-qa.log"}
+  ],
+  "deferred": [
+    "STT sub-scope 23.3 (whisper.cpp worker + segment/speaker nodes) DEFERRED: no whisper.cpp on host, D16 no-acquisition binding (no model/tooling downloads), user decision pending. Media without STT yields the explicit probed state with ms locators + transcript_status=unavailable - never success-empty, never fabricated transcript.",
+    "STT device prereq benchmark 23.3.0 (whisper.cpp Vulkan-on-gfx906 vs CUDA-on-3080) deferred with STT; no GPU work performed per task constraints."
+  ],
+  "tessdata_acquisition": {
+    "note": "the ONE permitted fetch for this task (traineddata, not model weights), performed by the prior worker, recorded per plan",
+    "url": "https://github.com/tesseract-ocr/tessdata_fast/raw/main/deu.traineddata",
+    "sha256": "19d219bbb6672c869d20a9636c6816a81eb9a71796cb93ebe0cb1530e2cdb22d",
+    "present_at": "scratch/t23-ocr/tessdata/deu.traineddata (1525436 bytes, sha256 verified at drive time)",
+    "eng": "symlink to system /usr/share/tesseract-ocr/5/tessdata/eng.traineddata",
+    "runtime_note": "worker must be launched with TESSDATA_PREFIX=scratch/t23-ocr/tessdata (system tessdata ships eng+osd only); verified in /proc/<worker>/environ before the drive"
+  },
+  "commit": "feat(ingestion): ING-02c OCR/STT/public-video families (ARCH-06 media subset)"
+}

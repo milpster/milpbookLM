@@ -7,6 +7,7 @@ import uuid
 from fastapi import APIRouter, Depends, Request
 from fastapi.responses import JSONResponse
 from milpbooklm_application.audit_actions import AuditAction
+from milpbooklm_application.public_video import AcquirePublicVideo, PublicVideoCommand
 from milpbooklm_application.source_acquisition import AcquireSource, AcquireSourceCommand
 from milpbooklm_application.web_fetch import AcquireWebSource, AcquireWebSourceCommand
 from milpbooklm_domain.acquisition import AcquisitionError
@@ -18,6 +19,7 @@ from .multipart_stream import MultipartError, multipart_file_chunks
 from .security import Principal
 from .source_http import (
     PasteTextRequest,
+    PublicVideoRequest,
     WebUrlRequest,
     authorize_notebook,
     problem,
@@ -31,6 +33,7 @@ def build_source_import_router(
     principal_dependency: PrincipalDependency,
     acquire: AcquireSource,
     acquire_web: AcquireWebSource | None = None,
+    acquire_public_video: AcquirePublicVideo | None = None,
 ) -> APIRouter:
     """Build streaming upload and paste acquisition routes."""
     router = APIRouter()
@@ -99,6 +102,56 @@ def build_source_import_router(
 
     if acquire_web is not None:
         router.include_router(_build_web_url_router(deps, principal_dependency, acquire_web))
+    if acquire_public_video is not None:
+        router.include_router(
+            _build_public_video_router(deps, principal_dependency, acquire_public_video)
+        )
+
+    return router
+
+
+def _build_public_video_router(
+    deps: ApiDeps,
+    principal_dependency: PrincipalDependency,
+    acquire_public_video: AcquirePublicVideo,
+) -> APIRouter:
+    router = APIRouter()
+
+    @router.post("/public-video", response_model=None)
+    async def acquire_public_video_route(
+        body: PublicVideoRequest,
+        principal: Principal = Depends(principal_dependency),
+    ) -> JSONResponse:
+        denied = authorize_notebook(
+            deps, principal, body.notebook_id, PolicyAction.SOURCE_MUTATE
+        )
+        if denied is not None:
+            return denied
+        try:
+            outcome = acquire_public_video(
+                PublicVideoCommand(
+                    notebook_id=body.notebook_id,
+                    actor_id=principal.user.id,
+                    title=body.title,
+                    url=body.url,
+                )
+            )
+        except ValueError as exc:
+            deps.audit.record(
+                actor_id=principal.user.id,
+                action=AuditAction.ACQUISITION_REJECTED.value,
+                subject_kind="notebook",
+                subject_id=body.notebook_id,
+                details={"error_code": "url_rejected"},
+            )
+            return problem("url_rejected", str(exc), status.HTTP_422_UNPROCESSABLE_CONTENT)
+        payload = source_payload(outcome.view)
+        payload["transcript_state"] = outcome.state
+        payload["transcript_reason"] = outcome.reason
+        return JSONResponse(
+            status_code=status.HTTP_201_CREATED if outcome.created else status.HTTP_200_OK,
+            content=payload,
+        )
 
     return router
 

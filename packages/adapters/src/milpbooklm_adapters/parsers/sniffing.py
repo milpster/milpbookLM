@@ -29,6 +29,33 @@ _OFFICE_PART_MARKERS: Final = (
     (b"word/", IdentifiedMedia.DOCX),
     (b"ppt/", IdentifiedMedia.PPTX),
 )
+_PNG_MAGIC: Final = b"\x89PNG\r\n\x1a\n"
+_JPEG_MAGIC: Final = b"\xff\xd8\xff"
+_GIF_MAGICS: Final = (b"GIF87a", b"GIF89a")
+_RIFF_MAGIC: Final = b"RIFF"
+_RIFF_TYPE_OFFSET: Final = 8
+_RIFF_TYPE_END: Final = 12
+_WEBP_TYPE: Final = b"WEBP"
+_WAV_TYPE: Final = b"WAVE"
+_BMP_MAGIC: Final = b"BM"
+_MP3_MAGIC: Final = b"ID3"
+_MP4_FTYPE_OFFSET: Final = 4
+_MP4_TYPE: Final = b"ftyp"
+_WEBM_MAGIC: Final = b"\x1a\x45\xdf\xa3"
+_MP3_SYNC_MIN: Final = 3
+_MP3_SYNC_BYTE: Final = 0xFF
+_MP3_SYNC_MASK: Final = 0xE0
+
+_MEDIA_MAGIC_TABLE: Final = (
+    (_PNG_MAGIC, IdentifiedMedia.IMAGE_PNG),
+    (_JPEG_MAGIC, IdentifiedMedia.IMAGE_JPEG),
+    (b"GIF87a", IdentifiedMedia.IMAGE_GIF),
+    (b"GIF89a", IdentifiedMedia.IMAGE_GIF),
+    (_BMP_MAGIC, IdentifiedMedia.IMAGE_BMP),
+    (_WEBM_MAGIC, IdentifiedMedia.VIDEO_WEBM),
+    (_MP3_MAGIC, IdentifiedMedia.AUDIO_MP3),
+)
+
 _HEADING: Final = re.compile(r"^#{1,6}\s")
 _LIST_ITEM: Final = re.compile(r"^\s*[-*+]\s|^\s*\d+\.\s")
 _QUOTE: Final = re.compile(r"^>\s")
@@ -47,7 +74,47 @@ def sniff_media_type(data: bytes) -> IdentifiedMedia | None:
         return IdentifiedMedia.PDF
     if data.startswith(_ZIP_MAGIC):
         return _sniff_office(data)
+    media = _sniff_media_binary(data)
+    if media is not None:
+        return media
     return _sniff_text(data)
+
+
+def _sniff_media_binary(data: bytes) -> IdentifiedMedia | None:
+    """Identify image/audio/video families from their byte magics (bounded)."""
+    for prefix, media in _MEDIA_MAGIC_TABLE:
+        if data.startswith(prefix):
+            return media
+    riff = _sniff_riff(data)
+    if riff is not None:
+        return riff
+    if len(data) >= _MP4_FTYPE_OFFSET + 4 and (
+        data[_MP4_FTYPE_OFFSET : _MP4_FTYPE_OFFSET + 4] == _MP4_TYPE
+    ):
+        return IdentifiedMedia.VIDEO_MP4
+    return _sniff_mp3_sync(data)
+
+
+def _sniff_riff(data: bytes) -> IdentifiedMedia | None:
+    """Distinguish RIFF-subtyped WEBP (image) from WAV (audio)."""
+    if data.startswith(_RIFF_MAGIC) and len(data) >= _RIFF_TYPE_END:
+        riff_type = data[_RIFF_TYPE_OFFSET : _RIFF_TYPE_END]
+        if riff_type == _WEBP_TYPE:
+            return IdentifiedMedia.IMAGE_WEBP
+        if riff_type == _WAV_TYPE:
+            return IdentifiedMedia.AUDIO_WAV
+    return None
+
+
+def _sniff_mp3_sync(data: bytes) -> IdentifiedMedia | None:
+    """MPEG audio frame sync: 0xFF followed by a marker/reserved bit pattern."""
+    if (
+        len(data) >= _MP3_SYNC_MIN
+        and data[0] == _MP3_SYNC_BYTE
+        and (data[2] & _MP3_SYNC_MASK) == _MP3_SYNC_MASK
+    ):
+        return IdentifiedMedia.AUDIO_MP3
+    return None
 
 
 def _sniff_office(data: bytes) -> IdentifiedMedia | None:

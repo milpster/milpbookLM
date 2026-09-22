@@ -114,6 +114,8 @@ class PgCanonicalRepository:
         locator_kind = _locator_kind(locator)
         row = locator.extra_fields.get("row")
         column = locator.extra_fields.get("col")
+        time_start = _int_or_none(locator.extra_fields.get("time_ms_start"))
+        time_end = _int_or_none(locator.extra_fields.get("time_ms_end"))
         connection.execute(
             sa.insert(canonical_locators).values(
                 id=uuid.uuid5(node.node_id, "locator:primary"),
@@ -128,6 +130,8 @@ class PgCanonicalRepository:
                 col_end=column if isinstance(column, int) else None,
                 char_start=locator.char_start,
                 char_end=locator.char_end,
+                time_ms_start=time_start,
+                time_ms_end=time_end,
                 bbox=list(locator.bbox) if locator.bbox is not None else None,
                 structural_path=list(locator.path),
             )
@@ -139,6 +143,8 @@ def _locator_kind(locator: SourceLocator) -> str:
         return "slide"
     if locator.extra_fields.get("sheet") is not None:
         return "sheet"
+    if locator.extra_fields.get("time_ms_start") is not None:
+        return "time_range"
     if locator.bbox is not None:
         return "bbox"
     if locator.page is not None:

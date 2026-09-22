@@ -18,6 +18,15 @@ class IdentifiedMedia(StrEnum):
     PPTX = "application/vnd.openxmlformats-officedocument.presentationml.presentation"
     HTML = "text/html"
     EPUB = "application/epub+zip"
+    IMAGE_PNG = "image/png"
+    IMAGE_JPEG = "image/jpeg"
+    IMAGE_GIF = "image/gif"
+    IMAGE_WEBP = "image/webp"
+    IMAGE_BMP = "image/bmp"
+    AUDIO_WAV = "audio/x-wav"
+    AUDIO_MP3 = "audio/mpeg"
+    VIDEO_MP4 = "video/mp4"
+    VIDEO_WEBM = "video/webm"
 
 
 class AcquisitionErrorCode(StrEnum):

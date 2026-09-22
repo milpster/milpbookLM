@@ -62,6 +62,7 @@ from milpbooklm_application.ports import (
     SessionTokenStore,
     UserRepository,
 )
+from milpbooklm_application.public_video import AcquirePublicVideo
 from milpbooklm_application.retrieval import RetrieveChunks
 from milpbooklm_application.source_acquisition import AcquireSource, SourceCatalog
 from milpbooklm_application.structured_logging import configure_structured_logging
@@ -132,6 +133,7 @@ def build_app(
     source_acquisition: AcquireSource | None = None,
     source_catalog: SourceCatalog | None = None,
     web_source_acquisition: AcquireWebSource | None = None,
+    public_video_acquisition: AcquirePublicVideo | None = None,
     retrieval: RetrieveChunks | None = None,
     index_config: IndexBuildConfig | None = None,
     grounding: PgGroundingStore | None = None,
@@ -235,7 +237,8 @@ def build_app(
                 principal,
                 source_acquisition,
                 source_catalog,
-                web_source_acquisition,
+                acquire_web=web_source_acquisition,
+                acquire_public_video=public_video_acquisition,
             )
         )
     return app
@@ -315,6 +318,10 @@ def create_app() -> FastAPI:
         acquire=source_acquisition,
         audit=audit,
     )
+    # REFERENCE-DEPENDENCIES names no credential-free compliant public-video
+    # adapter, so the adapter set ships empty: imports terminate in the
+    # explicit transcript_unavailable state, never a fabricated transcript.
+    public_video_acquisition = AcquirePublicVideo(catalog=source_catalog, audit=audit)
     index_config, embedding_client = _embedding_wiring(installation)
     retrieval = RetrieveChunks(
         retrieval=PgRetrievalService(engine),
@@ -355,6 +362,7 @@ def create_app() -> FastAPI:
         source_acquisition=source_acquisition,
         source_catalog=source_catalog,
         web_source_acquisition=web_source_acquisition,
+        public_video_acquisition=public_video_acquisition,
     )
     app.router.add_event_handler("shutdown", fetch_service.aclose)
     return app

@@ -11,8 +11,9 @@ import sys
 import tempfile
 import uuid
 from dataclasses import dataclass
+from functools import partial
 from pathlib import Path
-from typing import Final, Literal, assert_never
+from typing import Final, Literal
 
 from milpbooklm_contracts.canonical_document import CanonicalDocument, JsonValue
 from pydantic import BaseModel, ConfigDict
@@ -20,6 +21,9 @@ from pydantic import BaseModel, ConfigDict
 from .parser_context import WebLocatorContext
 
 _CHILD_MODULE: Final = "milpbooklm_adapters.parsers.child"
+
+
+_MEDIA_PREFIXES: Final = ("image/", "audio/", "video/")
 
 
 @dataclass(frozen=True, slots=True)
@@ -30,6 +34,10 @@ class ParseLimits:
     memory_bytes: int = 512 * 1024 * 1024
     output_bytes: int = 32 * 1024 * 1024
     wall_seconds: float = 20.0
+    # Native probe/OCR children (ffprobe/tesseract) map gigabytes of virtual
+    # address space at startup while using little resident memory, so media
+    # types get a separate, larger RLIMIT_AS than pure-Python parser children.
+    media_memory_bytes: int = 3 * 1024 * 1024 * 1024
 
 
 @dataclass(frozen=True, slots=True)
@@ -50,6 +58,7 @@ class ParseFailure:
         "too_large",
         "timeout",
         "policy_blocked",
+        "no_content",
         "internal",
     ]
     detail: str
@@ -69,6 +78,7 @@ class _ChildEnvelope(BaseModel):
         "too_large",
         "timeout",
         "policy_blocked",
+        "no_content",
         "internal",
     ]
     document: dict[str, JsonValue] | None = None
@@ -117,6 +127,10 @@ class IsolatedParser:
                 "PYTHONHASHSEED": "0",
                 "TMPDIR": temp_name,
             }
+            # OCR traineddata lives outside the child sandbox (D5: deu+eng);
+            # the parent's TESSDATA_PREFIX is the only additional variable passed.
+            if tessdata_prefix := os.environ.get("TESSDATA_PREFIX"):
+                environment["TESSDATA_PREFIX"] = tessdata_prefix
             process = subprocess.Popen(  # noqa: S603 - fixed interpreter/module argv
                 [
                     sys.executable,
@@ -133,7 +147,8 @@ class IsolatedParser:
                 stderr=subprocess.PIPE,
                 cwd=temp,
                 env=environment,
-                preexec_fn=self._apply_limits,  # noqa: PLW1509 - required for POSIX RLIMITs
+                # POSIX RLIMITs require preexec_fn; the worker loop is single-threaded
+                preexec_fn=partial(self._apply_limits, self._limit_for(media_type)),  # noqa: PLW1509
             )
             try:
                 _, stderr = process.communicate(data, timeout=self._limits.wall_seconds)
@@ -153,38 +168,25 @@ class IsolatedParser:
             return ParseFailure("too_large", "parser output exceeded limit")
         return _decode_envelope(_ChildEnvelope.model_validate_json(output.read_bytes()))
 
-    def _apply_limits(self) -> None:
+    def _limit_for(self, media_type: str) -> int:
+        if media_type.startswith(_MEDIA_PREFIXES):
+            return self._limits.media_memory_bytes
+        return self._limits.memory_bytes
+
+    def _apply_limits(self, memory_bytes: int) -> None:
         resource.setrlimit(
             resource.RLIMIT_CPU, (self._limits.cpu_seconds, self._limits.cpu_seconds)
         )
-        resource.setrlimit(
-            resource.RLIMIT_AS, (self._limits.memory_bytes, self._limits.memory_bytes)
-        )
+        resource.setrlimit(resource.RLIMIT_AS, (memory_bytes, memory_bytes))
         resource.setrlimit(
             resource.RLIMIT_FSIZE, (self._limits.output_bytes, self._limits.output_bytes)
         )
 
 
-def _decode_envelope(envelope: _ChildEnvelope) -> ParseResult:  # noqa: PLR0911
+def _decode_envelope(envelope: _ChildEnvelope) -> ParseResult:
     """Decode the child protocol into a typed parser result."""
-    match envelope.state:
-        case "succeeded":
-            if envelope.document is None:
-                return ParseFailure("internal", "parser child omitted the document")
-            return ParseSuccess(CanonicalDocument.from_json(envelope.document))
-        case "unsupported":
-            return ParseFailure("unsupported", envelope.detail or "unsupported")
-        case "corrupt":
-            return ParseFailure("corrupt", envelope.detail or "corrupt")
-        case "encrypted":
-            return ParseFailure("encrypted", envelope.detail or "encrypted")
-        case "too_large":
-            return ParseFailure("too_large", envelope.detail or "too_large")
-        case "timeout":
-            return ParseFailure("timeout", envelope.detail or "timeout")
-        case "policy_blocked":
-            return ParseFailure("policy_blocked", envelope.detail or "policy_blocked")
-        case "internal":
-            return ParseFailure("internal", envelope.detail or "internal")
-        case unreachable:
-            assert_never(unreachable)
+    if envelope.state == "succeeded":
+        if envelope.document is None:
+            return ParseFailure("internal", "parser child omitted the document")
+        return ParseSuccess(CanonicalDocument.from_json(envelope.document))
+    return ParseFailure(envelope.state, envelope.detail or envelope.state)

@@ -111,6 +111,17 @@ class SourceCatalog(Protocol):
         """Create or return the idempotent source version."""
         ...
 
+    def acquire_unavailable(
+        self,
+        command: AcquireSourceCommand,
+        *,
+        origin: str,
+        source_type: SourceType,
+        reason: str,
+    ) -> tuple[SourceView, bool]:
+        """Persist an explicit unavailable version (no content bytes exist)."""
+        ...
+
     def get(self, source_id: uuid.UUID, actor_id: uuid.UUID) -> SourceView | None:
         """Return one membership-visible source."""
         ...
