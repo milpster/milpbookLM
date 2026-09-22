@@ -301,3 +301,8 @@ Session: 2026-09-17, Prometheus (ulw-plan), intent=CLEAR (user asked to be inter
 - [~] T26 marked `- [~]` (worker `ses_f3676635`, commit `1fd6a89`). SearXNG adapter + deterministic fake + cache + budgets green; real smoke deferred (T8 podman class).
 - Cross-cutting find: frozen+slots dataclass exceptions break under anyio deadline scopes (contextlib __traceback__ reassignment) — T22 fetcher bug fixed w/ regression test; two more latent shapes flagged to owners.
 - Progress: 26/59 tasks (7 [x], 19 [~], 33 [ ]). Wave 3 (research surface) underway. Next: T27 RSR-01b research runs — the largest single task in the plan (state machine + 7-tool surface + injection hardening).
+
+## Process log (cont. 30 — T27 close-out, 2026-09-22)
+
+- [~] T27 marked `- [~]` (worker `ses_f366167a3`, commit `b047bb2`). Research runs live: durable state machine, exactly-seven-tool surface, immutable evidence, injection corpus fully denied server-side (live 30 tool.denied rows), E2E-008 green on fake web, migration 0008 idempotent both paths.
+- Progress: 27/59 tasks (7 [x], 20 [~], 32 [ ]). Next: T28 RSR-01c Playwright browser worker + deterministic local web (user-space worker now; container form T8-class deferred — Chromium+Firefox already installed from T18/T20 E2E).
