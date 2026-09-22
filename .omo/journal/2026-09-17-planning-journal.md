@@ -269,3 +269,10 @@ Session: 2026-09-17, Prometheus (ulw-plan), intent=CLEAR (user asked to be inter
 - Post-reboot UI lesson: a vite dev server dying mid-session leaves browser proxy fetches hanging forever — the SPA boots to `Loading view...` and never settles; symptom looks like an app hang but is dev-infra death. Check port liveness FIRST when the SPA sticks at boot.
 - User hard rule (2026-09-21, permanent): the Swift-Qwen llama.cpp server is shared pre-existing infra — consume only, never spawn/restart/duplicate when one is up.
 - HALT per user order after T20: stop and wait for instructions. Stack left RUNNING for the user: PG :29521 (scratch), :8009 (user), :8010 embeddings, :8000 API, :5173 web, worker t20-w1 — pidfiles in scratch/t20-gate/.
+
+## Process log (cont. 25 — T22 close-out, 2026-09-22)
+
+- [~] T22 marked `- [~]` (4 worker sessions: 2 aborts + usage-limit death + finisher; commit `4655dc8`). ING-02b complete: hardened fetch service (SSRF-pinned transport on the only connect path), EPUB + HTML families with hostile corpora, web locators, 18-test denial suite.
+- Orchestrator verification: all gates green first-hand (mypy 174 / pytest 154+26); live SSRF probes all refused pre-connect with stable reasons; port allowlist stricter than plan text.
+- Routing observation: quick-category dispatch died INSTANTLY at usage limit (remote upstream); deep category ran on local llamacpp/:8009 fine. When limits hit, dispatch deep, not quick.
+- HALT per user order (stop after T22): 22/59 tasks done (7 [x], 15 [~]), 37 remaining (T23+ wave 2). Stack live: PG :29521, :8009 (user), :8010, :8000, :5173, worker.

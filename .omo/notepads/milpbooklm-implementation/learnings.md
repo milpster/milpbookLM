@@ -250,3 +250,12 @@ ALL agent scratch (drivers, fixtures, DB clusters, logs, screenshots) lives unde
 1. pidfile kills can miss daemonized children: start-api.sh pidfile records the nohup/setsid wrapper; uvicorn survives as an orphan still holding :8000 (stale rate-limiter state persisted across a fake restart). To REALLY restart a listener: find the port PID via `ss -tlnp | grep ":PORT "` and kill that.
 2. Register/login limiters are per-client-IP in-memory sliding windows (`register:{ip}`, `login:{ip+account}`) - a busy QA evening exhausts them; real API restart resets.
 3. API surface: uploads POST /api/v1/sources/import?notebook_id=... (router prefix /api/v1/sources, notebook_id is a QUERY param); jobs GET /api/v1/jobs/{id}; canonical gate dirs (tests/meta|architecture|unit) miss tests/fixtures suites - run both.
+
+## T22 (2026-09-22)
+
+1. **Validate numeric IP literals inside the connector too**: URL prevalidation is not enough; every actual `connect_tcp` call must classify literal hosts before dialing, or direct metadata/private literals bypass DNS-candidate checks. The pinned httpcore backend now validates literals and all hostname candidates before handing a numeric address to the real connector.
+2. **A service-owned HTTP client must outlive individual fetches**: closing a per-fetch client also closes its shared transport/pool. The hardened service owns one client and exposes `aclose()` for composition shutdown; tests close it in `finally`.
+3. **A wall-clock deadline must include streamed body consumption**: wrapping only `AsyncClient.send(..., stream=True)` caps headers, not a slow-trickle body. Keep `_read_capped()` and response closure inside the same AnyIO deadline scope; a delayed-stream regression test proves red-to-green.
+4. **Selectolax node wrappers are not identity-stable**: ancestry comparisons must use `Node.mem_id`, not Python `is`, because traversals can return distinct wrappers for the same underlying node.
+5. **Job payload parameters persist under `payload.params`**: web capture provenance (final URL, timestamp, headers, redirect chain, hash) must be read and propagated from that nested structure into parser locator context.
+6. **The configured basedpyright process does not resolve this uv workspace/venv**: it reports broad pre-existing missing workspace imports and an older Python target, while project `uv run mypy`, Ruff, runtime tests, and focused LSP files are clean. Do not mutate product imports to appease that external environment mismatch.
