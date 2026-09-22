@@ -295,3 +295,9 @@ Session: 2026-09-17, Prometheus (ulw-plan), intent=CLEAR (user asked to be inter
 - [~] T25 marked `- [~]` (worker `ses_f36963cf2`, commit `f1c0bfe`). All 11 ingestion families evidenced (isolation/goldens/lifecycle/retrieval), E2E-002 heterogeneous journey green with real-model heterogeneous citations, disabled connectors honestly not-advertised.
 - The journey exposed a real T16 defect: publication validator required char-extent coverage from structural locators (bbox/slide/sheet) which have none — every phase-2-family citation would have been rejected. Fixed via identity+authz path for NULL-extent locators (authorization untouched, verified by orchestrator diff read).
 - Progress: 25/59 tasks (7 [x], 18 [~], 34 [ ]). Phase gates: 1 PASSED, 2 PASSED. Next: T26 RSR-01a (SearXNG service + adapter) — wave 3 begins (research surface).
+
+## Process log (cont. 29 — T26 close-out, 2026-09-22)
+
+- [~] T26 marked `- [~]` (worker `ses_f3676635`, commit `1fd6a89`). SearXNG adapter + deterministic fake + cache + budgets green; real smoke deferred (T8 podman class).
+- Cross-cutting find: frozen+slots dataclass exceptions break under anyio deadline scopes (contextlib __traceback__ reassignment) — T22 fetcher bug fixed w/ regression test; two more latent shapes flagged to owners.
+- Progress: 26/59 tasks (7 [x], 19 [~], 33 [ ]). Wave 3 (research surface) underway. Next: T27 RSR-01b research runs — the largest single task in the plan (state machine + 7-tool surface + injection hardening).

@@ -346,7 +346,7 @@ Blocks column = DIRECT dependants only (tasks listing X in their Depends on); a 
   QA scenarios: happy — gate green (evidence phase-2-gate.json); failure — family missing isolation proof blocks (evidence meta). Evidence <attemptDir>/task-25-milpbooklm-implementation.json
   Commit: Y | chore(release): Phase-2 gate evidence bundle
 
-- [ ] 26. RSR-01a — SearXNG service + adapter + fake + budgets
+- [~] 26. RSR-01a — SearXNG service + adapter + fake + budgets
   What to do / Must NOT do: Deploy SearXNG (pinned, private network, formats [html,json] explicitly enabled, limiter OFF, no Valkey — D7); adapter: engine/category/language/time params, deadlines, per-run budgets, unexpected content-type rejection; records URL/title/snippet + contributing engines + degraded/timeout partials; engine health observable; cache by normalized query + config revision, short TTL; discovery-only (results untrusted → pass fetch/import controls). Fake SearXNG for CI.
   Micro-index: 26.1 service config (26.1.1 image+settings.yml formats; 26.1.2 network isolation) · 26.2 adapter (26.2.1 params+deadlines+budgets; 26.2.2 partial/degraded semantics; 26.2.3 health) · 26.3 cache · 26.4 fake + tests.
   Parallelization: Wave 3 | Blocked by: 5,7,10,22 | Blocks: 27, 28, 30 (gate)
