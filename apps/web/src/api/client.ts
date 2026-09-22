@@ -1,5 +1,5 @@
 import ky, { HTTPError } from "ky";
-import type { z } from "zod";
+import { z } from "zod";
 import type {
   CreateNotebookRequest,
   LoginRequest,
@@ -20,6 +20,40 @@ import {
 
 let csrfToken = "";
 
+// 403 bodies the security middleware uses for credential/environment drift
+// (origin + CSRF failures). Authorization denials reuse the same body shape
+// with policy reason codes ("deny:*"), so the trigger set is an exact allowlist.
+const credentialFailureReasons: ReadonlySet<string> = new Set(["origin_rejected", "csrf_rejected"]);
+const rejectionBodySchema = z.object({ detail: z.object({ reason: z.string() }) });
+
+type SessionInvalidationListener = () => void;
+const sessionInvalidationListeners = new Set<SessionInvalidationListener>();
+
+/** Subscribe to global session-invalidation events (dead cookie / CSRF drift). */
+export function onSessionInvalidated(listener: SessionInvalidationListener): () => void {
+  sessionInvalidationListeners.add(listener);
+  return () => {
+    sessionInvalidationListeners.delete(listener);
+  };
+}
+
+function emitSessionInvalidation(): void {
+  csrfToken = "";
+  for (const listener of sessionInvalidationListeners) listener();
+}
+
+async function isCredentialFailure(response: Response): Promise<boolean> {
+  if (response.status === 401) return true;
+  if (response.status !== 403) return false;
+  const body = rejectionBodySchema.safeParse(
+    await response
+      .clone()
+      .json()
+      .catch(() => null),
+  );
+  return body.success && credentialFailureReasons.has(body.data.detail.reason);
+}
+
 const api = ky.create({
   prefixUrl: "/api/v1",
   credentials: "include",
@@ -31,6 +65,12 @@ const api = ky.create({
         if (request.method !== "GET" && request.method !== "HEAD" && csrfToken !== "") {
           request.headers.set("x-csrf-token", csrfToken);
         }
+      },
+    ],
+    afterResponse: [
+      async (_request, _options, response) => {
+        if (await isCredentialFailure(response)) emitSessionInvalidation();
+        return undefined; // never intercept: per-caller error handling stays intact
       },
     ],
   },
