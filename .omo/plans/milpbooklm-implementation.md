@@ -337,7 +337,7 @@ Blocks column = DIRECT dependants only (tasks listing X in their Depends on); a 
   QA scenarios: happy — purge report complete (evidence VER purge batch); failure — derivative discovered post-purge → test fails (evidence audit diff). Evidence <attemptDir>/task-24-milpbooklm-implementation.json
   Commit: Y | feat(ingestion): ING-02d refresh/rebuild/purge closure (ARCH-06/07/19 subsets)
 
-- [ ] 25. Phase-2 gate — Universal ingestion evidence
+- [~] 25. Phase-2 gate — Universal ingestion evidence
   What to do / Must NOT do: Every enabled family has parser isolation proof, canonical/provenance goldens, refresh/rebuild/purge evidence, retrieval evidence (per PLANNING-HANDOFF Phase 2 exit); E2E-002 full (heterogeneous sources); conformance.json update; gate report.
   Micro-index: 25.1 per-family evidence assembly · 25.2 E2E-002 · 25.3 conformance+report.
   Parallelization: Wave 2 | Blocked by: 21..24 | Blocks: Wave 3 (gate),54

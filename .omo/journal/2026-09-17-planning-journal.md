@@ -289,3 +289,9 @@ Session: 2026-09-17, Prometheus (ulw-plan), intent=CLEAR (user asked to be inter
 - [~] T24 marked `- [~]` (commit `1ef1270`). Refresh semantics, all-families rebuild proof, identity-based purge closure with transactional tombstones + async erase + report, purge-closure acceptance test, expanded hostile/eval corpora. Verified first-hand: gates green (mypy 180 / pytest 161+12), purge test PASSED.
 - The interrupted dispatch actually COMPLETED before its abort — PROGRESS.md + commit told the truth the aborted report could not. Third such pattern today: trust committed state, not agent reports.
 - Progress: 24/59 tasks (7 [x], 17 [~], 35 [ ]). Next: T25 Phase-2 gate (universal ingestion evidence).
+
+## Process log (cont. 28 — T25 close-out: PHASE-2 GATE PASSED, 2026-09-22)
+
+- [~] T25 marked `- [~]` (worker `ses_f36963cf2`, commit `f1c0bfe`). All 11 ingestion families evidenced (isolation/goldens/lifecycle/retrieval), E2E-002 heterogeneous journey green with real-model heterogeneous citations, disabled connectors honestly not-advertised.
+- The journey exposed a real T16 defect: publication validator required char-extent coverage from structural locators (bbox/slide/sheet) which have none — every phase-2-family citation would have been rejected. Fixed via identity+authz path for NULL-extent locators (authorization untouched, verified by orchestrator diff read).
+- Progress: 25/59 tasks (7 [x], 18 [~], 34 [ ]). Phase gates: 1 PASSED, 2 PASSED. Next: T26 RSR-01a (SearXNG service + adapter) — wave 3 begins (research surface).
