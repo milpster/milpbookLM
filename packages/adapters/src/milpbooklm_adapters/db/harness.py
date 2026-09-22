@@ -21,6 +21,7 @@ import psycopg
 import psycopg.errors
 from alembic import command
 from alembic.config import Config
+from alembic.script import ScriptDirectory
 
 REPO_ROOT = Path(__file__).resolve().parents[5]
 MIGRATIONS_DIR = REPO_ROOT / "migrations"
@@ -46,6 +47,20 @@ class MigrationReport:
     lock_key: int
     build_sha: str
     duration_ms: int
+
+
+def current_script_head() -> str:
+    """
+    Return the single current head revision from the script directory (no database).
+
+    Single source of truth for "which revision is head": the alembic script
+    directory itself, so consumers (e.g. the API schema health probe) compare
+    against the real migrations package instead of a re-stalable constant.
+    """
+    head = ScriptDirectory.from_config(Config(str(ALEMBIC_INI))).get_current_head()
+    if head is None:
+        raise RuntimeError(f"migration script directory has no revisions: {MIGRATIONS_DIR}")
+    return head
 
 
 def _alembic_config(dsn: str) -> Config:
@@ -173,6 +188,7 @@ __all__ = [
     "REPO_ROOT",
     "MigrationReport",
     "UnsupportedSourceVersionError",
+    "current_script_head",
     "downgrade_to",
     "record_build_metadata",
     "run_migrations",

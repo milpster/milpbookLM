@@ -9,6 +9,7 @@ from pathlib import Path
 import sqlalchemy as sa
 from fastapi import APIRouter, Depends
 from fastapi.responses import JSONResponse
+from milpbooklm_adapters.db.harness import current_script_head
 from pydantic import BaseModel, ConfigDict, ValidationError
 from sqlalchemy.exc import SQLAlchemyError
 from starlette import status
@@ -16,7 +17,12 @@ from starlette import status
 from .deps import PrincipalDependency
 from .security import Principal
 
-EXPECTED_SCHEMA_REVISION = "0001_baseline"
+# Derived from the migrations script directory (alembic head detection), never
+# a hardcoded revision: the constant follows the migrations package in every
+# build, so the schema probe cannot go stale when new revisions land.
+EXPECTED_SCHEMA_REVISION = current_script_head()
+# Production default; dev deployments on an older major override it through
+# MILPBOOKLM_REQUIRED_POSTGRES_MAJOR (see InstallationConfig).
 REQUIRED_POSTGRES_MAJOR = 18
 
 
@@ -72,11 +78,13 @@ class DeploymentHealth:
         engine: sa.engine.Engine,
         blob_root: Path,
         prerequisites_file: Path,
+        required_postgres_major: int = REQUIRED_POSTGRES_MAJOR,
     ) -> None:
-        """Bind the database, blob root, and installer report."""
+        """Bind the database, blob root, installer report and PG major floor."""
         self._engine = engine
         self._blob_root = blob_root
         self._prerequisites_file = prerequisites_file
+        self._required_postgres_major = required_postgres_major
 
     def probe(self) -> tuple[ComponentHealth, ...]:
         """Return current database, schema, blob, and prerequisite states."""
@@ -119,7 +127,9 @@ class DeploymentHealth:
             return unavailable, schema_unknown
 
         postgres_major = version_num // 10000
-        database_ready = postgres_major == REQUIRED_POSTGRES_MAJOR and vector_ready and uuidv7_ready
+        database_ready = (
+            postgres_major == self._required_postgres_major and vector_ready and uuidv7_ready
+        )
         database_reason = None
         if not database_ready:
             database_reason = "database_runtime_incompatible"

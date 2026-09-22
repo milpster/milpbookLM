@@ -40,6 +40,7 @@ INSTALLATION_ENV_KEYS = frozenset(
         "MILPBOOKLM_AUDIT_RETENTION_DAYS",
         "MILPBOOKLM_MAX_ACQUISITION_BYTES",
         "MILPBOOKLM_PREREQUISITES_PATH",
+        "MILPBOOKLM_REQUIRED_POSTGRES_MAJOR",
         "MILPBOOKLM_ENABLED_CAPABILITY_FLAGS",
         "MILPBOOKLM_CONFIGURED_PROVIDER_CAPABILITIES",
         "MILPBOOKLM_CHAT_PROVIDER",
@@ -139,6 +140,11 @@ def load_installation(env: Mapping[str, str]) -> InstallationConfig:
                 "MILPBOOKLM_PREREQUISITES_PATH",
                 "/run/milpbooklm/prerequisites.json",
             )
+        ),
+        required_postgres_major=_parse_positive_int(
+            resolved.get("MILPBOOKLM_REQUIRED_POSTGRES_MAJOR", ""),
+            key="MILPBOOKLM_REQUIRED_POSTGRES_MAJOR",
+            default=18,
         ),
         enabled_capability_flags=_parse_csv(
             resolved.get("MILPBOOKLM_ENABLED_CAPABILITY_FLAGS", "")

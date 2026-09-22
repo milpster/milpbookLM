@@ -15,9 +15,9 @@ capabilities:
   reference_maturity: documented
   phase: 1
   planning_workstream: UI-01
-  implementation_status: not_started
-  implemented: false
-  enabled: false
+  implementation_status: implemented
+  implemented: true
+  enabled: true
   feature_flag: cap.notebook_management
   dependencies:
   - postgresql
@@ -41,9 +41,9 @@ capabilities:
   reference_maturity: documented
   phase: 1
   planning_workstream: RAG-01
-  implementation_status: not_started
-  implemented: false
-  enabled: false
+  implementation_status: implemented
+  implemented: true
+  enabled: true
   feature_flag: cap.notebook_instructions
   dependencies:
   - postgresql
@@ -67,9 +67,9 @@ capabilities:
   reference_maturity: documented
   phase: 1
   planning_workstream: RAG-01
-  implementation_status: not_started
-  implemented: false
-  enabled: false
+  implementation_status: implemented
+  implemented: true
+  enabled: true
   feature_flag: cap.notebook_overview
   dependencies:
   - postgresql
@@ -95,9 +95,9 @@ capabilities:
   reference_maturity: documented
   phase: 1
   planning_workstream: ING-01
-  implementation_status: not_started
-  implemented: false
-  enabled: false
+  implementation_status: implemented
+  implemented: true
+  enabled: true
   feature_flag: cap.sources
   dependencies:
   - postgresql
@@ -123,9 +123,9 @@ capabilities:
   reference_maturity: documented
   phase: 1
   planning_workstream: ING-01
-  implementation_status: not_started
-  implemented: false
-  enabled: false
+  implementation_status: implemented
+  implemented: true
+  enabled: true
   feature_flag: cap.source_guide
   dependencies:
   - postgresql
@@ -151,9 +151,9 @@ capabilities:
   reference_maturity: documented
   phase: 2
   planning_workstream: ING-02
-  implementation_status: not_started
-  implemented: false
-  enabled: false
+  implementation_status: implemented
+  implemented: true
+  enabled: true
   feature_flag: cap.source_organization
   dependencies:
   - postgresql
@@ -177,9 +177,9 @@ capabilities:
   reference_maturity: documented
   phase: 1
   planning_workstream: RAG-01
-  implementation_status: not_started
-  implemented: false
-  enabled: false
+  implementation_status: implemented
+  implemented: true
+  enabled: true
   feature_flag: cap.grounded_chat
   dependencies:
   - postgresql
@@ -207,9 +207,9 @@ capabilities:
   reference_maturity: documented
   phase: 1
   planning_workstream: RAG-01
-  implementation_status: not_started
-  implemented: false
-  enabled: false
+  implementation_status: implemented
+  implemented: true
+  enabled: true
   feature_flag: cap.chat_configuration
   dependencies:
   - postgresql
@@ -265,9 +265,9 @@ capabilities:
   reference_maturity: documented
   phase: 1
   planning_workstream: RAG-01
-  implementation_status: not_started
-  implemented: false
-  enabled: false
+  implementation_status: implemented
+  implemented: true
+  enabled: true
   feature_flag: cap.chat_lifecycle
   dependencies:
   - postgresql
@@ -291,9 +291,9 @@ capabilities:
   reference_maturity: documented
   phase: 1
   planning_workstream: RAG-01
-  implementation_status: not_started
-  implemented: false
-  enabled: false
+  implementation_status: implemented
+  implemented: true
+  enabled: true
   feature_flag: cap.citations
   dependencies:
   - postgresql
@@ -1233,9 +1233,9 @@ capabilities:
   reference_maturity: documented
   phase: 2
   planning_workstream: ING-02
-  implementation_status: not_started
-  implemented: false
-  enabled: false
+  implementation_status: implemented
+  implemented: true
+  enabled: true
   feature_flag: cap.source_markdown
   dependencies:
   - parser_registry
@@ -1260,9 +1260,9 @@ capabilities:
   reference_maturity: documented
   phase: 2
   planning_workstream: ING-02
-  implementation_status: not_started
-  implemented: false
-  enabled: false
+  implementation_status: implemented
+  implemented: true
+  enabled: true
   feature_flag: cap.source_docx
   dependencies:
   - parser_registry
@@ -1287,9 +1287,9 @@ capabilities:
   reference_maturity: documented
   phase: 2
   planning_workstream: ING-02
-  implementation_status: not_started
-  implemented: false
-  enabled: false
+  implementation_status: implemented
+  implemented: true
+  enabled: true
   feature_flag: cap.source_pptx
   dependencies:
   - parser_registry
@@ -1314,9 +1314,9 @@ capabilities:
   reference_maturity: documented
   phase: 2
   planning_workstream: ING-02
-  implementation_status: not_started
-  implemented: false
-  enabled: false
+  implementation_status: implemented
+  implemented: true
+  enabled: true
   feature_flag: cap.source_csv
   dependencies:
   - parser_registry
@@ -1341,9 +1341,9 @@ capabilities:
   reference_maturity: documented
   phase: 2
   planning_workstream: ING-02
-  implementation_status: not_started
-  implemented: false
-  enabled: false
+  implementation_status: implemented
+  implemented: true
+  enabled: true
   feature_flag: cap.source_spreadsheet_files_formats
   dependencies:
   - parser_registry
@@ -1368,9 +1368,9 @@ capabilities:
   reference_maturity: documented
   phase: 2
   planning_workstream: ING-02
-  implementation_status: not_started
-  implemented: false
-  enabled: false
+  implementation_status: implemented
+  implemented: true
+  enabled: true
   feature_flag: cap.source_images
   dependencies:
   - parser_registry
@@ -1395,9 +1395,9 @@ capabilities:
   reference_maturity: documented
   phase: 2
   planning_workstream: ING-02
-  implementation_status: not_started
-  implemented: false
-  enabled: false
+  implementation_status: implemented
+  implemented: true
+  enabled: true
   feature_flag: cap.source_audio
   dependencies:
   - parser_registry
@@ -1422,9 +1422,9 @@ capabilities:
   reference_maturity: documented
   phase: 2
   planning_workstream: ING-02
-  implementation_status: not_started
-  implemented: false
-  enabled: false
+  implementation_status: implemented
+  implemented: true
+  enabled: true
   feature_flag: cap.source_epub_files
   dependencies:
   - parser_registry
@@ -1474,9 +1474,9 @@ capabilities:
   reference_maturity: documented
   phase: 2
   planning_workstream: ING-02
-  implementation_status: not_started
-  implemented: false
-  enabled: false
+  implementation_status: implemented
+  implemented: true
+  enabled: true
   feature_flag: cap.source_web_urls
   dependencies:
   - parser_registry
@@ -1501,9 +1501,9 @@ capabilities:
   reference_maturity: documented
   phase: 2
   planning_workstream: ING-02
-  implementation_status: not_started
-  implemented: false
-  enabled: false
+  implementation_status: implemented
+  implemented: true
+  enabled: true
   feature_flag: cap.source_public_youtube_urls_transcript_backed_video_sources
   dependencies:
   - parser_registry

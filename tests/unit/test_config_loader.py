@@ -21,6 +21,7 @@ from milpbooklm_api.config import (
     UserPreferences,
 )
 from milpbooklm_api.config_loader import ConfigError, load_config, load_installation
+from milpbooklm_api.health_routes import REQUIRED_POSTGRES_MAJOR
 from pydantic import ValidationError
 
 VALID_ENV: Mapping[str, str] = {
@@ -30,6 +31,7 @@ VALID_ENV: Mapping[str, str] = {
     "MILPBOOKLM_BASE_URL": "https://notebooks.example.org",
     "MILPBOOKLM_TRUSTED_PROXY_PEERS": "10.0.0.0/8, 192.168.1.5",
 }
+DEV_POSTGRES_MAJOR = 17
 
 
 def test_installation_loads_from_env() -> None:
@@ -121,6 +123,22 @@ def test_non_prefixed_environment_keys_are_not_ours() -> None:
     env = {**VALID_ENV, "PATH": "/usr/bin", "HOME": "/root"}
     when = load_installation(env)
     assert when.base_url == "https://notebooks.example.org"
+
+
+def test_required_postgres_major_defaults_to_the_production_value() -> None:
+    assert load_installation(VALID_ENV).required_postgres_major == REQUIRED_POSTGRES_MAJOR
+
+
+def test_required_postgres_major_is_overridable_for_dev() -> None:
+    env = {**VALID_ENV, "MILPBOOKLM_REQUIRED_POSTGRES_MAJOR": str(DEV_POSTGRES_MAJOR)}
+    assert load_installation(env).required_postgres_major == DEV_POSTGRES_MAJOR
+
+
+def test_required_postgres_major_rejects_non_positive_values() -> None:
+    env = {**VALID_ENV, "MILPBOOKLM_REQUIRED_POSTGRES_MAJOR": "0"}
+    with pytest.raises(ConfigError) as excinfo:
+        load_installation(env)
+    assert excinfo.value.keys == ("MILPBOOKLM_REQUIRED_POSTGRES_MAJOR",)
 
 
 def test_missing_required_key_is_a_typed_config_error() -> None:

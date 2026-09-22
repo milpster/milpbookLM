@@ -73,6 +73,10 @@ def _dependency_health(health: DeploymentHealth | None) -> Mapping[DependencyId,
         DependencyId("postgresql"): _ready(components, "database") and _ready(components, "schema"),
         DependencyId("blob_store"): _ready(components, "blob"),
         DependencyId("bubblewrap"): _ready(components, "execution_prerequisites"),
+        # The parser registry is compiled into the deployment (isolated
+        # subprocess parsers): it has no runtime component to probe, so the
+        # dependency is satisfied whenever the deployment itself is healthy.
+        DependencyId("parser_registry"): True,
     }
 
 

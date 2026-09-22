@@ -79,6 +79,9 @@ class InstallationConfig(BaseModel):
     audit_retention_days: int = Field(default=365, gt=0)
     max_acquisition_bytes: int = Field(default=10 * 1024 * 1024, gt=0)
     prerequisites_file: Path = Path("/run/milpbooklm/prerequisites.json")
+    # Deployment health gate: the PostgreSQL major this installation runs on
+    # (18 in production; a dev stack may honestly pin an older major, e.g. 17).
+    required_postgres_major: int = Field(default=18, gt=0)
     enabled_capability_flags: tuple[str, ...] = ()
     configured_provider_capabilities: tuple[str, ...] = ()
     chat_provider: ChatProvider = ChatProvider.LLAMA_CPP

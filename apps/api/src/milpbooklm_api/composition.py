@@ -125,6 +125,24 @@ def _completion_provider(
             return FakeGroundingCompletionProvider()
 
 
+def _configured_provider_ids(installation: InstallationConfig) -> frozenset[DependencyId]:
+    """
+    Map the actually-wired providers onto registry provider dependency ids.
+
+    The composition always wires exactly one chat completion provider
+    (llama_cpp or the deterministic fake) and, when an embedding endpoint is
+    configured, one embedding client — so those registry dependencies are
+    satisfied. Explicitly configured extra providers are unioned in.
+    """
+    providers = {
+        DependencyId(provider) for provider in installation.configured_provider_capabilities
+    }
+    providers.add(DependencyId("chat_provider"))
+    if installation.embedding_base_url is not None:
+        providers.add(DependencyId("embedding_provider"))
+    return frozenset(providers)
+
+
 def build_app(
     *,
     users: UserRepository,
@@ -376,14 +394,13 @@ def create_app() -> FastAPI:
             engine,
             installation.blob_root,
             installation.prerequisites_file,
+            required_postgres_major=installation.required_postgres_major,
         ),
         capability_runtime=CapabilityRuntime(
             enabled_feature_flags=frozenset(
                 FeatureFlag(flag) for flag in installation.enabled_capability_flags
             ),
-            configured_providers=frozenset(
-                DependencyId(provider) for provider in installation.configured_provider_capabilities
-            ),
+            configured_providers=_configured_provider_ids(installation),
         ),
         source_acquisition=source_acquisition,
         source_catalog=source_catalog,
