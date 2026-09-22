@@ -332,3 +332,15 @@ ALL agent scratch (drivers, fixtures, DB clusters, logs, screenshots) lives unde
 - Focus revalidation must distinguish 401 (clear session) from transient network failure (keep session); the react-query `refetchOnWindowFocus` equivalent for the hand-rolled provider is one `visibilitychange` listener gated on `document.visibilityState === "visible"` + actor presence.
 - `pnpm lint` (biome) is red on HEAD (`useLiteralKeys` in NotebookRoute/ViewerRoute/vite.config, pre-existing); gate is "no NEW diagnostics from changed files", verified with scoped `biome check`.
 - `signOut` should clear local session state even when the logout POST itself 401s (session already dead server-side) — `await logout().catch(() => undefined)` before clearing prevents the stuck-state bug class from the logout path too.
+
+## 2026-09-22 — Configurable auth rate limits
+
+- A short configured browser-QA window proves the limiter's real all-attempt semantics without changing production defaults: two successful logins plus one wrong password consumed a three-attempt budget, the fourth request returned 429, and waiting `Retry-After + 1` restored a successful login.
+- Derive the `Retry-After` header and JSON retry value from the same computed wait so browser guidance and machine-readable behavior cannot disagree.
+
+## 2026-09-22 — Auth rate-limit WIP completion (this session)
+
+- The in-memory per-IP limiter makes localhost ONE bucket shared by the human and browser tests — lockouts during QA are self-inflicted, not a code bug. Dev-stack fix belongs in `scratch/t20-gate/start-api.sh` env knobs (`MILPBOOKLM_LOGIN_MAX_ATTEMPTS=50`), never in `InstallationConfig` defaults.
+- `SlidingWindowLimiter.allow()` must NOT append on denial; `retry_after_seconds(key)` then reads the oldest in-window event for an exact ceil hint — a frozen `FakeClock` + `.advance()` pins both the 429 body and the `Retry-After` header deterministically.
+- 429 must stay off the web client's session-invalidation trigger set (`isCredentialFailure` = 401 or 403-with-credential-reason only): a rate-limited user still has a valid session; logging them out would compound the lockout.
+- `authFailureMessage` returning a constant "Authentication failed" for everything non-401/429 beats surfacing `error.message`: ky's HTTPError message embeds the request URL, which leaks internals into the UI.

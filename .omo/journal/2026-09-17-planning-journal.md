@@ -333,3 +333,11 @@ Session: 2026-09-17, Prometheus (ulw-plan), intent=CLEAR (user asked to be inter
 - Fix `a52a887` (deep worker, 10m): ky afterResponse hook — 401 any / 403 {origin_rejected,csrf_rejected} exact allowlist → reset CSRF + notify registry; auth provider clears actor+query cache (loop-guarded via actorRef); visibilitychange revalidation; 8 vitest tests.
 - Atlas E2E proof (scratch/t-qa/ui_revoke_check.mjs + 07/08.png): live login → DB-revoked session → create click → POST 401 → login screen shown, generic error NOT shown; wrong-password stays on login.
 - Gates: vitest 8/8 (11 total), tsc build ok, ruff clean, pytest unit 183. Biome pre-existing red on untouched files (useLiteralKeys) — noted, not in scope.
+
+## Process log (cont. 35 — auth rate-limit fix landed, 2026-09-22 late)
+
+- Multi-death saga: implementation worker exhausted weekly quota mid-task (staged its work first); a resumed session turned out to be an Oracle read-only advisor; a visual-engineering retry died instantly; fresh deep finisher (retry per user) completed in 5m.
+- Commit f582340: 4 env-tunable rate-limit knobs (defaults unchanged: login 5/15min, register 3/60min), machine-readable 429 + retry_after hint, AuthRoute friendly 401/429 messages + constant fallback (no raw error leakage), +13 API tests / web tests updated.
+- Dev stack: start-api.sh now sets LOGIN_MAX_ATTEMPTS=50 (localhost test/user coexistence; root cause of tonight user lockout). API restarted only (:8000); worker/web/8010/8009 untouched.
+- Verified first-hand: ruff/mypy-208/pytest-196/vitest-13 green; env live in API process; 20 capabilities available; wrong-password 401 clean. Worker browser matrix (6 screenshots, scratch/t-qa/10-*.png): fresh login, garbage-cookie login, friendly invalid-credentials, hammer x3 no 429, success-after-failures.
+- D17 recorded: mandatory Playwright E2E after every plan item (user order).
