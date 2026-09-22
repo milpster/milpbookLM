@@ -311,3 +311,10 @@ Session: 2026-09-17, Prometheus (ulw-plan), intent=CLEAR (user asked to be inter
 
 - [~] T28 marked `- [~]` (worker `ses_f362dd8f`, commit `25a9cc0`). User-space Playwright browser worker live: sandbox posture PROVEN (Playwright default = silent --no-sandbox — caught and forced correct), T22-table route guard, disposable contexts, quarantine downloads, automation gate; E2E-008 browser leg green.
 - Progress: 28/59 tasks (7 [x], 21 [~], 31 [ ]). Research surface (T26-T28) complete except T8-class deployment forms. Next: T29.
+
+## Process log (cont. 32 — T29 close-out + HALT, 2026-09-22)
+
+- [~] T29 marked `- [~]` (3 sessions through 2 usage-limit deaths; final finisher `ses_f35b7b79e` 20m; commit `4cfeaea`). User-space EXE-01 core complete: signed nonce-bound broker protocol, bwrap sandbox w/ delegated cgroups, CAS images, validated outputs pipeline, REAL-bwrap escape suite green + manual denial proofs. 4 new boundary defects found+fixed during QA (tmpfs quota ordering, swap leak, cgroup-attach race, corrected seccomp host fact).
+- Admin deployment forms + D11 GPU benchmark bundle deferred (user window + D16 authz) — ADRs 38/42 consume later.
+- Progress: 29/59 tasks (7 [x], 22 [~], 30 [ ]). Gates at 4cfeaea: ruff clean / mypy 208 / import-linter 4-0 / pytest 246 + 12. Wave 3 nearly complete — T30 (Phase-3 gate) is next and unblocked (T26-T29 evidence ready).
+- HALT per user order after T29. Stack live (PG :29521, :8009 user-managed, :8010, :8000, :5173); prototype usable at localhost:5173.
