@@ -46,12 +46,23 @@ class FetchErrorCode(StrEnum):
     INTERNAL = "internal"
 
 
-@dataclass(frozen=True, slots=True)
 class WebFetchRefusedError(Exception):
-    """A fetch was refused by policy, caps, or transport (no partial content)."""
+    """
+    A fetch was refused by policy, caps, or transport (no partial content).
 
-    code: FetchErrorCode
-    detail: str
+    Hand-written instead of a frozen+slots dataclass: contextlib/anyio assign
+    ``__traceback__``/``__cause__`` on exceptions after construction, which
+    the dataclass-generated frozen ``__setattr__`` breaks (TypeError) for
+    every refusal raised inside an ``anyio.fail_after`` scope.
+    """
+
+    __slots__ = ("code", "detail")
+
+    def __init__(self, code: FetchErrorCode, detail: str) -> None:
+        """Bind the stable refusal code and safe detail."""
+        super().__init__(code, detail)
+        self.code = code
+        self.detail = detail
 
     def __str__(self) -> str:
         """Return the stable code and safe detail."""

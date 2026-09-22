@@ -1,0 +1,108 @@
+{
+  "task": "26",
+  "title": "RSR-01a — SearXNG service + adapter + fake + budgets",
+  "commit_message": "feat(research): RSR-01a SearXNG service+adapter+fake (ARCH-11 subset)",
+  "verdict": "done",
+  "implemented": {
+    "service_config": [
+      "Pinned service artifacts already delivered by T8 and verified against this task's needs: infra/podman/searxng/settings.yml (formats [html,json] explicit, limiter: false), compose searxng service (digest sha256:76f9ec5b..., backend internal:true + research-egress unpublished networks, healthcheck), versions.lock SEARXNG_VERSION=2026.9.20-2e624bed4, quadlet milpbooklm.network Internal=true",
+      "No Valkey service exists in compose (D7 minimal profile; limiter disabled precisely because it would require Valkey)",
+      "NEW infra/podman/searxng/README.md: pinning/revision-sync rule, the two verified facts (json format non-default; limiter depends on Valkey), network isolation, discovery-only wiring point, and the deferred real-instance smoke procedure"
+    ],
+    "adapter": [
+      "SearxngSearchService implements WebSearchPort: q/engines/categories/language/time_range params (engines+categories deduped and sorted), format=json always",
+      "Per-run budgets: wall-clock deadline via anyio.fail_after covering headers AND streamed body, result-count cap, response-byte cap",
+      "Strict content-type validation: media type must be application/json; unexpected types are typed refusals (a misconfigured instance answering HTML is rejected, never parsed)",
+      "Records URL/title/snippet + contributing engines per hit; unresponsive engines recorded; degraded/timeout upstreams degrade the answer to an EXPLICIT partial report",
+      "All-degraded engine list -> partial with all_engines_unresponsive, never a silent empty success (plan QA failure scenario)",
+      "Budget-exceeded result list -> truncated partial with budget_result_cap reason",
+      "Engine health observable via /config parsing (name/enabled/categories/timeout)",
+      "Service-owned httpx client with aclose() and injectable transport (T22 pattern)"
+    ],
+    "cache": [
+      "CachedWebSearch (application decorator over the port): key = normalized query + sorted engines/categories + language + time_range + SearXNG config revision",
+      "Short TTL (default 120s) on an injectable monotonic clock; bounded LRU eviction (default 256 entries); only COMPLETE reports cached — partials/timeouts always re-queried; engine_health never cached"
+    ],
+    "fake": [
+      "FakeSearxng: deterministic in-process pure-ASGI app (no framework, no network, no running service) serving /search, /config, /healthz",
+      "Scenario-scriptable: results, unresponsive_hosts, content_type, status, delay, json_enabled (403-HTML format-gate emulation), raw_body, config_engines; records every request for parameter assertions"
+    ],
+    "defect_fix_proven_adjacent": [
+      "frozen+slots dataclass exceptions break under contextlib's __traceback__ reassignment inside anyio.fail_after scopes: T22's HardenedFetchService surfaced upstream HTTP errors as TypeError (proven by direct drive pre-fix)",
+      "WebFetchRefusedError and the new WebSearchRefusedError rewritten as hand-written typed exceptions (__slots__, typed fields, stable __str__); regression test added to tests/unit/test_hardened_fetch.py"
+    ]
+  },
+  "acceptance": {
+    "contract_tests_vs_fake": {
+      "suite": "tests/unit/test_searxng_search.py",
+      "result": "14 passed",
+      "cases": [
+        "results mapped with params on the wire",
+        "partial engines -> explicit partial",
+        "all engines degraded -> explicit partial, no silent empty success",
+        "wall-clock timeout -> typed timeout refusal",
+        "unexpected content-type -> typed refusal",
+        "json format gate disabled -> 403 HTML -> http_status refusal",
+        "budget result cap -> partial with budget_result_cap reason",
+        "response byte cap -> too_large refusal",
+        "engine health from /config",
+        "empty query refused before any request"
+      ]
+    },
+    "cache_tests": {
+      "suite": "tests/unit/test_web_search_cache.py",
+      "result": "9 passed"
+    },
+    "regression": {
+      "suite": "tests/unit/test_hardened_fetch.py",
+      "result": "19 passed (18 prior + 1 new TypeError regression)"
+    },
+    "real_instance_smoke": "deployment-deferred with the T8 wave-2 rootless-podman stack: no podman on host, snap docker daemon unavailable; a user-space searx checkout would require dependencies outside the REFERENCE-DEPENDENCIES matrix. Procedure documented in infra/podman/searxng/README.md; adapter fully verified against the in-process fake"
+  },
+  "dependencies": {
+    "new_third_party": "none — httpx/anyio already authorized (REFERENCE-DEPENDENCIES HTTP row; ALLOWED_ADAPTER_IMPORTS unchanged)"
+  },
+  "manual_qa_log": ".omo/evidence/task-26-manual-qa.log",
+  "scratch_results": "scratch/t26-rsr/manual-smoke.log",
+  "status": "complete",
+  "deliverables": [
+    "packages/application/src/milpbooklm_application/web_search.py — WebSearchPort, WebSearchCommand/SearchBudget/SearchTimeRange, WebSearchReport/SearchHit/outcome+partial-reason enums, EngineHealth(Report), WebSearchRefusedError, normalize_query",
+    "packages/application/src/milpbooklm_application/web_search_cache.py — bounded short-TTL cache keyed by normalized query + config revision",
+    "packages/adapters/src/milpbooklm_adapters/searxng/{__init__,service,parsing,fake}.py — adapter (params/deadlines/budgets/content-type/partials/health), payload boundary parsing, deterministic ASGI fake",
+    "packages/application/src/milpbooklm_application/web_fetch.py + tests/unit/test_hardened_fetch.py — proven frozen+slots exception defect fixed with regression test",
+    "infra/podman/searxng/README.md — deployment notes: pinning, formats/limiter/Valkey facts, network isolation, deferred smoke, discovery-only handoff",
+    "tests/unit/test_searxng_search.py + tests/unit/test_web_search_cache.py — 23 cases"
+  ],
+  "commands": [
+    {
+      "command": "uv run ruff check .",
+      "exit": 0,
+      "result": "All checks passed!"
+    },
+    {
+      "command": "uv run mypy",
+      "exit": 0,
+      "result": "Success: no issues found in 186 source files"
+    },
+    {
+      "command": "uv run import-linter lint",
+      "exit": 0,
+      "result": "Contracts: 4 kept, 0 broken."
+    },
+    {
+      "command": "uv run pytest tests/meta tests/architecture tests/unit -q",
+      "exit": 0,
+      "result": "185 passed, 2 warnings in 4.39s"
+    },
+    {
+      "command": "uv run pytest tests/fixtures/sources -q",
+      "exit": 0,
+      "result": "12 passed in 5.04s"
+    }
+  ],
+  "deferred": [
+    "Real-instance recording-mode smoke — blocked on the T8 wave-2 podman-rootless stack (no container runtime usable as this user today); procedure documented in infra/podman/searxng/README.md",
+    "API/worker composition wiring of WebSearchPort + MILPBOOKLM_SEARXNG_URL — owned by T27 research runs (tools surface)",
+    "ProviderFailureError (models/errors.py) and AcquisitionError (domain) share the frozen+slots dataclass exception shape and may carry the same contextlib/anyio latent defect on in-scope raise paths — left to their capability owners (unproven here, recorded for wave 2)"
+  ]
+}

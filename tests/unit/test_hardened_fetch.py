@@ -181,6 +181,25 @@ def test_wall_clock_limit_applies_while_streaming_body() -> None:
     anyio.run(drive)
 
 
+def test_http_error_status_raises_typed_refusal_inside_deadline_scope() -> None:
+    # Regression: frozen+slots dataclass exceptions could not receive the
+    # __traceback__ reassignment contextlib performs in anyio deadline scopes,
+    # so upstream HTTP errors surfaced as TypeError instead of the typed refusal.
+    async def drive() -> None:
+        transport = httpx.MockTransport(
+            lambda _request: httpx.Response(503, text="unavailable")
+        )
+        service = HardenedFetchService(transport=transport)
+        try:
+            with pytest.raises(WebFetchRefusedError) as captured:
+                await service.fetch(WebFetchCommand("https://example.test/down"))
+            assert captured.value.code is FetchErrorCode.INTERNAL
+        finally:
+            await service.aclose()
+
+    anyio.run(drive)
+
+
 def test_ipv6_literal_is_canonicalized_with_brackets() -> None:
     target = normalize_url("https://[2606:4700:4700::1111]/dns-query")
     assert target.url == "https://[2606:4700:4700::1111]/dns-query"

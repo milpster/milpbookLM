@@ -1,0 +1,17 @@
+# Task 26 manual QA log — RSR-01a SearXNG service + adapter + fake + budgets (2026-09-22, Sisyphus Worker)
+
+Stack: no live services touched. Shared llama.cpp :8009, bge-m3 :8010, PostgreSQL :29521, API :8000, worker, vite :5173 were not spawned, restarted, or killed. Host runtime check: no podman on PATH; snap docker CLI present but daemon UNAVAILABLE (`docker info` fails) — real-instance smoke deployment-deferred with the T8 wave-2 podman stack (no sudo, no image pulls, no system-wide searx install; its dep tree sits outside REFERENCE-DEPENDENCIES).
+
+1. Adapter vs in-process fake (driver output scratch/t26-rsr/manual-smoke.log):
+   - complete answer: outcome=complete, 2 hits with URL/title/snippet and per-hit contributing engines, upstream number_of_results passthrough — PASS.
+   - partial engines: outcome=partial, unresponsive_engines=('google',), reason engines_unresponsive — PASS.
+   - all engines degraded: outcome=partial, hits=(), reason all_engines_unresponsive — explicit partial, NO silent empty success (plan QA failure scenario) — PASS.
+   - bad content type: typed refusal `unexpected_content_type: expected application/json, got 'text/html'` — PASS.
+   - wall-clock deadline: typed refusal `timeout: wall-clock search limit` (0.3 s fake delay vs 0.05 s budget) — PASS.
+   - cache: two syntactically different but equivalent queries -> 1 inner call — PASS.
+2. Contract suite tests/unit/test_searxng_search.py (14 cases): params on the wire (engines deduped+sorted, categories, language, time_range, format=json), partial/all-degraded semantics, timeout, bad content-type, json-format-gate 403-HTML path, HTTP status, budget result cap -> partial with reason, response byte cap, malformed body, engine health from /config, empty query refused before any request, config revision tracks versions.lock pin — PASS.
+3. Cache suite tests/unit/test_web_search_cache.py (9 cases): TTL expiry on injected clock, partial reports never cached, config-revision invalidation, bounded eviction, query/param-order normalization, engine-health delegation — PASS.
+4. Regression fix verified by hand: pre-fix, a 503 through HardenedFetchService raised `TypeError: super(type, obj)...`; post-fix (hand-written WebFetchRefusedError), the same drive raises the typed `internal: upstream returned HTTP 503` refusal — PASS.
+5. Gates: ruff "All checks passed!", mypy "Success: no issues found in 186 source files", import-linter "Contracts: 4 kept, 0 broken.", pytest tests/meta+architecture+unit 185 passed (baseline 161), tests/fixtures/sources 12 passed (baseline 12). VER-* churn from the gate run reverted before staging.
+
+Task scratch (manual-smoke.log, driver) intentionally uncommitted under scratch/t26-rsr/.
