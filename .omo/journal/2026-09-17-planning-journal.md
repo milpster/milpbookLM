@@ -326,3 +326,10 @@ Session: 2026-09-17, Prometheus (ulw-plan), intent=CLEAR (user asked to be inter
 - Atlas wired dev env into scratch/t20-gate/start-api.sh (PG 17 + 20 cap flags), restarted API: 20 available incl. notebook_management+grounded_chat; health database/schema/blob ready (execution_prerequisites honestly degraded until prerequisites.json provisioned).
 - Browser QA (node playwright, scratch/t-qa/): create button VISIBLE+ENABLED, notebook created via UI, chat panel no longer blocked. Evidence: scratch/t-qa/01..05.png.
 - Not flipped (honest): agentic_chat, code/execution caps (engine unwired), voice/STT, pdf+paste flags (parsers live, outside delegated set — flip on request).
+
+## Process log (cont. 34 — web session-invalidation hardening, 2026-09-22 late)
+
+- User hit "Notebook creation failed" from a stale session (API restart churn invalidated cookie HMAC chain; client never noticed). Root cause: auth checked once per page load; no global 401/403 handler; react-query cache masked decay.
+- Fix `a52a887` (deep worker, 10m): ky afterResponse hook — 401 any / 403 {origin_rejected,csrf_rejected} exact allowlist → reset CSRF + notify registry; auth provider clears actor+query cache (loop-guarded via actorRef); visibilitychange revalidation; 8 vitest tests.
+- Atlas E2E proof (scratch/t-qa/ui_revoke_check.mjs + 07/08.png): live login → DB-revoked session → create click → POST 401 → login screen shown, generic error NOT shown; wrong-password stays on login.
+- Gates: vitest 8/8 (11 total), tsc build ok, ruff clean, pytest unit 183. Biome pre-existing red on untouched files (useLiteralKeys) — noted, not in scope.
