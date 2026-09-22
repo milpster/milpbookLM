@@ -318,3 +318,11 @@ Session: 2026-09-17, Prometheus (ulw-plan), intent=CLEAR (user asked to be inter
 - Admin deployment forms + D11 GPU benchmark bundle deferred (user window + D16 authz) — ADRs 38/42 consume later.
 - Progress: 29/59 tasks (7 [x], 22 [~], 30 [ ]). Gates at 4cfeaea: ruff clean / mypy 208 / import-linter 4-0 / pytest 246 + 12. Wave 3 nearly complete — T30 (Phase-3 gate) is next and unblocked (T26-T29 evidence ready).
 - HALT per user order after T29. Stack live (PG :29521, :8009 user-managed, :8010, :8000, :5173); prototype usable at localhost:5173.
+
+## Process log (cont. 33 — user-requested capability surfacing, 2026-09-22 eve)
+
+- User asked why notebook-create was still absent in UI. Root cause chain: UI gates on capability `state==="available"`; registry seed marked ALL 61 entries implemented:false (day-one placeholder, never flipped); plus stale health constants (schema head pinned 0001_baseline; PG-major 18 vs dev 17) degraded the postgresql dependency.
+- Fix `98b14f7` (deep worker, 15m): 20 live capabilities flipped in registry+seed lockstep (check_capabilities green); schema head now derived from migrations; `MILPBOOKLM_REQUIRED_POSTGRES_MAJOR` env override; provider mapping fixed in composition; +9 tests (255 canonical now).
+- Atlas wired dev env into scratch/t20-gate/start-api.sh (PG 17 + 20 cap flags), restarted API: 20 available incl. notebook_management+grounded_chat; health database/schema/blob ready (execution_prerequisites honestly degraded until prerequisites.json provisioned).
+- Browser QA (node playwright, scratch/t-qa/): create button VISIBLE+ENABLED, notebook created via UI, chat panel no longer blocked. Evidence: scratch/t-qa/01..05.png.
+- Not flipped (honest): agentic_chat, code/execution caps (engine unwired), voice/STT, pdf+paste flags (parsers live, outside delegated set — flip on request).
