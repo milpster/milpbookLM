@@ -40,6 +40,8 @@ _SOURCE_TYPES: Final = {
     "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet": SourceType.XLSX,
     "application/vnd.openxmlformats-officedocument.wordprocessingml.document": SourceType.DOCX,
     "application/vnd.openxmlformats-officedocument.presentationml.presentation": SourceType.PPTX,
+    "application/epub+zip": SourceType.EPUB,
+    "text/html": SourceType.WEB_URL,
 }
 
 
@@ -54,9 +56,7 @@ class PgSourceCatalog(SourceCatalog):
 
     def acquire(self, command: AcquireSourceCommand, blob: BlobObject) -> tuple[SourceView, bool]:
         """Create or return the notebook-local source for this acquisition identity."""
-        origin = (
-            f"{command.origin_kind}:{IMPORTER_VERSION}:sha256:{blob.content_sha256}"
-        )
+        origin = self._origin(command, blob)
         source_type = self._source_type(blob)
         with self._engine.begin() as connection:
             connection.execute(
@@ -230,6 +230,15 @@ class PgSourceCatalog(SourceCatalog):
     ) -> EffectiveRestrictions:
         """Effective deny/reuse/export state across content-bearing ancestors."""
         return self._guide.effective_restrictions(source_id, actor_id)
+
+    @staticmethod
+    def _origin(command: AcquireSourceCommand, blob: BlobObject) -> str:
+        if command.web_capture is not None:
+            return (
+                f"web_url:{command.web_capture.final_url}:"
+                f"captured:{command.web_capture.captured_at}"
+            )
+        return f"{command.origin_kind}:{IMPORTER_VERSION}:sha256:{blob.content_sha256}"
 
     @staticmethod
     def _source_type(blob: BlobObject) -> SourceType:

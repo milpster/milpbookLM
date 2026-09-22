@@ -22,7 +22,7 @@ from milpbooklm_adapters.parsers.textcodec import validate_text_stream
 _CHUNK_SIZE: Final = 1024 * 1024
 _PDF_ENCRYPT_MARKER: Final = b"/Encrypt"
 _TEXT_FAMILY: Final = frozenset(
-    {IdentifiedMedia.TEXT, IdentifiedMedia.MARKDOWN, IdentifiedMedia.CSV}
+    {IdentifiedMedia.TEXT, IdentifiedMedia.MARKDOWN, IdentifiedMedia.CSV, IdentifiedMedia.HTML}
 )
 
 

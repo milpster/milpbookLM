@@ -15,6 +15,7 @@ from fastapi import FastAPI, HTTPException, Request
 from milpbooklm_adapters.blobs import FilesystemBlobStore, PgBlobRepository
 from milpbooklm_adapters.chat import PgConversationStore
 from milpbooklm_adapters.db.connections import make_engine
+from milpbooklm_adapters.fetch import HardenedFetchService
 from milpbooklm_adapters.grounding import PgGroundingStore
 from milpbooklm_adapters.grounding_completion import (
     FakeGroundingCompletionProvider,
@@ -64,6 +65,7 @@ from milpbooklm_application.ports import (
 from milpbooklm_application.retrieval import RetrieveChunks
 from milpbooklm_application.source_acquisition import AcquireSource, SourceCatalog
 from milpbooklm_application.structured_logging import configure_structured_logging
+from milpbooklm_application.web_fetch import AcquireWebSource
 from milpbooklm_domain.capabilities import CapabilityDefinition, DependencyId, FeatureFlag
 from milpbooklm_domain.indexing import STRUCTURAL_CHUNKER_V1
 from starlette import status
@@ -129,6 +131,7 @@ def build_app(
     capability_runtime: CapabilityRuntime | None = None,
     source_acquisition: AcquireSource | None = None,
     source_catalog: SourceCatalog | None = None,
+    web_source_acquisition: AcquireWebSource | None = None,
     retrieval: RetrieveChunks | None = None,
     index_config: IndexBuildConfig | None = None,
     grounding: PgGroundingStore | None = None,
@@ -226,7 +229,15 @@ def build_app(
     if jobs is not None:
         app.include_router(build_job_router(deps, principal, jobs))
     if source_acquisition is not None and source_catalog is not None:
-        app.include_router(build_source_router(deps, principal, source_acquisition, source_catalog))
+        app.include_router(
+            build_source_router(
+                deps,
+                principal,
+                source_acquisition,
+                source_catalog,
+                web_source_acquisition,
+            )
+        )
     return app
 
 
@@ -298,6 +309,12 @@ def create_app() -> FastAPI:
         audit=audit,
         jobs=jobs,
     )
+    fetch_service = HardenedFetchService()
+    web_source_acquisition = AcquireWebSource(
+        fetch=fetch_service,
+        acquire=source_acquisition,
+        audit=audit,
+    )
     index_config, embedding_client = _embedding_wiring(installation)
     retrieval = RetrieveChunks(
         retrieval=PgRetrievalService(engine),
@@ -306,7 +323,7 @@ def create_app() -> FastAPI:
     )
     grounding = PgGroundingStore(engine)
     conversations = PgConversationStore(engine)
-    return build_app(
+    app = build_app(
         users=users,
         hasher=Argon2PasswordHasher(),
         sessions=PgSessionTokenStore(engine, secret_key=settings.secret_key, clock=clock),
@@ -337,4 +354,7 @@ def create_app() -> FastAPI:
         ),
         source_acquisition=source_acquisition,
         source_catalog=source_catalog,
+        web_source_acquisition=web_source_acquisition,
     )
+    app.router.add_event_handler("shutdown", fetch_service.aclose)
+    return app

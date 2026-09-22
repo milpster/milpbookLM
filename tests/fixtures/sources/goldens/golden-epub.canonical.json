@@ -1,0 +1,98 @@
+{
+ "schema_version": "1",
+ "document_id": "c1a4b608-2694-5cbe-b60b-864c7fe0e853",
+ "source_version_id": "00000000-0000-5000-8000-000000000211",
+ "mime_type": "application/epub+zip",
+ "parser": {
+  "identity": "milpbooklm.epub",
+  "version": "1",
+  "profile": "epub-ebooklib-v1",
+  "tool_versions": [
+   "ebooklib=0.19",
+   "python=3.13.3"
+  ]
+ },
+ "languages": [],
+ "metadata": {
+  "chapter_count": 2
+ },
+ "root_node_ids": [
+  "18aca739-99df-5a59-85a0-6316bf8dd3d5"
+ ],
+ "nodes": [
+  {
+   "node_id": "18aca739-99df-5a59-85a0-6316bf8dd3d5",
+   "kind": "document",
+   "structural_identity": "document",
+   "parent_id": null,
+   "child_order": 0,
+   "text": null,
+   "locator": {
+    "path": [
+     "document"
+    ]
+   },
+   "authority": "source_authored",
+   "language": null
+  },
+  {
+   "node_id": "f4a464e3-f50d-57ef-a5eb-f9626197e8a2",
+   "kind": "section",
+   "structural_identity": "chapter:1:chapter.xhtml",
+   "parent_id": "18aca739-99df-5a59-85a0-6316bf8dd3d5",
+   "child_order": 1,
+   "text": null,
+   "locator": {
+    "path": [
+     "document",
+     "chapter",
+     "chapter.xhtml"
+    ]
+   },
+   "authority": "source_authored",
+   "language": null
+  },
+  {
+   "node_id": "ee0e2a07-4443-5d1c-8fb4-e1cf85cb98c0",
+   "kind": "heading",
+   "structural_identity": "chapter:1:chapter.xhtml:block:1:body:nth-of-type(1)>h1:nth-of-type(1)",
+   "parent_id": "f4a464e3-f50d-57ef-a5eb-f9626197e8a2",
+   "child_order": 1,
+   "text": "Quartalsbericht",
+   "locator": {
+    "path": [
+     "document",
+     "chapter",
+     "chapter.xhtml",
+     "dom",
+     "body:nth-of-type(1)>h1:nth-of-type(1)",
+     "heading",
+     "Quartalsbericht"
+    ]
+   },
+   "authority": "source_authored",
+   "language": null
+  },
+  {
+   "node_id": "a90c8696-8b3d-5da5-9639-d76deaa3587a",
+   "kind": "paragraph",
+   "structural_identity": "chapter:1:chapter.xhtml:block:2:body:nth-of-type(1)>p:nth-of-type(1)",
+   "parent_id": "f4a464e3-f50d-57ef-a5eb-f9626197e8a2",
+   "child_order": 2,
+   "text": "Der Umsatz stieg.",
+   "locator": {
+    "path": [
+     "document",
+     "chapter",
+     "chapter.xhtml",
+     "dom",
+     "body:nth-of-type(1)>p:nth-of-type(1)",
+     "heading",
+     "Quartalsbericht"
+    ]
+   },
+   "authority": "source_authored",
+   "language": null
+  }
+ ]
+}

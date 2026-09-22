@@ -17,6 +17,7 @@ from milpbooklm_adapters.parsers.isolation import (
     IsolatedParser,
     ParseFailure,
     ParseSuccess,
+    WebLocatorContext,
 )
 
 from tests._evidence import write_evidence
@@ -28,6 +29,12 @@ SOURCE_VERSION_ID = uuid.UUID("00000000-0000-5000-8000-000000000211")
 XLSX_TYPE = "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet"
 DOCX_TYPE = "application/vnd.openxmlformats-officedocument.wordprocessingml.document"
 PPTX_TYPE = "application/vnd.openxmlformats-officedocument.presentationml.presentation"
+HTML_TYPE = "text/html"
+EPUB_TYPE = "application/epub+zip"
+WEB_CONTEXT = WebLocatorContext(
+    canonical_url="https://example.test/reports/q3",
+    captured_at="2026-09-22T12:00:00+00:00",
+)
 
 GOLDENS_UNDER_TEST = {
     "golden-markdown.md": "text/markdown",
@@ -36,6 +43,8 @@ GOLDENS_UNDER_TEST = {
     "golden-xlsx.xlsx": XLSX_TYPE,
     "golden-docx.docx": DOCX_TYPE,
     "golden-pptx.pptx": PPTX_TYPE,
+    "golden-html.html": HTML_TYPE,
+    "golden-epub.epub": EPUB_TYPE,
 }
 
 HOSTILE_CORPUS = {
@@ -43,13 +52,21 @@ HOSTILE_CORPUS = {
     "hostile-extref.docx": (DOCX_TYPE, "policy_blocked"),
     "hostile-bomb.xlsx": (XLSX_TYPE, "too_large"),
     "hostile-corrupt.xlsx": (XLSX_TYPE, "corrupt"),
+    "hostile-bomb.epub": (EPUB_TYPE, "too_large"),
+    "hostile-corrupt.epub": (EPUB_TYPE, "corrupt"),
+    "hostile-entity.epub": (EPUB_TYPE, "policy_blocked"),
+    "hostile-external.epub": (EPUB_TYPE, "policy_blocked"),
 }
 
 
 def test_golden_canonical_documents_match() -> None:
     for fixture_name, media_type in sorted(GOLDENS_UNDER_TEST.items()):
+        context = WEB_CONTEXT if media_type == HTML_TYPE else None
         result = IsolatedParser().parse(
-            SOURCE_VERSION_ID, media_type, (FIXTURES / fixture_name).read_bytes()
+            SOURCE_VERSION_ID,
+            media_type,
+            (FIXTURES / fixture_name).read_bytes(),
+            web_locator=context,
         )
         assert isinstance(result, ParseSuccess), f"{fixture_name}: {result}"
         golden_path = GOLDENS / f"{Path(fixture_name).stem}.canonical.json"
@@ -114,6 +131,38 @@ def test_hostile_office_corpus_rejected_with_explicit_states() -> None:
         assert result.detail, f"{fixture_name}: failure carries no detail"
         outcomes[fixture_name] = result.state
     assert set(outcomes.values()) <= {"policy_blocked", "too_large", "corrupt"}
+
+
+def test_web_snapshot_locators_pin_url_capture_dom_and_heading_paths() -> None:
+    result = IsolatedParser().parse(
+        SOURCE_VERSION_ID,
+        HTML_TYPE,
+        (FIXTURES / "golden-html.html").read_bytes(),
+        web_locator=WEB_CONTEXT,
+    )
+    assert isinstance(result, ParseSuccess)
+    paragraph = next(node for node in result.document.nodes if node.text == "Der Umsatz stieg.")
+    assert paragraph.locator.path[:4] == (
+        "web",
+        WEB_CONTEXT.canonical_url,
+        WEB_CONTEXT.captured_at,
+        "dom",
+    )
+    assert "main:nth-of-type(1)>p:nth-of-type(1)" in paragraph.locator.path
+    assert paragraph.locator.path[-2:] == ("heading", "Quartalsbericht")
+
+
+def test_html_snapshot_excludes_navigation_and_script_text() -> None:
+    result = IsolatedParser().parse(
+        SOURCE_VERSION_ID,
+        HTML_TYPE,
+        (FIXTURES / "golden-html.html").read_bytes(),
+        web_locator=WEB_CONTEXT,
+    )
+    assert isinstance(result, ParseSuccess)
+    text = "\n".join(node.text or "" for node in result.document.nodes)
+    assert "Navigationstext" not in text
+    assert "prompt injection from script" not in text
 
 
 def test_evidence_record_written() -> None:

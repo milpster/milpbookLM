@@ -16,6 +16,8 @@ class IdentifiedMedia(StrEnum):
     XLSX = "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet"
     DOCX = "application/vnd.openxmlformats-officedocument.wordprocessingml.document"
     PPTX = "application/vnd.openxmlformats-officedocument.presentationml.presentation"
+    HTML = "text/html"
+    EPUB = "application/epub+zip"
 
 
 class AcquisitionErrorCode(StrEnum):
@@ -24,6 +26,8 @@ class AcquisitionErrorCode(StrEnum):
     UNSUPPORTED = "unsupported"
     CORRUPT = "corrupt"
     TOO_LARGE = "too_large"
+    TIMEOUT = "timeout"
+    INTERNAL = "internal"
     POLICY_BLOCKED = "policy_blocked"
 
 

@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+import json
 import os
 import resource
 import signal
@@ -15,6 +16,8 @@ from typing import Final, Literal, assert_never
 
 from milpbooklm_contracts.canonical_document import CanonicalDocument, JsonValue
 from pydantic import BaseModel, ConfigDict
+
+from .parser_context import WebLocatorContext
 
 _CHILD_MODULE: Final = "milpbooklm_adapters.parsers.child"
 
@@ -85,12 +88,29 @@ class IsolatedParser:
         return self._limits
 
     def parse(
-        self, source_version_id: uuid.UUID, media_type: str, data: bytes
+        self,
+        source_version_id: uuid.UUID,
+        media_type: str,
+        data: bytes,
+        *,
+        web_locator: WebLocatorContext | None = None,
     ) -> ParseResult:
         """Parse bytes through the isolated child and validate its result contract."""
         with tempfile.TemporaryDirectory(prefix="milpbooklm-parser-") as temp_name:
             temp = Path(temp_name)
             output = temp / "result.json"
+            context_path = temp / "context.json"
+            context_path.write_text(
+                json.dumps(
+                    {
+                        "canonical_url": web_locator.canonical_url,
+                        "captured_at": web_locator.captured_at,
+                    }
+                    if web_locator is not None
+                    else {}
+                ),
+                encoding="utf-8",
+            )
             environment = {
                 "HOME": temp_name,
                 "PATH": os.environ.get("PATH", ""),
@@ -106,6 +126,7 @@ class IsolatedParser:
                     str(output),
                     str(source_version_id),
                     media_type,
+                    str(context_path),
                 ],
                 stdin=subprocess.PIPE,
                 stdout=subprocess.DEVNULL,

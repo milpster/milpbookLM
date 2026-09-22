@@ -64,6 +64,20 @@ class SourceGuideView:
 
 
 @dataclass(frozen=True, slots=True)
+class WebCaptureMetadata:
+    """Immutable retrieval metadata carried into canonical web locators."""
+
+    requested_url: str
+    final_url: str
+    captured_at: str
+    status_code: int
+    content_sha256: str
+    content_type: str
+    redirect_chain: tuple[str, ...]
+    headers: tuple[tuple[str, str], ...]
+
+
+@dataclass(frozen=True, slots=True)
 class AcquireSourceCommand:
     """Trusted command metadata paired with an untrusted byte stream."""
 
@@ -71,6 +85,7 @@ class AcquireSourceCommand:
     actor_id: uuid.UUID
     display_title: str
     origin_kind: str
+    web_capture: WebCaptureMetadata | None = None
 
 
 class QuarantineStore(Protocol):
@@ -211,6 +226,19 @@ class AcquireSource:
             "content_sha256": view.content_sha256,
             "importer_version": IMPORTER_VERSION,
         }
+        if command.web_capture is not None:
+            payload["web_final_url"] = command.web_capture.final_url
+            payload["web_captured_at"] = command.web_capture.captured_at
+            payload["web_capture"] = {
+                "requested_url": command.web_capture.requested_url,
+                "final_url": command.web_capture.final_url,
+                "captured_at": command.web_capture.captured_at,
+                "status_code": command.web_capture.status_code,
+                "content_sha256": command.web_capture.content_sha256,
+                "content_type": command.web_capture.content_type,
+                "redirect_chain": list(command.web_capture.redirect_chain),
+                "headers": [list(header) for header in command.web_capture.headers],
+            }
         parse_job, _ = self._jobs.enqueue(
             kind="ingestion.parse",
             payload=payload,

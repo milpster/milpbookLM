@@ -32,6 +32,8 @@ ADAPTERS_SRC = REPO_ROOT / "packages" / "adapters" / "src" / "milpbooklm_adapter
 # pypdf/pdfplumber/pdfminer: the ING-01b PDF chain named verbatim in the parser matrix.
 # openpyxl/docx/pptx: the ING-02a office rows named verbatim in the parser matrix
 # ("openpyxl read-only/data-only", "python-docx", "python-pptx").
+# ebooklib/selectolax/lxml: the ING-02b EPUB and HTML/web rows; httpcore is the
+# HTTP row's pinned-connection layer beneath the dedicated httpx transport.
 ALLOWED_ADAPTER_IMPORTS = {
     "milpbooklm_adapters",
     "milpbooklm_domain",
@@ -43,6 +45,7 @@ ALLOWED_ADAPTER_IMPORTS = {
     "argon2",
     "nacl",
     "httpx",
+    "httpcore",
     "pydantic",
     "anyio",
     "pypdf",
@@ -51,6 +54,9 @@ ALLOWED_ADAPTER_IMPORTS = {
     "openpyxl",
     "docx",
     "pptx",
+    "ebooklib",
+    "selectolax",
+    "lxml",
 } | set(sys.stdlib_module_names)
 
 
@@ -85,7 +91,8 @@ def test_evidence_record_written() -> None:
             "adapter_imports": sorted(imported_top_level_modules(ADAPTERS_SRC)),
             "allowed_adapter_imports_policy": (
                 "stdlib + internal packages + REFERENCE-DEPENDENCIES.md third parties "
-                "(sqlalchemy, alembic, psycopg, argon2, nacl)"
+                "(sqlalchemy, alembic, psycopg, argon2, nacl, httpx/httpcore, "
+                "ebooklib, selectolax, lxml)"
             ),
         },
     )

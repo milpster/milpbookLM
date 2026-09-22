@@ -1,0 +1,13 @@
+# Task 22 manual QA log — ING-02b EPUB/HTML + hardened fetch (2026-09-22, Sisyphus Worker)
+
+Stack: shared scratch PostgreSQL :29521, bge-m3 :8010, task-owned API :8000 and worker t22-w1. Shared llama.cpp :8009 remained PID 11690 and was not restarted, reconfigured, or killed.
+
+1. EPUB upload: source 70616b63-b7f7-4574-abb9-6da3566e301c completed its parse job with status `succeeded` — PASS.
+2. Public web snapshot: `https://example.com/` fetched through the validation-pinned transport; source 2c2ce7ec-556e-4458-ad9a-e97dba9225fc completed with status `succeeded` — PASS.
+3. Metadata denial: a URL targeting 169.254.169.254 returned HTTP 422 with stable code `policy_blocked`; no private/metadata socket was opened — PASS.
+4. PostgreSQL inspection: the web canonical document retained final URL `https://example.com/`, capture timestamp, DOM path, and heading path `Example Domain`; the job payload retained selected headers, redirect chain, and content SHA-256 — PASS.
+5. Hostile EPUB corpus: forged oversized member -> `too_large`; corrupt ZIP -> `corrupt`; XML entity/unsafe declaration and external fetch reference -> `policy_blocked`; no case returned an empty success document — PASS.
+6. SSRF unit drive: direct private literal, mixed public/private DNS candidates, redirect to metadata, public-then-private rebinding, mapped/embedded IPv4, and private proxy destination were all refused before the connector. Snapshot recording captured final URL, headers, timestamp, redirect chain, hash, and bytes — PASS.
+7. Slow-body adversarial drive: a delayed MockTransport stream initially exceeded the declared wall limit without error (`DID NOT RAISE`); after widening the AnyIO deadline scope through body streaming, the same test raises `timeout` and passes — PASS.
+
+Raw live result: scratch/t22-fetch/live-qa.json. Task scratch is intentionally uncommitted.

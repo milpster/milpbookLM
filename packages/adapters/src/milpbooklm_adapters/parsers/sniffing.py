@@ -24,6 +24,7 @@ _ZIP_MAGIC: Final = b"PK\x03\x04"
 # the family part prefixes; the member-name bytes appear in the first local
 # file headers, well inside the sniff sample for real-world files.
 _OFFICE_PART_MARKERS: Final = (
+    (b"application/epub+zip", IdentifiedMedia.EPUB),
     (b"xl/", IdentifiedMedia.XLSX),
     (b"word/", IdentifiedMedia.DOCX),
     (b"ppt/", IdentifiedMedia.PPTX),
@@ -35,6 +36,7 @@ _FENCE: Final = re.compile(r"^```")
 _TABLE_ROW: Final = re.compile(r"^\s*\|.*\|\s*$")
 _MARKDOWN_MARKER_THRESHOLD: Final = 2
 _MIN_CSV_LINES: Final = 2
+_HTML_DOCUMENT: Final = re.compile(r"<(?:!doctype\s+html|html|head|body)\b", re.IGNORECASE)
 
 
 def sniff_media_type(data: bytes) -> IdentifiedMedia | None:
@@ -71,13 +73,16 @@ def _sniff_text(data: bytes) -> IdentifiedMedia | None:
         text = codecs.getincrementaldecoder(encoding)("strict").decode(sample)
     except UnicodeDecodeError:
         return None
-    if _markdown_score(text) >= _MARKDOWN_MARKER_THRESHOLD:
-        return IdentifiedMedia.MARKDOWN
-    if _looks_like_csv(text):
-        return IdentifiedMedia.CSV
-    if _markdown_score(text) >= 1:
-        return IdentifiedMedia.MARKDOWN
-    return IdentifiedMedia.TEXT
+    media = IdentifiedMedia.TEXT
+    if _HTML_DOCUMENT.search(text):
+        media = IdentifiedMedia.HTML
+    elif _markdown_score(text) >= _MARKDOWN_MARKER_THRESHOLD:
+        media = IdentifiedMedia.MARKDOWN
+    elif _looks_like_csv(text):
+        media = IdentifiedMedia.CSV
+    elif _markdown_score(text) >= 1:
+        media = IdentifiedMedia.MARKDOWN
+    return media
 
 
 def _looks_like_csv(text: str) -> bool:

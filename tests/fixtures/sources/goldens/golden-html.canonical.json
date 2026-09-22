@@ -1,0 +1,129 @@
+{
+ "schema_version": "1",
+ "document_id": "b6edd7d1-da07-549b-8161-98ae1b6fa6bc",
+ "source_version_id": "00000000-0000-5000-8000-000000000211",
+ "mime_type": "text/html",
+ "parser": {
+  "identity": "milpbooklm.html",
+  "version": "1",
+  "profile": "html-readability-v1",
+  "tool_versions": [
+   "python=3.13.3"
+  ]
+ },
+ "languages": [],
+ "metadata": {
+  "canonical_url": "https://example.test/reports/q3",
+  "captured_at": "2026-09-22T12:00:00+00:00"
+ },
+ "root_node_ids": [
+  "4d5c0967-78dc-5556-a31f-79bb7a5504f0"
+ ],
+ "nodes": [
+  {
+   "node_id": "4d5c0967-78dc-5556-a31f-79bb7a5504f0",
+   "kind": "document",
+   "structural_identity": "document",
+   "parent_id": null,
+   "child_order": 0,
+   "text": null,
+   "locator": {
+    "path": [
+     "web",
+     "https://example.test/reports/q3",
+     "2026-09-22T12:00:00+00:00"
+    ]
+   },
+   "authority": "source_authored",
+   "language": null
+  },
+  {
+   "heading_level": 1,
+   "node_id": "fec62798-3726-54ed-9a04-32e895eda621",
+   "kind": "heading",
+   "structural_identity": "block:1:main:nth-of-type(1)>h1:nth-of-type(1)",
+   "parent_id": "4d5c0967-78dc-5556-a31f-79bb7a5504f0",
+   "child_order": 1,
+   "text": "Quartalsbericht",
+   "locator": {
+    "path": [
+     "web",
+     "https://example.test/reports/q3",
+     "2026-09-22T12:00:00+00:00",
+     "dom",
+     "main:nth-of-type(1)>h1:nth-of-type(1)",
+     "heading",
+     "Quartalsbericht"
+    ]
+   },
+   "authority": "source_authored",
+   "language": null
+  },
+  {
+   "node_id": "d9d4e341-8633-552d-8976-ede2094f577a",
+   "kind": "paragraph",
+   "structural_identity": "block:2:main:nth-of-type(1)>p:nth-of-type(1)",
+   "parent_id": "4d5c0967-78dc-5556-a31f-79bb7a5504f0",
+   "child_order": 2,
+   "text": "Der Umsatz stieg.",
+   "locator": {
+    "path": [
+     "web",
+     "https://example.test/reports/q3",
+     "2026-09-22T12:00:00+00:00",
+     "dom",
+     "main:nth-of-type(1)>p:nth-of-type(1)",
+     "heading",
+     "Quartalsbericht"
+    ]
+   },
+   "authority": "source_authored",
+   "language": null
+  },
+  {
+   "heading_level": 2,
+   "node_id": "e63d8d99-7f5a-5117-baee-846ada0557da",
+   "kind": "heading",
+   "structural_identity": "block:3:main:nth-of-type(1)>h2:nth-of-type(1)",
+   "parent_id": "4d5c0967-78dc-5556-a31f-79bb7a5504f0",
+   "child_order": 3,
+   "text": "Ausblick",
+   "locator": {
+    "path": [
+     "web",
+     "https://example.test/reports/q3",
+     "2026-09-22T12:00:00+00:00",
+     "dom",
+     "main:nth-of-type(1)>h2:nth-of-type(1)",
+     "heading",
+     "Quartalsbericht",
+     "Ausblick"
+    ]
+   },
+   "authority": "source_authored",
+   "language": null
+  },
+  {
+   "node_id": "734e25ce-1e21-5b67-8787-608d552b8b15",
+   "kind": "paragraph",
+   "structural_identity": "block:4:main:nth-of-type(1)>p:nth-of-type(2)",
+   "parent_id": "4d5c0967-78dc-5556-a31f-79bb7a5504f0",
+   "child_order": 4,
+   "text": "Das Team w\u00e4chst.",
+   "locator": {
+    "path": [
+     "web",
+     "https://example.test/reports/q3",
+     "2026-09-22T12:00:00+00:00",
+     "dom",
+     "main:nth-of-type(1)>p:nth-of-type(2)",
+     "heading",
+     "Quartalsbericht",
+     "Ausblick"
+    ]
+   },
+   "authority": "source_authored",
+   "language": null
+  }
+ ]
+}

@@ -12,6 +12,7 @@ external references are policy rejections — never executed, never fetched.
 from __future__ import annotations
 
 import io
+import pathlib
 import re
 import zipfile
 from typing import Final
@@ -49,6 +50,11 @@ def open_bounded_archive(data: bytes) -> zipfile.ZipFile:
         raise OfficeTooLargeError(f"archive exceeds {MAX_ARCHIVE_MEMBERS} member limit")
     total = 0
     for info in infos:
+        member_path = pathlib.PurePosixPath(info.filename.replace("\\", "/"))
+        if member_path.is_absolute() or ".." in member_path.parts:
+            raise OfficePolicyError("archive contains an unsafe member path")
+        if info.flag_bits & 0x1:
+            raise OfficePolicyError("archive contains encrypted members")
         if info.file_size > MAX_MEMBER_BYTES:
             raise OfficeTooLargeError("archive member exceeds uncompressed size limit")
         total += info.file_size

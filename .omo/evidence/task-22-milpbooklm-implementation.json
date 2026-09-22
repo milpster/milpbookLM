@@ -1,0 +1,128 @@
+{
+  "task": "22",
+  "title": "ING-02b \u2014 EPUB, HTML/web snapshots, and hardened fetch service",
+  "commit_message": "feat(ingestion): ING-02b EPUB/HTML + hardened fetch service (ARCH-06/19 subsets)",
+  "verdict": "done",
+  "implemented": {
+    "hardened_fetch": [
+      "Custom httpx/httpcore transport validates every DNS candidate and dials a selected numeric address while preserving the original HTTP origin for Host and TLS SNI",
+      "Private, loopback, link-local/metadata, multicast, reserved, IPv4-mapped IPv6, NAT64, 6to4, and Teredo-embedded private addresses are rejected before connector invocation",
+      "Manual redirect processing revalidates every hop; direct literals, redirect-to-private, DNS rebinding, and private proxy destinations use the same pre-connect policy",
+      "Fetches cap bytes, total wall-clock time including streamed body consumption, redirects, schemes, and ports",
+      "Capture records retain requested/final URL, timestamp, status, selected response headers, redirect chain, size, and SHA-256"
+    ],
+    "html": [
+      "selectolax readability-style extraction removes executable/chrome elements and emits canonical text only",
+      "Canonical web locators retain final URL, capture timestamp, DOM path, and heading ancestry"
+    ],
+    "epub": [
+      "EbookLib extraction runs only after the shared bounded ZIP preflight",
+      "Unsafe archive paths, encrypted members, oversized members, unsafe XML declarations/entities, and external resource fetch references are rejected",
+      "Chapter and block locators provide stable canonical structure"
+    ],
+    "pipeline": [
+      "HTML/EPUB sniffing and quarantine/catalog mappings",
+      "Isolated parser dispatch with typed web locator context",
+      "Fetch provenance persisted in parse job payload",
+      "POST /api/v1/sources/web-url wired through the dedicated fetch service",
+      "Composition owns and closes the shared fetch client/transport"
+    ]
+  },
+  "acceptance": {
+    "ssrf_preconnect": {
+      "suite": "tests/unit/test_hardened_fetch.py",
+      "result": "18 passed",
+      "cases": [
+        "private numeric literal denied before connector",
+        "all DNS candidates validated before connector",
+        "public-then-private rebinding denied before second connect",
+        "redirect to 169.254.169.254 denied before connector",
+        "mapped and embedded IPv4 classifications",
+        "private proxy destination denied",
+        "total wall-clock deadline includes delayed streamed body"
+      ]
+    },
+    "snapshot_golden": {
+      "html": "golden-html.html byte-compares to goldens/golden-html.canonical.json",
+      "epub": "golden-epub.epub byte-compares to goldens/golden-epub.canonical.json",
+      "suite_result": "tests/fixtures plus media sniffing: 16 passed"
+    },
+    "hostile_epub": {
+      "hostile-bomb.epub": "too_large",
+      "hostile-corrupt.epub": "corrupt",
+      "hostile-entity.epub": "policy_blocked",
+      "hostile-external.epub": "policy_blocked",
+      "no_success_empty": "asserted"
+    },
+    "live_qa": {
+      "stack": "PostgreSQL :29521, bge-m3 :8010, task-owned API :8000, worker t22-w1",
+      "epub_source_id": "70616b63-b7f7-4574-abb9-6da3566e301c",
+      "epub_job": "succeeded",
+      "web_url": "https://example.com/",
+      "web_source_id": "2c2ce7ec-556e-4458-ad9a-e97dba9225fc",
+      "web_source_version_id": "9018e01e-d6eb-4f8e-a368-3cece7ddeded",
+      "web_job_id": "01a0c68c-879b-4e08-99c5-7ba0afb40ee3",
+      "web_job": "succeeded",
+      "metadata_target": "HTTP 422 policy_blocked before connect",
+      "database_proof": "canonical locator retained https://example.com/, capture timestamp, DOM path, heading Example Domain; job payload retained selected headers, redirect chain, and content hash",
+      "shared_llama": ":8009 remained PID 11690 and was untouched"
+    }
+  },
+  "gates": {
+    "ruff": "clean (uv run ruff check .)",
+    "mypy": "clean (uv run mypy)",
+    "import_linter": "4 kept, 0 broken",
+    "canonical_pytest": "154 passed (tests/meta tests/architecture tests/unit)",
+    "fixture_pytest": "16 passed (tests/fixtures plus tests/unit/test_media_sniffing.py)",
+    "lsp": "No errors on the final changed test and fetch addressing/domain files; service/html imports remain unresolved only in the externally misconfigured basedpyright environment, which cannot see the uv workspace/venv. Project mypy and runtime imports are clean."
+  },
+  "dependencies": {
+    "ebooklib": "EPUB parser",
+    "lxml": "EbookLib/XML dependency",
+    "selectolax": "HTML extraction",
+    "httpcore": "numeric-address pinned connection backend",
+    "architecture_policy": "All four are registered in ALLOWED_ADAPTER_IMPORTS"
+  },
+  "manual_qa_log": ".omo/evidence/task-22-manual-qa.log",
+  "scratch_results": "scratch/t22-fetch/live-qa.json",
+  "status": "complete",
+  "deliverables": [
+    "packages/adapters/src/milpbooklm_adapters/fetch/ \u2014 hardened fetch service: pre-connect SSRF policy over every DNS candidate, pinned numeric-address transport preserving validated Host/SNI, manual redirect revalidation, byte/wall-clock/redirect/scheme/port caps, capture recording (URLs, timestamp, headers, chain, size, SHA-256), proxy-destination policy hook",
+    "packages/adapters/src/milpbooklm_adapters/parsers/epub.py \u2014 EbookLib extraction behind the shared bounded-archive preflight; unsafe paths, encryption, entities, oversized members and external fetch references rejected",
+    "packages/adapters/src/milpbooklm_adapters/parsers/html.py \u2014 selectolax readability-style snapshot, canonical text only; canonical web locators (final URL, capture timestamp, DOM path, heading ancestry)",
+    "pipeline wiring \u2014 EPUB upload + POST /api/v1/sources/web-url acquisition through the dedicated fetch service; fetch provenance persisted in parse job payload; composition owns and closes the shared client",
+    "tests \u2014 tests/unit/test_hardened_fetch.py (18-case pre-connect denial suite), tests/fixtures/sources HTML/EPUB goldens + hostile EPUB corpus, tests/architecture/composition/ver-arch-03-001.py ALLOWED_ADAPTER_IMPORTS += ebooklib/lxml/selectolax"
+  ],
+  "commands": [
+    {
+      "command": "uv run ruff check .",
+      "exit": 0,
+      "result": "All checks passed!"
+    },
+    {
+      "command": "uv run mypy",
+      "exit": 0,
+      "result": "Success: no issues found in 174 source files"
+    },
+    {
+      "command": "uv run import-linter lint",
+      "exit": 0,
+      "result": "Contracts: 4 kept, 0 broken."
+    },
+    {
+      "command": "uv run pytest tests/meta tests/architecture tests/unit -q",
+      "exit": 0,
+      "result": "154 passed, 2 warnings in 4.37s"
+    },
+    {
+      "command": "uv run pytest tests/unit/test_hardened_fetch.py tests/fixtures/sources -q",
+      "exit": 0,
+      "result": "26 passed in 2.54s"
+    }
+  ],
+  "deferred": [
+    "T22 learnings notepad append \u2014 orchestrator action per handoff (worker does not edit notepads)",
+    "basedpyright editor diagnostics for the new service/html modules remain unresolved in the externally misconfigured basedpyright environment (cannot see the uv workspace/venv); project mypy and runtime imports are clean"
+  ],
+  "artifact": "artifacts/verification/VER-INGEST-GOLDEN-001.json"
+}

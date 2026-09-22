@@ -22,6 +22,7 @@ from milpbooklm_adapters.parsers.isolation import (
     ParseFailure,
     ParseSuccess,
 )
+from milpbooklm_adapters.parsers.parser_context import WebLocatorContext
 from milpbooklm_adapters.parsers.pg_canonical import PgCanonicalRepository
 from milpbooklm_adapters.parsers.sniffing import sniff_media_type
 from milpbooklm_application.blob_store import BlobIntegrityError, BlobStore
@@ -129,7 +130,12 @@ class SourceParseHandler:
         if media is None:
             self._canonical.persist_failure(source_version_id, "unsupported")
             raise SourceParseFailedError(source_version_id, "unsupported")
-        result = self._parser.parse(source_version_id, media.value, data)
+        result = self._parser.parse(
+            source_version_id,
+            media.value,
+            data,
+            web_locator=_payload_web_locator(job),
+        )
         match result:
             case ParseSuccess(document=document):
                 self._canonical.persist(document)
@@ -163,6 +169,14 @@ def _payload_uuid(job: JobRecord, key: str) -> uuid.UUID:
         return uuid.UUID(value)
     except ValueError as exc:
         raise SourceParseFailedError(uuid.UUID(int=0), f"invalid_{key}") from exc
+
+
+def _payload_web_locator(job: JobRecord) -> WebLocatorContext | None:
+    final_url = job.payload.get("web_final_url")
+    captured_at = job.payload.get("web_captured_at")
+    if isinstance(final_url, str) and isinstance(captured_at, str):
+        return WebLocatorContext(final_url, captured_at)
+    return None
 
 
 class DemoEchoHandler:

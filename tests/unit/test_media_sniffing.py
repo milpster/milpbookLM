@@ -20,6 +20,7 @@ def test_office_families_identified_by_zip_part_markers() -> None:
     assert sniff_media_type(base + b" xl/workbook.xml") is IdentifiedMedia.XLSX
     assert sniff_media_type(base + b" word/document.xml") is IdentifiedMedia.DOCX
     assert sniff_media_type(base + b" ppt/presentation.xml") is IdentifiedMedia.PPTX
+    assert sniff_media_type(base + b" application/epub+zip") is IdentifiedMedia.EPUB
 
 
 def test_unknown_zip_is_unsupported() -> None:
@@ -33,6 +34,11 @@ def test_text_families_classified_by_content() -> None:
     assert sniff_media_type(markdown) is IdentifiedMedia.MARKDOWN
     assert sniff_media_type(csv_like) is IdentifiedMedia.CSV
     assert sniff_media_type(plain) is IdentifiedMedia.TEXT
+
+
+def test_html_identified_by_document_structure() -> None:
+    payload = b"<!doctype html><html><body>Atlas</body></html>"
+    assert sniff_media_type(payload) is IdentifiedMedia.HTML
 
 
 def test_boms_are_handled_and_binary_rejected() -> None:
@@ -64,6 +70,8 @@ def test_committed_golden_fixtures_sniff_to_their_families() -> None:
         "golden-xlsx.xlsx": IdentifiedMedia.XLSX,
         "golden-docx.docx": IdentifiedMedia.DOCX,
         "golden-pptx.pptx": IdentifiedMedia.PPTX,
+        "golden-html.html": IdentifiedMedia.HTML,
+        "golden-epub.epub": IdentifiedMedia.EPUB,
     }
     for name, expected in expectations.items():
         assert sniff_media_type((FIXTURES / name).read_bytes()) is expected, name
