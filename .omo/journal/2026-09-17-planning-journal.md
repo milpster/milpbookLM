@@ -306,3 +306,8 @@ Session: 2026-09-17, Prometheus (ulw-plan), intent=CLEAR (user asked to be inter
 
 - [~] T27 marked `- [~]` (worker `ses_f366167a3`, commit `b047bb2`). Research runs live: durable state machine, exactly-seven-tool surface, immutable evidence, injection corpus fully denied server-side (live 30 tool.denied rows), E2E-008 green on fake web, migration 0008 idempotent both paths.
 - Progress: 27/59 tasks (7 [x], 20 [~], 32 [ ]). Next: T28 RSR-01c Playwright browser worker + deterministic local web (user-space worker now; container form T8-class deferred — Chromium+Firefox already installed from T18/T20 E2E).
+
+## Process log (cont. 31 — T28 close-out, 2026-09-22)
+
+- [~] T28 marked `- [~]` (worker `ses_f362dd8f`, commit `25a9cc0`). User-space Playwright browser worker live: sandbox posture PROVEN (Playwright default = silent --no-sandbox — caught and forced correct), T22-table route guard, disposable contexts, quarantine downloads, automation gate; E2E-008 browser leg green.
+- Progress: 28/59 tasks (7 [x], 21 [~], 31 [ ]). Research surface (T26-T28) complete except T8-class deployment forms. Next: T29.
