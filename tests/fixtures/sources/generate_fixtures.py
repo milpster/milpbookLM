@@ -53,6 +53,12 @@ WEB_CONTEXT = WebLocatorContext(
 
 
 def main() -> int:
+    if sys.argv[1:] == ["t24"]:
+        _write("golden-text.txt", _text_fixture())
+        _write("golden-pdf.pdf", _pdf_fixture())
+        _regenerate_t24_goldens()
+        print("task 24 fixtures + goldens written")
+        return 0
     if sys.argv[1:] == ["t22"]:
         _write_t22_fixtures()
         _regenerate_t22_goldens()
@@ -64,6 +70,8 @@ def main() -> int:
         print("task 23 fixtures + goldens written")
         return 0
     _write("golden-markdown.md", _markdown_fixture())
+    _write("golden-text.txt", _text_fixture())
+    _write("golden-pdf.pdf", _pdf_fixture())
     _write("golden-csv.csv", _csv_fixture())
     _write("golden-csv-utf16le.csv", _utf16_csv_fixture())
     _write("golden-xlsx.xlsx", _xlsx_fixture())
@@ -104,6 +112,37 @@ def _markdown_fixture() -> bytes:
         "| Kennzahl | 2025 | 2026 |\r\n|---|---:|---:|\r\n| Umsatz | 120 | 180 |\r\n"
     )
     return body.encode("utf-8")
+
+
+def _text_fixture() -> bytes:
+    return b"Vierteljahresbericht\nUmsatz stieg. Quarterly revenue increased.\n"
+
+
+def _pdf_fixture() -> bytes:
+    stream = b"BT /F1 14 Tf 72 720 Td (Quarterly revenue increased.) Tj ET"
+    objects = (
+        b"<< /Type /Catalog /Pages 2 0 R >>",
+        b"<< /Type /Pages /Kids [3 0 R] /Count 1 >>",
+        b"<< /Type /Page /Parent 2 0 R /MediaBox [0 0 612 792] "
+        b"/Resources << /Font << /F1 4 0 R >> >> /Contents 5 0 R >>",
+        b"<< /Type /Font /Subtype /Type1 /BaseFont /Helvetica >>",
+        b"<< /Length " + str(len(stream)).encode() + b" >>\nstream\n" + stream + b"\nendstream",
+    )
+    pdf = bytearray(b"%PDF-1.4\n")
+    offsets = [0]
+    for number, body in enumerate(objects, start=1):
+        offsets.append(len(pdf))
+        pdf.extend(f"{number} 0 obj\n".encode() + body + b"\nendobj\n")
+    xref = len(pdf)
+    pdf.extend(f"xref\n0 {len(objects) + 1}\n".encode())
+    pdf.extend(b"0000000000 65535 f\n")
+    for offset in offsets[1:]:
+        pdf.extend(f"{offset:010d} 00000 n\n".encode())
+    pdf.extend(
+        f"trailer\n<< /Size {len(objects) + 1} /Root 1 0 R >>\n"
+        f"startxref\n{xref}\n%%EOF\n".encode()
+    )
+    return bytes(pdf)
 
 
 def _html_fixture() -> bytes:
@@ -399,6 +438,8 @@ def _regenerate_t23_goldens() -> None:
 def _regenerate_goldens() -> None:
     parser = IsolatedParser()
     media = {
+        "golden-text.txt": "text/plain",
+        "golden-pdf.pdf": "application/pdf",
         "golden-markdown.md": "text/markdown",
         "golden-csv.csv": "text/csv",
         "golden-csv-utf16le.csv": "text/csv",
@@ -408,6 +449,21 @@ def _regenerate_goldens() -> None:
     }
     GOLDENS.mkdir(parents=True, exist_ok=True)
     for name, media_type in media.items():
+        result = parser.parse(
+            SOURCE_VERSION_ID, media_type, (FIXTURES / name).read_bytes()
+        )
+        if not isinstance(result, ParseSuccess):
+            raise SystemExit(f"golden regeneration failed for {name}: {result}")
+        golden_path = GOLDENS / f"{Path(name).stem}.canonical.json"
+        golden_path.write_text(json.dumps(result.document.to_json(), indent=1) + "\n")
+
+
+def _regenerate_t24_goldens() -> None:
+    parser = IsolatedParser()
+    for name, media_type in {
+        "golden-text.txt": "text/plain",
+        "golden-pdf.pdf": "application/pdf",
+    }.items():
         result = parser.parse(
             SOURCE_VERSION_ID, media_type, (FIXTURES / name).read_bytes()
         )

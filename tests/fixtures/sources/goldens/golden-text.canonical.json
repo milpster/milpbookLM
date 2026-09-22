@@ -1,0 +1,59 @@
+{
+ "schema_version": "1",
+ "document_id": "19a47414-740e-5ebf-b586-311d8ca69dc6",
+ "source_version_id": "00000000-0000-5000-8000-000000000211",
+ "mime_type": "text/plain",
+ "parser": {
+  "identity": "milpbooklm.text",
+  "version": "1",
+  "profile": "text-paragraphs-v1",
+  "tool_versions": [
+   "python=3.13.3"
+  ]
+ },
+ "languages": [],
+ "metadata": {
+  "normalization": "NFC+LF"
+ },
+ "root_node_ids": [
+  "ea0d791d-c66c-5317-9169-945abec243dd"
+ ],
+ "nodes": [
+  {
+   "node_id": "ea0d791d-c66c-5317-9169-945abec243dd",
+   "kind": "document",
+   "structural_identity": "document",
+   "parent_id": null,
+   "child_order": 0,
+   "text": null,
+   "locator": {
+    "path": [
+     "document"
+    ],
+    "char_start": 0,
+    "char_end": 64
+   },
+   "authority": "source_authored",
+   "language": null
+  },
+  {
+   "node_id": "d9151977-6e44-5f16-b6d4-77e5a0db3eb4",
+   "kind": "paragraph",
+   "structural_identity": "paragraph:1",
+   "parent_id": "ea0d791d-c66c-5317-9169-945abec243dd",
+   "child_order": 1,
+   "text": "Vierteljahresbericht\nUmsatz stieg. Quarterly revenue increased.",
+   "locator": {
+    "path": [
+     "document",
+     "paragraph",
+     "1"
+    ],
+    "char_start": 0,
+    "char_end": 63
+   },
+   "authority": "source_authored",
+   "language": null
+  }
+ ]
+}

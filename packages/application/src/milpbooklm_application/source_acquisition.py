@@ -86,6 +86,7 @@ class AcquireSourceCommand:
     display_title: str
     origin_kind: str
     web_capture: WebCaptureMetadata | None = None
+    refresh_source_id: uuid.UUID | None = None
 
 
 class QuarantineStore(Protocol):
@@ -154,6 +155,14 @@ class SourceCatalog(Protocol):
         self, source_id: uuid.UUID, actor_id: uuid.UUID, *, selected: bool
     ) -> SourceView:
         """Select or remove a source without purging retained bytes."""
+        ...
+
+    def mark_refresh_failed(self, source_id: uuid.UUID, actor_id: uuid.UUID) -> None:
+        """Expose refresh failure while retaining the prior active version."""
+        ...
+
+    def refresh_url(self, source_id: uuid.UUID, actor_id: uuid.UUID) -> str | None:
+        """Return the stable remote locator for a refreshable web source."""
         ...
 
 
@@ -260,3 +269,7 @@ class AcquireSource:
             idempotency_key=f"parse:{view.source_version_id}:canonical-v1",
         )
         return parse_job
+
+    def mark_refresh_failed(self, source_id: uuid.UUID, actor_id: uuid.UUID) -> None:
+        """Record a failed refresh without touching the active version pointer."""
+        self._catalog.mark_refresh_failed(source_id, actor_id)

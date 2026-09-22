@@ -17,6 +17,12 @@ TRIGGER_FUNCTIONS: tuple[str, ...] = (
     """
     CREATE OR REPLACE FUNCTION milpbooklm_immutability_violation() RETURNS trigger AS $$
     BEGIN
+      IF current_setting('milpbooklm.purge_context', true) = 'on' THEN
+        IF TG_OP = 'DELETE' THEN
+          RETURN OLD;
+        END IF;
+        RETURN NEW;
+      END IF;
       IF TG_TABLE_NAME = 'canonical_documents'
          AND NEW.id IS NOT DISTINCT FROM OLD.id
          AND NEW.source_version_id IS NOT DISTINCT FROM OLD.source_version_id
@@ -36,6 +42,9 @@ TRIGGER_FUNCTIONS: tuple[str, ...] = (
     """
     CREATE OR REPLACE FUNCTION milpbooklm_source_version_activation_guard() RETURNS trigger AS $$
     BEGIN
+      IF current_setting('milpbooklm.purge_context', true) = 'on' THEN
+        RETURN NEW;
+      END IF;
       IF OLD.activated_at IS NOT NULL
          AND (
            NEW.content_sha256 IS DISTINCT FROM OLD.content_sha256
@@ -87,6 +96,9 @@ TRIGGER_FUNCTIONS: tuple[str, ...] = (
     """
     CREATE OR REPLACE FUNCTION milpbooklm_blob_finalize_guard() RETURNS trigger AS $$
     BEGIN
+      IF current_setting('milpbooklm.purge_context', true) = 'on' THEN
+        RETURN NEW;
+      END IF;
       IF OLD.state = 'finalized' AND NEW.state <> 'finalized' THEN
         RAISE EXCEPTION 'milpbooklm: finalized blob objects may only be purged, never re-staged';
       END IF;

@@ -1,6 +1,7 @@
 """Source acquisition adapters."""
 
 from .filesystem_quarantine import FilesystemQuarantineStore
+from .pg_purge import PgSourcePurge
 from .pg_sources import PgSourceCatalog
 
-__all__ = ["FilesystemQuarantineStore", "PgSourceCatalog"]
+__all__ = ["FilesystemQuarantineStore", "PgSourceCatalog", "PgSourcePurge"]

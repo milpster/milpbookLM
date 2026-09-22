@@ -3,6 +3,7 @@
 from fastapi import APIRouter
 from milpbooklm_application.public_video import AcquirePublicVideo
 from milpbooklm_application.source_acquisition import AcquireSource, SourceCatalog
+from milpbooklm_application.source_lifecycle import SourcePurge
 from milpbooklm_application.web_fetch import AcquireWebSource
 
 from .deps import ApiDeps, PrincipalDependency
@@ -18,6 +19,7 @@ def build_source_router(
     *,
     acquire_web: AcquireWebSource | None = None,
     acquire_public_video: AcquirePublicVideo | None = None,
+    purge: SourcePurge | None = None,
 ) -> APIRouter:
     """Build the complete ING-01a source route family."""
     router = APIRouter(prefix="/api/v1/sources", tags=["sources"])
@@ -26,5 +28,13 @@ def build_source_router(
             deps, principal_dependency, acquire, acquire_web, acquire_public_video
         )
     )
-    router.include_router(build_source_lifecycle_router(deps, principal_dependency, catalog))
+    router.include_router(
+        build_source_lifecycle_router(
+            deps,
+            principal_dependency,
+            catalog,
+            purge,
+            acquire_web,
+        )
+    )
     return router

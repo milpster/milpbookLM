@@ -39,6 +39,7 @@ from milpbooklm_adapters.parsers.pg_canonical import PgCanonicalRepository
 from milpbooklm_adapters.security.clock import SystemClock
 from milpbooklm_adapters.security.notebook_reader import PgNotebookReader
 from milpbooklm_adapters.security.pg_identity import PgUserRepository
+from milpbooklm_adapters.sources import PgSourcePurge
 from milpbooklm_application.blob_usecases import BlobPorts, CollectBlobGarbage, ReconcileBlobs
 from milpbooklm_application.indexing import (
     DEFAULT_EMBEDDING_BATCH_SIZE,
@@ -59,6 +60,7 @@ from milpbooklm_application.job_usecases import (
     RecoverExpiredLeases,
 )
 from milpbooklm_application.policy_engine import PolicyEngine
+from milpbooklm_application.source_lifecycle import NoOpBackupExpiryScheduler
 from milpbooklm_application.structured_logging import configure_structured_logging
 from milpbooklm_domain.blobs import MAX_BACKUP_WINDOW, gc_safety_delay_valid
 from milpbooklm_domain.indexing import STRUCTURAL_CHUNKER_V1
@@ -70,6 +72,7 @@ from milpbooklm_workers.handlers import (
     DemoEchoHandler,
     JobHandler,
     SourceParseHandler,
+    SourcePurgeEraseHandler,
 )
 from milpbooklm_workers.indexing_handler import SourceIndexHandler
 from milpbooklm_workers.loop import WorkerLoop
@@ -289,6 +292,13 @@ def build_worker(args: argparse.Namespace) -> WorkerLoop:
             blob_ports.store,
             IsolatedParser(),
             PgCanonicalRepository(engine),
+        )
+        handlers[SourcePurgeEraseHandler.kind] = SourcePurgeEraseHandler(
+            PgSourcePurge(
+                engine,
+                NoOpBackupExpiryScheduler(),
+                blob_ports.store,
+            )
         )
     if args.embedding_base_url:
         config = _index_build_config(args)

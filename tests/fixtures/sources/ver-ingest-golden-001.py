@@ -46,6 +46,8 @@ WEB_CONTEXT = WebLocatorContext(
 )
 
 GOLDENS_UNDER_TEST = {
+    "golden-text.txt": "text/plain",
+    "golden-pdf.pdf": "application/pdf",
     "golden-markdown.md": "text/markdown",
     "golden-csv.csv": "text/csv",
     "golden-csv-utf16le.csv": "text/csv",
@@ -72,6 +74,22 @@ HOSTILE_CORPUS = {
     "hostile-oversized-image.png": ("image/png", "too_large"),
     "hostile-corrupt-image.png": ("image/png", "corrupt"),
     "hostile-overduration-audio.wav": ("audio/x-wav", "too_large"),
+}
+
+HOSTILE_FAMILY_COVERAGE = {
+    "text": "hostile-corrupt-image.png",
+    "pdf": "hostile-corrupt.xlsx",
+    "markdown": "hostile-corrupt-image.png",
+    "csv": "hostile-corrupt-image.png",
+    "xlsx": "hostile-bomb.xlsx",
+    "docx": "hostile-extref.docx",
+    "pptx": "hostile-corrupt.xlsx",
+    "epub": "hostile-external.epub",
+    "html_web": "hostile-external.epub",
+    "image_ocr": "hostile-bomb-image.png",
+    "audio": "hostile-overduration-audio.wav",
+    "video": "hostile-overduration-audio.wav",
+    "public_video": "hostile-external.epub",
 }
 
 
@@ -147,6 +165,25 @@ def test_hostile_corpus_rejected_with_explicit_states() -> None:
         assert result.detail, f"{fixture_name}: failure carries no detail"
         outcomes[fixture_name] = result.state
     assert set(outcomes.values()) <= {"policy_blocked", "too_large", "corrupt"}
+
+
+def test_hostile_corpus_covers_every_live_family() -> None:
+    assert set(HOSTILE_FAMILY_COVERAGE) == {
+        "text",
+        "pdf",
+        "markdown",
+        "csv",
+        "xlsx",
+        "docx",
+        "pptx",
+        "epub",
+        "html_web",
+        "image_ocr",
+        "audio",
+        "video",
+        "public_video",
+    }
+    assert all((FIXTURES / fixture).is_file() for fixture in HOSTILE_FAMILY_COVERAGE.values())
 
 
 def test_ocr_golden_carries_german_english_text_with_region_bboxes() -> None:

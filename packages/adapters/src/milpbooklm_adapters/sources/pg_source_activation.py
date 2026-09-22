@@ -60,6 +60,7 @@ class SourceActivationStore:
                 .where(sources.c.id == source_id)
                 .values(
                     current_version_id=version["id"],
+                    availability="active",
                     revision=sources.c.revision + 1,
                     etag=sa.cast(sources.c.revision + 1, sa.Text),
                     updated_at=sa.func.now(),

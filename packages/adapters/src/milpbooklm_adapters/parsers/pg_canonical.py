@@ -16,6 +16,7 @@ from milpbooklm_adapters.db.tables.sources import (
     canonical_locators,
     canonical_nodes,
     source_versions,
+    sources,
 )
 
 
@@ -63,6 +64,18 @@ class PgCanonicalRepository:
                 sa.update(source_versions)
                 .where(source_versions.c.id == source_version_id)
                 .values(status=status, parse_error_code=error_code)
+            )
+            connection.execute(
+                sa.update(sources)
+                .where(
+                    sources.c.id
+                    == sa.select(source_versions.c.source_id)
+                    .where(source_versions.c.id == source_version_id)
+                    .scalar_subquery(),
+                    sources.c.current_version_id.is_not(None),
+                    sources.c.current_version_id != source_version_id,
+                )
+                .values(availability="stale", updated_at=sa.func.now())
             )
 
     @staticmethod

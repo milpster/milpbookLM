@@ -1,0 +1,92 @@
+{
+ "schema_version": "1",
+ "document_id": "769bd485-374d-57a0-9178-0aa7e114f1f3",
+ "source_version_id": "00000000-0000-5000-8000-000000000211",
+ "mime_type": "application/pdf",
+ "parser": {
+  "identity": "milpbooklm.pdf",
+  "version": "1",
+  "profile": "pypdf-pdfplumber-layout-v1",
+  "tool_versions": [
+   "pypdf=6.19.0",
+   "pdfplumber=0.11.10",
+   "pdfminer.six=20260107"
+  ]
+ },
+ "languages": [],
+ "metadata": {
+  "page_count": 1
+ },
+ "root_node_ids": [
+  "3f79450a-b5bf-51f4-abe7-b2afeb19983a"
+ ],
+ "nodes": [
+  {
+   "node_id": "3f79450a-b5bf-51f4-abe7-b2afeb19983a",
+   "kind": "document",
+   "structural_identity": "document",
+   "parent_id": null,
+   "child_order": 0,
+   "text": null,
+   "locator": {
+    "path": [
+     "document"
+    ]
+   },
+   "authority": "source_authored",
+   "language": null
+  },
+  {
+   "node_id": "9e7a7723-c55a-5eaf-bb9c-151cf3fb876e",
+   "kind": "page",
+   "structural_identity": "page:1",
+   "parent_id": "3f79450a-b5bf-51f4-abe7-b2afeb19983a",
+   "child_order": 1,
+   "text": null,
+   "locator": {
+    "path": [
+     "document",
+     "page",
+     "1"
+    ],
+    "page": 1,
+    "bbox": [
+     0.0,
+     0.0,
+     612.0,
+     792.0
+    ]
+   },
+   "authority": "source_authored",
+   "language": null
+  },
+  {
+   "node_id": "c1b50df9-c563-544e-a21f-998b8bfc562f",
+   "kind": "paragraph",
+   "structural_identity": "page:1:paragraph:1",
+   "parent_id": "9e7a7723-c55a-5eaf-bb9c-151cf3fb876e",
+   "child_order": 1,
+   "text": "Quarterly revenue increased.",
+   "locator": {
+    "path": [
+     "document",
+     "page",
+     "1",
+     "paragraph",
+     "1"
+    ],
+    "char_start": 0,
+    "char_end": 28,
+    "page": 1,
+    "bbox": [
+     72.0,
+     60.898000000000025,
+     252.516,
+     74.89800000000002
+    ]
+   },
+   "authority": "source_authored",
+   "language": null
+  }
+ ]
+}

@@ -27,6 +27,7 @@ from milpbooklm_adapters.parsers.pg_canonical import PgCanonicalRepository
 from milpbooklm_adapters.parsers.sniffing import sniff_media_type
 from milpbooklm_application.blob_store import BlobIntegrityError, BlobStore
 from milpbooklm_application.blob_usecases import ReconcileBlobs
+from milpbooklm_application.source_lifecycle import SourcePurge
 from milpbooklm_domain.blobs import ReconciliationClass
 from milpbooklm_domain.jobs import JobRecord
 
@@ -92,8 +93,7 @@ class BlobIntegrityScanHandler:
         summary = {
             "scanned_at": report.at.isoformat(),
             **{
-                f"count_{kind.value}": len(report.findings_of(kind))
-                for kind in ReconciliationClass
+                f"count_{kind.value}": len(report.findings_of(kind)) for kind in ReconciliationClass
             },
         }
         return JobResult(result_ref=json.dumps(summary, sort_keys=True))
@@ -146,6 +146,24 @@ class SourceParseHandler:
                 raise SourceParseFailedError(source_version_id, state)
             case unreachable:
                 assert_never(unreachable)
+
+
+class SourcePurgeEraseHandler:
+    """Run the asynchronous controlled-copy erase phase of a marked purge."""
+
+    kind = "source.purge_erase"
+
+    def __init__(self, purge: SourcePurge) -> None:
+        """Bind the identity-closure purge service."""
+        self._purge = purge
+
+    def run(self, job: JobRecord, context: JobContext) -> JobResult:
+        """Erase a marked identity closure and return its non-content report reference."""
+        task_id = _payload_uuid(job, "purge_task_id")
+        context.progress("purge_erase", 0.1, "erasing controlled copies")
+        report = self._purge.erase(task_id)
+        context.progress("purge_erase", 1.0, "controlled copies erased")
+        return JobResult(result_ref=f"purge-task:{report.task_id}")
 
 
 @dataclass(frozen=True, slots=True)

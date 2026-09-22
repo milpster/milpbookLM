@@ -65,6 +65,8 @@ class PgSourceCatalog(SourceCatalog):
 
     def acquire(self, command: AcquireSourceCommand, blob: BlobObject) -> tuple[SourceView, bool]:
         """Create or return the notebook-local source for this acquisition identity."""
+        if command.refresh_source_id is not None:
+            return self._acquire_refresh(command, blob)
         origin = self._origin(command, blob)
         source_type = self._source_type(blob)
         with self._engine.begin() as connection:
@@ -118,6 +120,94 @@ class PgSourceCatalog(SourceCatalog):
                 self._select_view().where(sources.c.id == source_id)
             ).mappings().one()
         return self._view(row), True
+
+    def _acquire_refresh(
+        self, command: AcquireSourceCommand, blob: BlobObject
+    ) -> tuple[SourceView, bool]:
+        source_id = command.refresh_source_id
+        if source_id is None:
+            raise SourceNotFoundError
+        with self._engine.begin() as connection:
+            source = connection.execute(
+                sa.select(sources.c.id)
+                .join(
+                    notebook_memberships,
+                    notebook_memberships.c.notebook_id == sources.c.notebook_id,
+                )
+                .where(
+                    sources.c.id == source_id,
+                    sources.c.notebook_id == command.notebook_id,
+                    sources.c.type == SourceType.WEB_URL.value,
+                    sources.c.availability != Availability.DELETED_TOMBSTONED.value,
+                    notebook_memberships.c.user_id == command.actor_id,
+                )
+                .with_for_update(of=sources)
+            ).first()
+            if source is None:
+                raise SourceNotFoundError
+            latest = connection.execute(
+                sa.select(source_versions)
+                .where(source_versions.c.source_id == source_id)
+                .order_by(source_versions.c.version_number.desc())
+                .limit(1)
+            ).mappings().one()
+            version_id = uuid.uuid4()
+            connection.execute(
+                sa.insert(source_versions).values(
+                    id=version_id,
+                    source_id=source_id,
+                    version_number=int(latest["version_number"]) + 1,
+                    original_blob_id=blob.id,
+                    content_sha256=blob.content_sha256,
+                    content_size_bytes=blob.size_bytes,
+                    status="activating",
+                    created_by_user_id=command.actor_id,
+                )
+            )
+            connection.execute(
+                pg_insert(blob_references)
+                .values(blob_id=blob.id, referrer_kind="source_version", referrer_id=version_id)
+                .on_conflict_do_nothing()
+            )
+            row = connection.execute(
+                self._select_view().where(sources.c.id == source_id)
+            ).mappings().one()
+        return self._view(row), True
+
+    def mark_refresh_failed(self, source_id: uuid.UUID, actor_id: uuid.UUID) -> None:
+        """Mark a refresh failure without replacing the active source version."""
+        with self._engine.begin() as connection:
+            connection.execute(
+                sa.update(sources)
+                .where(
+                    sources.c.id == source_id,
+                    sa.exists().where(
+                        notebook_memberships.c.notebook_id == sources.c.notebook_id,
+                        notebook_memberships.c.user_id == actor_id,
+                    ),
+                )
+                .values(availability=Availability.STALE.value, updated_at=sa.func.now())
+            )
+
+    def refresh_url(self, source_id: uuid.UUID, actor_id: uuid.UUID) -> str | None:
+        """Return the stable URL identity for a visible web source."""
+        with self._engine.begin() as connection:
+            origin = connection.scalar(
+                sa.select(sources.c.origin)
+                .join(
+                    notebook_memberships,
+                    notebook_memberships.c.notebook_id == sources.c.notebook_id,
+                )
+                .where(
+                    sources.c.id == source_id,
+                    sources.c.type == SourceType.WEB_URL.value,
+                    notebook_memberships.c.user_id == actor_id,
+                )
+            )
+        if origin is None or not str(origin).startswith("web_url:"):
+            return None
+        remote = str(origin).removeprefix("web_url:")
+        return remote.rsplit(":captured:", maxsplit=1)[0]
 
     def acquire_unavailable(
         self,
@@ -298,10 +388,7 @@ class PgSourceCatalog(SourceCatalog):
     @staticmethod
     def _origin(command: AcquireSourceCommand, blob: BlobObject) -> str:
         if command.web_capture is not None:
-            return (
-                f"web_url:{command.web_capture.final_url}:"
-                f"captured:{command.web_capture.captured_at}"
-            )
+            return f"web_url:{command.web_capture.requested_url}"
         return f"{command.origin_kind}:{IMPORTER_VERSION}:sha256:{blob.content_sha256}"
 
     @staticmethod

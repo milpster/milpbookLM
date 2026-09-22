@@ -1,0 +1,25 @@
+Task 24 manual QA - 2026-09-22
+
+Live stack: PostgreSQL :29521, API :8000, worker t24-w1, bge-m3 :8010.
+Shared user-managed llama.cpp :8009 was not restarted or reconfigured.
+
+E2E-006 API journey:
+- Registered/login user suffix t24 and created notebook "T24 Refresh Race".
+- Imported https://example.com/ through the hardened fetch service as version N.
+- Worker parsed canonical HTML; activation atomically made N active and enqueued indexing.
+- POST /sources/{id}/refresh created immutable version N+1 while N remained retrieval-active.
+- Concurrent source read observed N+1 as parsed while activation pointer remained on N; no mixed canonical/index state was exposed.
+- Activation atomically promoted N+1 (etag 1 -> 2); prior version remained retained.
+- Purge preview reported 2 source versions and 2 index generations.
+- Purge confirm returned 202 and immediate state=marked; worker source.purge_erase completed succeeded.
+
+Purge closure acceptance:
+- tests/unit/db/test_source_purge.py created source bytes, canonical nodes/locator, manifest, cited message,
+  artifact version, ready index generation and blob reference in live PostgreSQL.
+- Transactional mark made PgGroundingStore.jump return {"state":"unavailable (purged)"} immediately.
+- Async erase removed canonical/index/message/artifact rows and the unreferenced blob row + filesystem object.
+- Purge report retained the unresolved external-transmission/manual-copy caveat.
+- Deletion traversal grep found no cosine, similarity, embedding-delete, or vector-delete dependency logic.
+
+INGEST-GOLDEN: 12 passed, including text/PDF plus all previously live families and hostile-family coverage.
+EVAL-GATE: pass; 20 German + 20 English per corpus kind, every live family represented, recall@3 1.0.

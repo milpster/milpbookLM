@@ -7,11 +7,16 @@ import uuid
 from fastapi import APIRouter, Depends, Header
 from fastapi.responses import JSONResponse
 from milpbooklm_application.audit_actions import AuditAction
+from milpbooklm_application.job_actor import InitiatingActor
 from milpbooklm_application.source_acquisition import (
     SourceCatalog,
     SourceConflictError,
     SourceNotFoundError,
 )
+from milpbooklm_application.source_lifecycle import SourcePurge
+from milpbooklm_application.web_fetch import AcquireWebSource, AcquireWebSourceCommand
+from milpbooklm_domain.acquisition import AcquisitionError
+from milpbooklm_domain.jobs import CapacityClass
 from milpbooklm_domain.policy import PolicyAction
 from starlette import status
 
@@ -25,12 +30,17 @@ def build_source_lifecycle_router(
     deps: ApiDeps,
     principal_dependency: PrincipalDependency,
     catalog: SourceCatalog,
+    purge: SourcePurge | None = None,
+    acquire_web: AcquireWebSource | None = None,
 ) -> APIRouter:
     """Compose source metadata routes before selection and purge routes."""
     router = APIRouter()
     router.include_router(build_source_guide_router(deps, principal_dependency, catalog))
     router.include_router(_build_metadata_router(deps, principal_dependency, catalog))
     router.include_router(_build_selection_router(deps, principal_dependency, catalog))
+    router.include_router(_build_refresh_router(deps, principal_dependency, catalog, acquire_web))
+    router.include_router(_build_purge_preview_router(deps, principal_dependency, catalog, purge))
+    router.include_router(_build_purge_confirm_router(deps, principal_dependency, catalog, purge))
     return router
 
 
@@ -109,24 +119,133 @@ def _build_selection_router(
     ) -> JSONResponse:
         return _set_selected(deps, principal, catalog, source_id, selected=False)
 
-    @router.post("/{source_id}/purge-preview", response_model=None)
-    @router.post("/{source_id}/purge-confirm", response_model=None)
-    async def purge_deferred(
+    return router
+
+
+def _build_refresh_router(
+    deps: ApiDeps,
+    principal_dependency: PrincipalDependency,
+    catalog: SourceCatalog,
+    acquire_web: AcquireWebSource | None,
+) -> APIRouter:
+    router = APIRouter()
+
+    @router.post("/{source_id}/refresh", response_model=None)
+    async def refresh_source(
         source_id: uuid.UUID,
         principal: Principal = Depends(principal_dependency),
     ) -> JSONResponse:
         view = catalog.get(source_id, principal.user.id)
         if view is None:
             return JSONResponse(status_code=404, content={"detail": "source not found"})
-        denied = authorize_notebook(
-            deps, principal, view.notebook_id, PolicyAction.SOURCE_MUTATE
-        )
+        denied = authorize_notebook(deps, principal, view.notebook_id, PolicyAction.SOURCE_MUTATE)
         if denied is not None:
             return denied
-        return problem(
-            "not_implemented_until_ing_02d",
-            "purge preview and confirmation are implemented by task 24",
-            status.HTTP_501_NOT_IMPLEMENTED,
+        remote_url = catalog.refresh_url(source_id, principal.user.id)
+        if acquire_web is None or remote_url is None:
+            return problem(
+                "refresh_unsupported",
+                "source is not a refreshable remote snapshot",
+                status.HTTP_409_CONFLICT,
+            )
+        try:
+            refreshed, created, job_id = await acquire_web(
+                AcquireWebSourceCommand(
+                    notebook_id=view.notebook_id,
+                    actor_id=principal.user.id,
+                    title=view.display_title,
+                    url=remote_url,
+                    refresh_source_id=source_id,
+                )
+            )
+        except AcquisitionError as exc:
+            return problem(exc.code.value, exc.detail, status.HTTP_422_UNPROCESSABLE_CONTENT)
+        payload = source_payload(refreshed, job_id)
+        payload["created"] = created
+        return JSONResponse(status_code=status.HTTP_202_ACCEPTED, content=payload)
+
+    return router
+
+
+def _build_purge_preview_router(
+    deps: ApiDeps,
+    principal_dependency: PrincipalDependency,
+    catalog: SourceCatalog,
+    purge: SourcePurge | None,
+) -> APIRouter:
+    router = APIRouter()
+
+    @router.post("/{source_id}/purge-preview", response_model=None)
+    async def purge_preview(
+        source_id: uuid.UUID,
+        principal: Principal = Depends(principal_dependency),
+    ) -> JSONResponse:
+        view = catalog.get(source_id, principal.user.id)
+        if view is None:
+            return JSONResponse(status_code=404, content={"detail": "source not found"})
+        denied = authorize_notebook(deps, principal, view.notebook_id, PolicyAction.SOURCE_MUTATE)
+        if denied is not None:
+            return denied
+        if purge is None:
+            return problem(
+                "purge_unavailable",
+                "purge service unavailable",
+                status.HTTP_503_SERVICE_UNAVAILABLE,
+            )
+        preview = purge.preview(source_id, principal.user.id)
+        if preview is None:
+            return JSONResponse(status_code=404, content={"detail": "source not found"})
+        return JSONResponse(content={"source_id": str(source_id), "counts": dict(preview.counts)})
+
+    return router
+
+
+def _build_purge_confirm_router(
+    deps: ApiDeps,
+    principal_dependency: PrincipalDependency,
+    catalog: SourceCatalog,
+    purge: SourcePurge | None,
+) -> APIRouter:
+    router = APIRouter()
+
+    @router.post("/{source_id}/purge-confirm", response_model=None)
+    async def purge_confirm(
+        source_id: uuid.UUID,
+        principal: Principal = Depends(principal_dependency),
+    ) -> JSONResponse:
+        view = catalog.get(source_id, principal.user.id)
+        if view is None:
+            return JSONResponse(status_code=404, content={"detail": "source not found"})
+        denied = authorize_notebook(deps, principal, view.notebook_id, PolicyAction.SOURCE_MUTATE)
+        if denied is not None:
+            return denied
+        if purge is None or deps.jobs is None:
+            return problem(
+                "purge_unavailable",
+                "purge service unavailable",
+                status.HTTP_503_SERVICE_UNAVAILABLE,
+            )
+        mark = purge.mark(source_id, principal.user.id)
+        if mark is None:
+            return JSONResponse(status_code=404, content={"detail": "source not found"})
+        job, _ = deps.jobs.enqueue(
+            kind="source.purge_erase",
+            payload={"purge_task_id": str(mark.task_id)},
+            actor=InitiatingActor(user_id=principal.user.id),
+            capacity_class=CapacityClass.INGESTION_INDEXING,
+            notebook_id=view.notebook_id,
+            capability="source_mutate",
+            idempotency_key=f"purge:{mark.task_id}",
+        )
+        return JSONResponse(
+            status_code=status.HTTP_202_ACCEPTED,
+            content={
+                "source_id": str(source_id),
+                "purge_task_id": str(mark.task_id),
+                "job_id": str(job.id),
+                "state": "marked",
+                "counts": dict(mark.counts),
+            },
         )
 
     return router
@@ -143,9 +262,7 @@ def _set_selected(
     current = catalog.get(source_id, principal.user.id)
     if current is None:
         return JSONResponse(status_code=404, content={"detail": "source not found"})
-    denied = authorize_notebook(
-        deps, principal, current.notebook_id, PolicyAction.SOURCE_MUTATE
-    )
+    denied = authorize_notebook(deps, principal, current.notebook_id, PolicyAction.SOURCE_MUTATE)
     if denied is not None:
         return denied
     try:

@@ -1,0 +1,18 @@
+{
+  "task": 24,
+  "workstream": "ING-02d",
+  "status": "pass",
+  "commands": [
+    {"command": "uv run ruff check .", "exit": 0},
+    {"command": "uv run mypy", "exit": 0, "files_checked": 178},
+    {"command": "uv run import-linter lint", "exit": 0, "contracts_kept": 4, "contracts_broken": 0},
+    {"command": "uv run pytest tests/meta tests/architecture tests/unit -q", "exit": 0, "passed": 161},
+    {"command": "TESSDATA_PREFIX=scratch/t23-ocr/tessdata uv run pytest tests/fixtures/sources -q", "exit": 0, "passed": 12},
+    {"command": "uv run pytest tests/unit/db/test_source_purge.py -q", "exit": 0, "passed": 1},
+    {"command": "uv run python tests/evaluation/run_eval_gate.py --embedding-url http://127.0.0.1:8010/v1", "exit": 0, "status": "pass", "de": 20, "en": 20, "recall_at_3": 1.0}
+  ],
+  "manual_qa": ".omo/evidence/task-24-milpbooklm-implementation-manual-qa.log",
+  "deferred": [
+    "Task 50 supplies the production backup-expiry scheduler behind the typed no-op port."
+  ]
+}

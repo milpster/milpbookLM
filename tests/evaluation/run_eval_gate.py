@@ -13,6 +13,23 @@ from pydantic import BaseModel, ConfigDict
 
 ROOT = Path(__file__).parent
 CORPUS_ROOT = ROOT / "corpora" / "v1"
+REQUIRED_FAMILIES = frozenset(
+    {
+        "text",
+        "pdf",
+        "markdown",
+        "csv",
+        "xlsx",
+        "docx",
+        "pptx",
+        "epub",
+        "html_web",
+        "image_ocr",
+        "audio",
+        "video",
+        "public_video",
+    }
+)
 
 
 class LockedModel(BaseModel):
@@ -25,6 +42,7 @@ class EmbeddingChunk(LockedModel):
     id: str
     language: Literal["de", "en"]
     text: str
+    family: str | None = None
 
 
 class EmbeddingJudgment(LockedModel):
@@ -32,6 +50,7 @@ class EmbeddingJudgment(LockedModel):
     language: Literal["de", "en"]
     query: str
     expected_chunk_id: str
+    family: str | None = None
 
 
 class EmbeddingCorpus(LockedModel):
@@ -179,6 +198,15 @@ def run(base_url: str) -> GateReport:
         for language_counts in counts.values()
         for count in language_counts.values()
     )
+    family_ok = all(
+        {
+            item.family
+            for item in embedding.chunks
+            if item.language == language and item.family is not None
+        }
+        == REQUIRED_FAMILIES
+        for language in ("de", "en")
+    )
     texts = [chunk.text for chunk in embedding.chunks]
     texts.extend(judgment.query for judgment in embedding.judgments)
     vectors = _embed(base_url, texts)
@@ -199,7 +227,7 @@ def run(base_url: str) -> GateReport:
     }
     return GateReport(
         gate=conformance.profile,
-        status="pass" if count_ok and threshold_ok else "fail",
+        status="pass" if count_ok and family_ok and threshold_ok else "fail",
         corpus_version=conformance.corpus_version,
         corpus_sha256=hashes,
         counts=counts,

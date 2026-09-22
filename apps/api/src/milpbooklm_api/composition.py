@@ -32,7 +32,7 @@ from milpbooklm_adapters.security.notebook_reader import PgNotebookReader
 from milpbooklm_adapters.security.notebook_store import PgNotebookStore
 from milpbooklm_adapters.security.pg_identity import PgAuditLog, PgUserRepository
 from milpbooklm_adapters.security.session_store import PgSessionTokenStore
-from milpbooklm_adapters.sources import FilesystemQuarantineStore, PgSourceCatalog
+from milpbooklm_adapters.sources import FilesystemQuarantineStore, PgSourceCatalog, PgSourcePurge
 from milpbooklm_application.authn import LoginUser, LogoutUser, RegisterUser, RotateSession
 from milpbooklm_application.capabilities import CapabilityRuntime
 from milpbooklm_application.chat import GenerateChatTurn, GenerateNotebookOverview
@@ -65,6 +65,7 @@ from milpbooklm_application.ports import (
 from milpbooklm_application.public_video import AcquirePublicVideo
 from milpbooklm_application.retrieval import RetrieveChunks
 from milpbooklm_application.source_acquisition import AcquireSource, SourceCatalog
+from milpbooklm_application.source_lifecycle import NoOpBackupExpiryScheduler, SourcePurge
 from milpbooklm_application.structured_logging import configure_structured_logging
 from milpbooklm_application.web_fetch import AcquireWebSource
 from milpbooklm_domain.capabilities import CapabilityDefinition, DependencyId, FeatureFlag
@@ -134,6 +135,7 @@ def build_app(
     source_catalog: SourceCatalog | None = None,
     web_source_acquisition: AcquireWebSource | None = None,
     public_video_acquisition: AcquirePublicVideo | None = None,
+    source_purge: SourcePurge | None = None,
     retrieval: RetrieveChunks | None = None,
     index_config: IndexBuildConfig | None = None,
     grounding: PgGroundingStore | None = None,
@@ -239,6 +241,7 @@ def build_app(
                 source_catalog,
                 acquire_web=web_source_acquisition,
                 acquire_public_video=public_video_acquisition,
+                purge=source_purge,
             )
         )
     return app
@@ -298,16 +301,17 @@ def create_app() -> FastAPI:
     audit = PgAuditLog(engine)
     jobs = build_job_ports(engine, users, notebooks)
     source_catalog = PgSourceCatalog(engine)
+    blob_store = FilesystemBlobStore(
+        installation.blob_root,
+        PgBlobRepository(engine),
+        clock,
+    )
     source_acquisition = AcquireSource(
         quarantine=FilesystemQuarantineStore(
             installation.blob_root,
             max_bytes=installation.max_acquisition_bytes,
         ),
-        blobs=FilesystemBlobStore(
-            installation.blob_root,
-            PgBlobRepository(engine),
-            clock,
-        ),
+        blobs=blob_store,
         catalog=source_catalog,
         audit=audit,
         jobs=jobs,
@@ -363,6 +367,11 @@ def create_app() -> FastAPI:
         source_catalog=source_catalog,
         web_source_acquisition=web_source_acquisition,
         public_video_acquisition=public_video_acquisition,
+        source_purge=PgSourcePurge(
+            engine,
+            NoOpBackupExpiryScheduler(),
+            blob_store,
+        ),
     )
     app.router.add_event_handler("shutdown", fetch_service.aclose)
     return app

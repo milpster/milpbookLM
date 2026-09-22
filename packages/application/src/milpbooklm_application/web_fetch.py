@@ -104,6 +104,7 @@ class AcquireWebSourceCommand:
     actor_id: uuid.UUID
     title: str
     url: str
+    refresh_source_id: uuid.UUID | None = None
 
 
 class AcquireWebSource:
@@ -128,6 +129,8 @@ class AcquireWebSource:
         try:
             fetched = await self._fetch.fetch(WebFetchCommand(url=command.url))
         except WebFetchRefusedError as exc:
+            if command.refresh_source_id is not None:
+                self._acquire.mark_refresh_failed(command.refresh_source_id, command.actor_id)
             self._audit.record(
                 actor_id=command.actor_id,
                 action=AuditAction.ACQUISITION_REJECTED.value,
@@ -155,6 +158,7 @@ class AcquireWebSource:
                 display_title=command.title,
                 origin_kind="web_url",
                 web_capture=capture,
+                refresh_source_id=command.refresh_source_id,
             ),
             _one_shot(fetched.body),
         )
