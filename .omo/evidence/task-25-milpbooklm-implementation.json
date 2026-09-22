@@ -1,0 +1,31 @@
+{
+  "task": 25,
+  "workstream": "Phase-2 gate",
+  "status": "pass",
+  "commands": [
+    {"command": "uv run ruff check .", "exit": 0, "result": "All checks passed!"},
+    {"command": "uv run mypy", "exit": 0, "result": "Success: no issues found in 180 source files (baseline 180)"},
+    {"command": "uv run import-linter lint", "exit": 0, "result": "Contracts: 4 kept, 0 broken"},
+    {"command": "uv run pytest tests/meta tests/architecture tests/unit -q", "exit": 0, "result": "161 passed, 2 warnings (baseline 161)"},
+    {"command": "TESSDATA_PREFIX=scratch/t23-ocr/tessdata uv run pytest tests/fixtures/sources -q", "exit": 0, "result": "12 passed (baseline 12)"},
+    {"command": "uv run python scratch/t25-gate/e2e002.py (E2E-002 full heterogeneous, live stack)", "exit": 0, "result": "ALL LEGS PASS: 11 families one notebook; 9 rank-1 probes; audio+video probed honest; chat 38 real-model tokens, citations image(bbox)+pdf(char_range)+docx+epub+markdown, 5/5 locator jumps state=available"},
+    {"command": "uv run python tools/spec/emit_conformance.py", "exit": 0, "result": "artifacts/conformance.json regenerated at build 40f8530; advertised=[] (frozen seed untouched; check_capabilities meta tests green in the 161-pass run)"}
+  ],
+  "gate_report": "artifacts/verification/phase-2-gate.json",
+  "e2e_report": "scratch/t25-gate/e2e-results.json",
+  "stack_changes": [
+    "API :8000 and worker restarted at gate start on current code (pg_purge.py mtime 15:50:49 postdated both running processes); worker t25-w1 with TESSDATA_PREFIX verified via /proc/<pid>/environ",
+    "shared :8009 consumed only (38 streamed tokens); :8010 / PG :29521 / vite :5173 untouched"
+  ],
+  "bundle_code_changes": [
+    "packages/adapters/src/milpbooklm_adapters/grounding.py: _validate_item accepts extent-less structural locators (identity+authz path); char-typed locators still require span coverage — enables citations into office/epub/html/image/media families (phase-1 bundle precedent)",
+    "packages/adapters/src/milpbooklm_adapters/parsers/markdown.py: node-relative locator extents [0, len(text)] on text nodes, no extents on containers (was document-relative; chunker spans are node-relative)",
+    "tests/fixtures/sources/goldens/golden-markdown.canonical.json: regenerated for the above; binary fixture regeneration churn reverted (zip timestamps)"
+  ],
+  "deferred": [
+    "PHASE-GATE-001 / PARITY-ACCEPTANCE-001 automated suites (wave-2 deferrals, phase-0/1 precedent) — recorded in gate report, not faked",
+    "STT (stt_not_deployed_on_host, D16) and public-video transcript adapter (no_compliant_adapter_without_credentials) remain honest unavailable states, NOT advertised",
+    "podman-rootless deployment form deferred to wave 2 (task 8)"
+  ],
+  "manual_qa": ".omo/evidence/task-25-manual-qa.log"
+}

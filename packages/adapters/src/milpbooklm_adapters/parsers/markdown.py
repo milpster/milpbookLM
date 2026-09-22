@@ -65,9 +65,7 @@ class _NodeBuilder:
     def start(
         self,
         kind: NodeKind,
-        first: _Line,
         *,
-        last: _Line | None = None,
         parent: uuid.UUID | None = None,
         identity_suffix: str = "",
         order: int = 0,
@@ -85,7 +83,7 @@ class _NodeBuilder:
                 parent_id=parent if parent is not None else self._root_id,
                 child_order=order if order else self._block,
                 text=None,
-                locator=self._locator(first, last),
+                locator=SourceLocator(path=("document", "block", str(self._block))),
                 extra_fields=dict(extra) if extra else {},
             )
         )
@@ -95,9 +93,7 @@ class _NodeBuilder:
         self,
         kind: NodeKind,
         text: str,
-        line: _Line,
         *,
-        last: _Line | None = None,
         parent: uuid.UUID | None = None,
         identity_suffix: str = "",
         order: int = 0,
@@ -114,7 +110,11 @@ class _NodeBuilder:
                 parent_id=parent if parent is not None else self._root_id,
                 child_order=order if order else self._block,
                 text=text,
-                locator=self._locator(line, last),
+                locator=SourceLocator(
+                    path=("document", "block", str(self._block)),
+                    char_start=0,
+                    char_end=len(text),
+                ),
                 extra_fields=dict(extra) if extra else {},
             )
         )
@@ -122,14 +122,6 @@ class _NodeBuilder:
     def _identity(self, kind: NodeKind, identity_suffix: str) -> str:
         identity = f"{kind.value}:{self._block}"
         return f"{identity}:{identity_suffix}" if identity_suffix else identity
-
-    def _locator(self, first: _Line, last: _Line | None) -> SourceLocator:
-        end_line = last if last is not None else first
-        return SourceLocator(
-            path=("document", "block", str(self._block)),
-            char_start=first.start,
-            char_end=end_line.start + len(end_line.text),
-        )
 
 
 def parse_markdown(source_version_id: uuid.UUID, data: bytes) -> CanonicalDocument:
@@ -161,7 +153,6 @@ def parse_markdown(source_version_id: uuid.UUID, data: bytes) -> CanonicalDocume
             builder.emit(
                 NodeKind.HEADING,
                 heading.group(2).strip(),
-                line,
                 extra={"heading_level": len(heading.group(1))},
             )
             index += 1
@@ -239,7 +230,7 @@ def _emit_paragraph(builder: _NodeBuilder, lines: list[_Line], index: int) -> in
     while end < len(lines) and lines[end].text.strip() and _is_plain_continuation(lines[end]):
         end += 1
     body = [line.text.strip() for line in lines[index:end]]
-    builder.emit(NodeKind.PARAGRAPH, " ".join(body), lines[index], last=lines[end - 1])
+    builder.emit(NodeKind.PARAGRAPH, " ".join(body))
     return end
 
 
@@ -250,11 +241,10 @@ def _emit_code(
     while end < len(lines) and not lines[end].text.startswith(marker):
         end += 1
     body = [line.text for line in lines[index + 1 : end]]
-    closer = lines[end] if end < len(lines) else lines[-1]
     extra: dict[str, JsonValue] = {}
     if language:
         extra["language"] = language
-    builder.emit(NodeKind.CODE, "\n".join(body), lines[index], last=closer, extra=extra)
+    builder.emit(NodeKind.CODE, "\n".join(body), extra=extra)
     return min(end + 1, len(lines))
 
 
@@ -263,12 +253,11 @@ def _emit_list(builder: _NodeBuilder, lines: list[_Line], index: int) -> int:
     while end < len(lines) and _LIST_ITEM.match(lines[end].text):
         end += 1
     items = lines[index:end]
-    list_node = builder.start(NodeKind.LIST, items[0], last=items[-1])
+    list_node = builder.start(NodeKind.LIST)
     for order, line in enumerate(items, start=1):
         builder.emit(
             NodeKind.LIST_ITEM,
             _item_text(line),
-            line,
             parent=list_node,
             identity_suffix=f"item:{order}",
             order=order,
@@ -281,7 +270,7 @@ def _emit_quote(builder: _NodeBuilder, lines: list[_Line], index: int) -> int:
     while end < len(lines) and _QUOTE.match(lines[end].text):
         end += 1
     body = [_quote_text(line) for line in lines[index:end]]
-    builder.emit(NodeKind.QUOTE, "\n".join(body), lines[index], last=lines[end - 1])
+    builder.emit(NodeKind.QUOTE, "\n".join(body))
     return end
 
 
@@ -292,15 +281,11 @@ def _emit_table(builder: _NodeBuilder, lines: list[_Line], index: int) -> int:
     table_lines = lines[index:end]
     table_node = builder.start(
         NodeKind.TABLE,
-        table_lines[0],
-        last=table_lines[-1],
         extra={"header": list[JsonValue](_row_cells(table_lines[0]))},
     )
     for row_number, line in enumerate(table_lines[2:], start=1):
         row_node = builder.start(
             NodeKind.ROW,
-            line,
-            last=line,
             parent=table_node,
             identity_suffix=f"row:{row_number}",
             order=row_number,
@@ -309,7 +294,6 @@ def _emit_table(builder: _NodeBuilder, lines: list[_Line], index: int) -> int:
             builder.emit(
                 NodeKind.CELL,
                 value,
-                line,
                 parent=row_node,
                 identity_suffix=f"row:{row_number}:cell:{column}",
                 order=column,

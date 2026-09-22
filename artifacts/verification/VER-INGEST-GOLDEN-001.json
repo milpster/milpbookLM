@@ -4,7 +4,7 @@
   "task": "FND-01",
   "test_path": "tests/fixtures/sources/ver-ingest-golden-001.py",
   "result": "passed",
-  "timestamp": "2026-09-22T08:05:36.517237+00:00",
+  "timestamp": "2026-09-22T14:31:13.125926+00:00",
   "checks": {
     "golden_families": [
       "golden-audio.wav",
@@ -15,7 +15,9 @@
       "golden-html.html",
       "golden-image.png",
       "golden-markdown.md",
+      "golden-pdf.pdf",
       "golden-pptx.pptx",
+      "golden-text.txt",
       "golden-video.mp4",
       "golden-xlsx.xlsx"
     ],
@@ -39,7 +41,7 @@
   },
   "environment": {
     "python": "3.13.3",
-    "platform": "Linux-7.2.6-x64v3-xanmod1-x86_64-with-glibc2.41",
+    "platform": "Linux-7.2.7-x64v3-xanmod1-x86_64-with-glibc2.41",
     "host": "GUAM"
   }
 }

@@ -270,8 +270,20 @@ class PgGroundingStore:
         locator = connection.execute(
             sa.select(canonical_locators.c.id).where(
                 canonical_locators.c.canonical_node_id == item.canonical_node_id,
-                canonical_locators.c.char_start <= item.char_start,
-                canonical_locators.c.char_end >= item.char_end,
+                sa.or_(
+                    # Char-typed locators must cover the cited span.
+                    sa.and_(
+                        canonical_locators.c.char_start <= item.char_start,
+                        canonical_locators.c.char_end >= item.char_end,
+                    ),
+                    # Structural locators (block/slide/sheet/bbox) carry no
+                    # char extents; chunk spans are node-relative by chunker
+                    # construction, so identity + authorization above apply.
+                    sa.and_(
+                        canonical_locators.c.char_start.is_(None),
+                        canonical_locators.c.char_end.is_(None),
+                    ),
+                ),
             )
         ).first()
         if locator is None:

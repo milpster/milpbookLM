@@ -1,0 +1,57 @@
+# T25 manual QA log — Phase-2 gate universal ingestion evidence (2026-09-22, Sisyphus Worker)
+
+Live stack: shared scratch PostgreSQL :29521 (never reset), bge-m3 :8010, task-owned API :8000 + worker t25-w1,
+vite :5173. Shared user-managed llama.cpp :8009 (Swift-Qwen3.8-27B-Q6_K, D16/D17 prod config) was probed and
+consumed only — never spawned, restarted, reconfigured, or killed.
+
+## Pre-drive hygiene
+- Worktree VER-* churn reverted (T14 learning: gate runs re-record every VER JSON).
+- Running API (pid 549817, started 15:41:34) and worker t24-w1 (started 15:32:48) both predated the mtime of
+  packages/adapters/.../sources/pg_purge.py (15:50:49, T24's last write) -> killed by explicit PID (port listener
+  via ss -tlnp for :8000; ps for the worker), relaunched from scratch/t25-gate/start-{api,worker}.sh.
+- Worker TESSDATA_PREFIX=/home/srcds/dev/milpbookLM/scratch/t23-ocr/tessdata verified in /proc/<pid>/environ
+  BEFORE any OCR leg (T23 learning 1). API health 200 after restart.
+
+## E2E-002 full heterogeneous journey (driver scratch/t25-gate/e2e002.py; results e2e-results.json)
+Notebook 01a0c980-0753-457e-97db-00e3ec477255, user suffix t25. ALL 11 live families in ONE notebook:
+
+- text paste ('T25 lighthouse facts', marker NEBELHORN-T25) -> parsed -> activated -> guide labels
+  [plain text, active, canonical] -> fused search rank 1/1.
+- golden-pdf.pdf -> rank 1/2 ('Quarterly revenue increased').
+- golden-markdown.md -> rank 1/5 ('Kosten sanken').
+- golden-csv.csv -> rank 1/6 ('Zuständig für Einkauf').
+- golden-xlsx.xlsx -> rank 1/7 ('Saldo').
+- golden-docx.docx -> rank 1/10 ('Das Team wuchs auf zwölf Personen').
+- golden-pptx.pptx -> rank 1/10 ('Ergebnisse des dritten Quartals').
+- golden-epub.epub -> rank 1/10 ('Quartalsbericht').
+- golden-image.png -> OCR parse (deu+eng) -> rank 1/10 ('Quarterly report results').
+- web-url https://example.com/ through the hardened fetch service -> rank 1/10 ('illustrative examples');
+  guide labels [web url, active, canonical].
+- golden-audio.wav + golden-video.mp4 -> parse jobs succeeded, source_versions stay 'parsed' (probed):
+  attachment nodes carry 'Transcript status: unavailable (sttt_not_deployed_on_host)' text and time_range
+  0-500ms locators — honest states, asserted, never activated (nothing to index without a transcript).
+
+Grounded chat (real Swift-Qwen :8009, MILPBOOKLM_CHAT_PROVIDER=llama_cpp, output_language EN):
+question 'What happened to the quarterly revenue according to the sources?' ->
+38 streamed SSE token events + terminal frame; answer 'Quarterly revenue increased.';
+insufficient_evidence=false; 5 citations published across docx/epub/image/markdown/pdf — heterogeneous
+citations achieved: image evidence e1 (locator_kind=bbox, chars 0-25) and pdf evidence e2 (char_range 0-28);
+all 5 citation jumps (GET /api/v1/source-versions/{v}/nodes/{n}) returned HTTP 200 state=available.
+
+## Defect found and fixed during the drive (root cause, phase-1 bundle precedent)
+First chat attempt failed publication with GroundingError 'evidence has no valid canonical locator':
+- phase-2 families persist structural locators (block/slide/sheet/bbox/dom) with NO char extents, and markdown
+  emitted DOCUMENT-relative extents while chunker spans are node-relative -> T16's validator (built against
+  text/PDF in phase 1) rejected every citation into any phase-2 family.
+- Fix: grounding.py _validate_item validates extent-less structural locators via node identity + authorization
+  (char-typed locators still require span coverage); markdown.py now emits node-relative extents [0, len(text)]
+  on text nodes and none on containers; golden-markdown.canonical.json regenerated (binary fixture zip-timestamp
+  churn reverted). API+worker restarted again after the change; full gate set re-run green afterwards.
+
+## Gate runs (post-fix, actuals)
+- ruff: All checks passed!
+- mypy: Success: no issues found in 180 source files
+- import-linter: Contracts: 4 kept, 0 broken
+- pytest tests/meta tests/architecture tests/unit -q: 161 passed, 2 warnings
+- TESSDATA_PREFIX=... pytest tests/fixtures/sources -q: 12 passed (VER-INGEST-GOLDEN-001 re-recorded)
+- conformance emitter run at build 40f8530: advertised=[] (frozen seed untouched; capabilities meta tests green)

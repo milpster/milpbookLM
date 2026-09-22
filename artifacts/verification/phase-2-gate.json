@@ -1,0 +1,348 @@
+{
+  "schema": "milpbooklm.phase-gate/0",
+  "task": "25. Phase-2 gate — Universal ingestion evidence bundle",
+  "phase": 2,
+  "generated_at": "2026-09-22",
+  "build_head": "40f8530 (plus this task's bundle: heterogeneous citation validation + markdown node-relative locators + gate artifacts)",
+  "scope": "prototype-first (D12/D13): existing suites only, no new test files, light manual QA; E2E-002 full heterogeneous journey on the live stack",
+  "exit_row_source": "PLANNING-HANDOFF § Phase entry and exit gates (Phase 2) + guide ch22 Phase 2",
+  "exit_row_required": "every enabled remaining source family has parser isolation, canonical/provenance goldens, refresh/rebuild/purge and retrieval evidence",
+  "deployment_form": {
+    "decision": "gate runs on the real local stack (orchestrator-authorized); podman-rootless form deferred to wave 2 (task 8 owns the deployment workstream)",
+    "stack": {
+      "database": "shared scratch PostgreSQL at scratch/t13-smoke socket, port 29521, db milpbooklm_t13 (pre-existing, never reset)",
+      "api": "uvicorn milpbooklm_api :8000 (task-owned, scratch/t25-gate/api.pid; restarted at gate start — pg_purge.py mtime postdated the running processes)",
+      "worker": "milpbooklm_workers t25-w1 with TESSDATA_PREFIX=scratch/t23-ocr/tessdata verified via /proc/<pid>/environ (task-owned, scratch/t25-gate/worker.pid)",
+      "web": "vite dev apps/web :5173 (task-owned origin; API-level drives use its trust origin)",
+      "chat": "SHARED pre-existing llama.cpp Swift-Qwen3.8-27B-Q6_K :8009 (prod config per D16/D17) — consumed only (38 streamed tokens this gate), never spawned/restarted/reconfigured/killed",
+      "embeddings": "task-owned llama.cpp bge-m3-Q8_0 CPU :8010, dimension 1024"
+    },
+    "chat_provider_env": "MILPBOOKLM_CHAT_PROVIDER=llama_cpp (real model, not fake)"
+  },
+  "family_evidence_matrix": {
+    "families_total": 11,
+    "families": [
+      {
+        "family": "text",
+        "isolation": "parsers/isolation.py rootless child (python -I, empty HOME/TMPDIR, RLIMIT_CPU/AS/FSIZE, 20s wall, meta-path network finder); parsers/textcodec.py BOM-bound strict decode",
+        "goldens": "tests/fixtures/sources/golden-text.txt + goldens/golden-text.canonical.json (T24 1ef1270); ING-GOLDEN suite green",
+        "lifecycle": "universal rebuild from canonical (T24, resumable generation swap); purge closure test tests/unit/db/test_source_purge.py (1ef1270)",
+        "retrieval": "phase-1-e2e.json text leg rank-1 + real-model answer 'ORION-T20'; this gate: paste -> parse -> activate -> search 'NEBELHORN-T25' rank-1 of 1"
+      },
+      {
+        "family": "pdf",
+        "isolation": "same isolated child; pypdf/pdfplumber imported after network guard install (T13 learning 2)",
+        "goldens": "golden-pdf.pdf + goldens/golden-pdf.canonical.json (T24 1ef1270)",
+        "lifecycle": "T24 rebuild/purge machinery is family-agnostic over canonical documents; refresh semantics per T24 E2E-006",
+        "retrieval": "phase-1-e2e.json PDF leg page-1 locator; this gate: rank-1 of 2 ('Quarterly revenue increased') AND real-model citation char_range 0-28 resolving state=available"
+      },
+      {
+        "family": "markdown",
+        "isolation": "parsers/markdown.py in the same child; stdlib only (T21 5430cca)",
+        "goldens": "golden-markdown.md + goldens/golden-markdown.canonical.json (T21; regenerated in this bundle for node-relative locators — see grounding_change_in_bundle)",
+        "lifecycle": "T24 rebuild/purge over canonical (family-agnostic)",
+        "retrieval": "T21 scratch/t21-ingest/e2e-results.json rank-1 ('Kosten sanken'); this gate rank-1 of 5 + chat-cited (evidence e4)"
+      },
+      {
+        "family": "csv",
+        "isolation": "parsers/csv_parser.py in the same child; bounded Sniffer + tolerant fallback (T21)",
+        "goldens": "golden-csv.csv + golden-csv-utf16le.csv (BOM codec leg) + 2 canonical goldens (T21)",
+        "lifecycle": "T24 rebuild/purge over canonical (family-agnostic)",
+        "retrieval": "T21 e2e-results rank-1 ('Zuständig für Einkauf'); this gate rank-1 of 6"
+      },
+      {
+        "family": "xlsx",
+        "isolation": "parsers/office.py shared OOXML pre-flight (member/size bomb limits, vbaProject.bin rejection, external-reference rejection) + parsers/xlsx.py read_only/data_only two-load (T21)",
+        "goldens": "golden-xlsx.xlsx + goldens/golden-xlsx.canonical.json; hostile: macro->policy_blocked, bomb->too_large, corrupt->corrupt (VER-INGEST-GOLDEN-001.json hostile_corpus)",
+        "lifecycle": "T24 rebuild/purge over canonical (family-agnostic)",
+        "retrieval": "T21 e2e-results rank-1 ('Saldo'); this gate rank-1 of 7"
+      },
+      {
+        "family": "docx",
+        "isolation": "office.py pre-flight + parsers/docx_parser.py body walk; hostile-extref.docx -> policy_blocked (T21)",
+        "goldens": "golden-docx.docx + goldens/golden-docx.canonical.json (T21)",
+        "lifecycle": "T24 rebuild/purge over canonical (family-agnostic)",
+        "retrieval": "T21 e2e-results rank-1 ('Das Team wuchs auf zwölf Personen'); this gate rank-1 of 10 + chat-cited (evidence e3) with locator resolving state=available"
+      },
+      {
+        "family": "pptx",
+        "isolation": "office.py pre-flight + parsers/pptx_parser.py; the stdlib network chain is preloaded then stubbed so the child's no-network invariant holds (T21 learning 1)",
+        "goldens": "golden-pptx.pptx + goldens/golden-pptx.canonical.json, separate speaker-notes stream (T21)",
+        "lifecycle": "T24 rebuild/purge over canonical (family-agnostic)",
+        "retrieval": "T21 e2e-results rank-1 ('Ergebnisse des dritten Quartals'); this gate rank-1 of 10"
+      },
+      {
+        "family": "epub",
+        "isolation": "parsers/epub.py behind the shared bounded-ZIP preflight: unsafe paths, encryption, oversized members, unsafe XML declarations/entities, external fetch references rejected (T22 4655dc8)",
+        "goldens": "golden-epub.epub + goldens/golden-epub.canonical.json; hostile: bomb->too_large, corrupt->corrupt, entity->policy_blocked, external->policy_blocked",
+        "lifecycle": "T24 rebuild/purge over canonical (family-agnostic)",
+        "retrieval": "T22 live QA job succeeded (source 70616b63); this gate rank-1 of 10 ('Quartalsbericht') + chat-cited with locator resolving state=available"
+      },
+      {
+        "family": "html/web-url",
+        "isolation": "parsers/html.py selectolax readability extraction (canonical text only); acquisition through the hardened fetch service: pre-connect SSRF policy over every DNS candidate, pinned numeric-address transport, manual redirect revalidation, byte/wall-clock/redirect/scheme/port caps (T22; tests/unit/test_hardened_fetch.py 18 passed)",
+        "goldens": "golden-html.html + goldens/golden-html.canonical.json (T22)",
+        "lifecycle": "T24 E2E-006 live journey on this exact family: web import -> parse -> activate -> refresh N+1 (immutable, prior retained) -> concurrent read -> atomic promotion -> purge preview 2 versions/2 generations -> 202 marked -> worker erase succeeded (task-24 manual QA log)",
+        "retrieval": "T22 live snapshot job succeeded with URL/timestamp/DOM-path provenance; this gate: https://example.com/ fetched live -> rank-1 of 10 ('illustrative examples')"
+      },
+      {
+        "family": "image-OCR",
+        "isolation": "parsers/image.py: Pillow dimension/pixel caps BEFORE decode; isolated Tesseract CLI child (deu+eng via TESSDATA_PREFIX, 15s/1MB caps); hostile: bomb->too_large, oversized->too_large, corrupt->corrupt (T23 d6a6473)",
+        "goldens": "golden-image.png + goldens/golden-image.canonical.json; per-line bbox locators, authority_class=ocr (T23)",
+        "lifecycle": "T24 rebuild/purge over canonical (family-agnostic)",
+        "retrieval": "T23 live drive: search 'Vierteljahresbericht' rank-1 = image source with OCR text verbatim; this gate rank-1 of 10 ('Quarterly report results') AND real-model citation with bbox locator [30,25,460,54] resolving state=available"
+      },
+      {
+        "family": "audio/video (probed)",
+        "isolation": "parsers/media.py bounded ffprobe JSON child (10s/1MB), container allowlist + duration/track limits; hostile-overduration-audio -> too_large (T23)",
+        "goldens": "golden-audio.wav + golden-video.mp4 + 2 canonical goldens; ATTACHMENT node with ms time_range locator (T23)",
+        "lifecycle": "T24 rebuild/purge over canonical (family-agnostic)",
+        "retrieval": "honest probed state, BY DESIGN at this phase: parse succeeds, transcript_status=unavailable (stt_not_deployed_on_host per D16), time_range 0-500ms locators verified in PG both at T23 and in this gate's journey — never a fabricated transcript, never success-empty"
+      }
+    ],
+    "blocked_families": [],
+    "note": "no family lacks evidence; the two legs without searchable text (audio/video) carry their designed honest probed state as the evidence, per the STT deferral recorded at T23 (D16)"
+  },
+  "suites": {
+    "e2e_002_full": {
+      "name": "E2E-002 full heterogeneous journey",
+      "driver": "scratch/t25-gate/e2e002.py (API-level drive per task brief; the T20 browser harness drove this same REST surface in phase 1)",
+      "report": "scratch/t25-gate/e2e-results.json",
+      "notebook_id": "01a0c980-0753-457e-97db-00e3ec477255",
+      "result": "pass — ALL 11 families in ONE notebook",
+      "journey": "register (suffix t25) -> notebook -> text paste + 8 uploads + live web-url fetch (https://example.com/) + audio & video uploads -> every parse job succeeded -> 10 activations (audio/video intentionally probed, not activated) -> Source Guide per family (family labels recorded) -> per-family fused search rank-1 -> real-model grounded chat (Swift-Qwen :8009, 38 streamed SSE token events + terminal)",
+      "rank1_hits": {
+        "text": ["NEBELHORN-T25", 1], "pdf": ["Quarterly revenue increased", 1], "markdown": ["Kosten sanken", 1],
+        "csv": ["Zuständig für Einkauf", 1], "xlsx": ["Saldo", 1], "docx": ["Das Team wuchs auf zwölf Personen", 1],
+        "pptx": ["Ergebnisse des dritten Quartals", 1], "epub": ["Quartalsbericht", 1],
+        "image": ["Quarterly report results", 1], "html": ["illustrative examples", 1]
+      },
+      "probed_states": {
+        "audio": "parsed (probed); attachment text carries 'Transcript status: unavailable (stt_not_deployed_on_host)'; time_range 0-500ms",
+        "video": "parsed (probed); same honest state; time_range 0-500ms"
+      },
+      "chat": {
+        "question": "What happened to the quarterly revenue according to the sources?",
+        "answer": "Quarterly revenue increased.",
+        "cited_families": ["docx", "epub", "image", "markdown", "pdf"],
+        "heterogeneous_citations": ["image (bbox locator, char 0-25)", "pdf (char_range 0-28)"],
+        "locator_resolutions": "5/5 citation jumps returned HTTP 200 state=available",
+        "insufficient_evidence": false
+      }
+    },
+    "ingest_golden": {
+      "command": "TESSDATA_PREFIX=scratch/t23-ocr/tessdata uv run pytest tests/fixtures/sources -q",
+      "result": "12 passed (baseline 12); evidence VER-INGEST-GOLDEN-001.json (re-recorded by the suite this gate: 11 family goldens + hostile corpus states + locator guarantees)"
+    },
+    "eval_gate_v1": {
+      "report": "scratch/t24-purge/eval-report-final.json (T24 run, corpus v1 sha-pinned)",
+      "result": "pass — recall@3 overall/DE/EN = 1.0/1.0/1.0 at dimension 1024; corpus covers all 13 family tags incl. epub/html_web/image_ocr/audio/video/public_video (tests/evaluation/corpora/v1/embedding-recall.json)"
+    },
+    "existing_pytest": {
+      "command": "rtk uv run pytest tests/meta tests/architecture tests/unit -q",
+      "result": "161 passed, 2 warnings in 4.34s (baseline 161; warnings are the pre-existing starlette/anyio DeprecationWarning)",
+      "status": "green"
+    },
+    "gates": {
+      "ruff": { "command": "rtk uv run ruff check .", "result": "All checks passed!", "status": "green" },
+      "mypy": { "command": "rtk uv run mypy", "result": "Success: no issues found in 180 source files (baseline 180)", "status": "green" },
+      "import_linter": { "command": "rtk uv run import-linter lint", "result": "Contracts: 4 kept, 0 broken", "status": "green" }
+    },
+    "deferred_automated_suites": [
+      {
+        "name": "PHASE-GATE-001 (tests/meta/phase_gates group)",
+        "status": "deferred_wave_2",
+        "evidence": "no such group exists at HEAD (phase-0 and phase-1 gates recorded the same); this gate report is the phase-2 instrument per plan task 25",
+        "note": "not faked green; phase-2 scope judged by the live-stack evidence below"
+      },
+      {
+        "name": "PARITY-ACCEPTANCE-001 (tests/parity/capabilities.md)",
+        "status": "deferred_wave_2",
+        "evidence": "tests/parity/ does not exist; D12 forbids new test files in wave 1/2 prototype scope",
+        "note": "phase-2 functionality judged by live-journey + golden + hostile evidence"
+      }
+    ]
+  },
+  "conformance": {
+    "emitter": "tools/spec/emit_conformance.py",
+    "path": "artifacts/conformance.json",
+    "build": "40f8530",
+    "capabilities_total": 61,
+    "implemented": 0,
+    "advertised": 0,
+    "unimplemented_but_advertised": 0,
+    "frozen_seed_note": "packages/contracts/.../capabilities.yaml equals the guide seed (tools/spec/check_capabilities.py::_check_seed_drift; the 161-pass canonical run includes the capabilities meta tests — green). The seed was NOT modified. Registry flags stay false until the wave-2 seed review, so emitter-pure conformance advertises nothing — honest, not a failure (phase-1 precedent).",
+    "phase_2_advertisement": {
+      "where": "this gate report (orchestrator-authorized location for wave prototype phase scope)",
+      "statement": "The 11 ENABLED phase-2 capabilities below are advertised AT PHASE-2 PROTOTYPE SCOPE by the evidence recorded here, while the frozen registry keeps them disabled/compiled_support_missing. Live /api/v1/capabilities states recorded verbatim in scratch/t25-gate/capabilities-live.json: all 13 phase-2 entries state=disabled, reason=compiled_support_missing.",
+      "ui_effect": "journeys used the REST surface, which is capability-independent — honest behavior per the frozen-registry policy"
+    }
+  },
+  "capabilities": [
+    {
+      "id": "source_organization",
+      "classification": "stable/core",
+      "required_test_groups": ["CAP-PROFILE-001", "PHASE-GATE-001", "PARITY-ACCEPTANCE-001"],
+      "phase_2_verdict": "pass (prototype scope)",
+      "evidence": [
+        "POST /api/v1/sources/{id}/select + /deselect (source_lifecycle_routes.py:101-120) with audit SOURCE_SELECTED/SOURCE_REMOVED — selection surface exercised in phase-1 E2E legs",
+        "automatic family labels: GET /api/v1/sources/{id}/guide returns labels per family — recorded verbatim per family in this gate's e2e-results.json legs (e.g. ['xlsx','active','canonical'], ['web url','active','canonical'])",
+        "rename: PATCH source display title route (source_lifecycle_routes.py 'Source status, selection, rename' module)"
+      ],
+      "notes": "reference_text 'Automatic/manual labels/categories and source selection': automatic labels + manual selection + rename delivered at prototype scope; manual user-defined categories are later-wave polish"
+    },
+    {
+      "id": "source_markdown",
+      "classification": "stable/core",
+      "required_test_groups": ["CAP-PROFILE-001", "PHASE-GATE-001", "PARITY-ACCEPTANCE-001", "E2E-002"],
+      "phase_2_verdict": "pass",
+      "evidence": ["family_evidence_matrix.families[markdown]", "T21 evidence JSON INGEST_GOLDEN + e2e_002_legs markdown rank-1", "this gate: rank-1 of 5 + chat-cited"],
+      "notes": "golden regenerated in this bundle for node-relative locators (see grounding_change_in_bundle)"
+    },
+    {
+      "id": "source_docx",
+      "classification": "stable/core",
+      "required_test_groups": ["CAP-PROFILE-001", "PHASE-GATE-001", "PARITY-ACCEPTANCE-001", "E2E-002"],
+      "phase_2_verdict": "pass",
+      "evidence": ["family_evidence_matrix.families[docx]", "T21 rank-1 + hostile-extref policy_blocked", "this gate: rank-1 of 10 + chat-cited (locator jump state=available)"],
+      "notes": ""
+    },
+    {
+      "id": "source_pptx",
+      "classification": "stable/core",
+      "required_test_groups": ["CAP-PROFILE-001", "PHASE-GATE-001", "PARITY-ACCEPTANCE-001", "E2E-002"],
+      "phase_2_verdict": "pass",
+      "evidence": ["family_evidence_matrix.families[pptx]", "T21 rank-1; speaker-notes separate stream golden", "this gate: rank-1 of 10"],
+      "notes": ""
+    },
+    {
+      "id": "source_csv",
+      "classification": "stable/core",
+      "required_test_groups": ["CAP-PROFILE-001", "PHASE-GATE-001", "PARITY-ACCEPTANCE-001", "E2E-002"],
+      "phase_2_verdict": "pass",
+      "evidence": ["family_evidence_matrix.families[csv]", "T21 rank-1 incl. UTF-16LE BOM codec golden", "this gate: rank-1 of 6"],
+      "notes": ""
+    },
+    {
+      "id": "source_spreadsheet_files_formats",
+      "classification": "stable/core",
+      "required_test_groups": ["CAP-PROFILE-001", "PHASE-GATE-001", "PARITY-ACCEPTANCE-001", "E2E-002"],
+      "phase_2_verdict": "pass",
+      "evidence": ["family_evidence_matrix.families[xlsx]", "formulas stored_not_evaluated (VER-INGEST-GOLDEN-001 formula_policy); hostile macro/bomb/corrupt states", "T21 rank-1 'Saldo'; this gate rank-1 of 7"],
+      "notes": "xlsx recalculation explicitly 'none' — LibreOffice render/recalc deferred until a feature needs it (T21)"
+    },
+    {
+      "id": "source_images",
+      "classification": "stable/core",
+      "required_test_groups": ["CAP-PROFILE-001", "PHASE-GATE-001", "PARITY-ACCEPTANCE-001", "E2E-002"],
+      "phase_2_verdict": "pass",
+      "evidence": ["family_evidence_matrix.families[image-OCR]", "T23 live drive: OCR deu+eng, bbox locators, rank-1 'Vierteljahresbericht'", "this gate: rank-1 of 10 AND real-model citation with bbox locator resolving state=available"],
+      "notes": "OCR language profile decision recorded at T23 (deu+eng, tessdata_fast, sha256-pinned)"
+    },
+    {
+      "id": "source_audio",
+      "classification": "stable/core",
+      "required_test_groups": ["CAP-PROFILE-001", "PHASE-GATE-001", "PARITY-ACCEPTANCE-001", "E2E-002"],
+      "phase_2_verdict": "pass (probed scope; STT honestly not advertised)",
+      "evidence": ["family_evidence_matrix.families[audio/video (probed)]", "T23 live drive: parse succeeded, transcript_status=unavailable (stt_not_deployed_on_host), time_range 0-500ms", "this gate: same honest state re-proven in the heterogeneous notebook"],
+      "notes": "STT (whisper.cpp worker) deferred per D16 no-acquisition binding + pending user decision — recorded, never silently skipped; adapters never return success-empty"
+    },
+    {
+      "id": "source_epub_files",
+      "classification": "stable/core",
+      "required_test_groups": ["CAP-PROFILE-001", "PHASE-GATE-001", "PARITY-ACCEPTANCE-001", "E2E-002"],
+      "phase_2_verdict": "pass",
+      "evidence": ["family_evidence_matrix.families[epub]", "T22 live QA + 4 hostile EPUB states", "this gate: rank-1 of 10 + chat-cited (locator jump state=available)"],
+      "notes": ""
+    },
+    {
+      "id": "source_web_urls",
+      "classification": "stable/core",
+      "required_test_groups": ["CAP-PROFILE-001", "PHASE-GATE-001", "PARITY-ACCEPTANCE-001", "E2E-002"],
+      "phase_2_verdict": "pass",
+      "evidence": ["family_evidence_matrix.families[html/web-url]", "tests/unit/test_hardened_fetch.py 18 passed (SSRF pre-connect denial suite, T22)", "T24 E2E-006 refresh/version-race journey ran on this family; this gate: live https://example.com/ fetch rank-1 of 10"],
+      "notes": "fetch is discovery-untrusted: snapshots pass the same quarantine/parse controls as uploads"
+    },
+    {
+      "id": "source_public_youtube_urls_transcript_backed_video_sources",
+      "classification": "stable/core",
+      "required_test_groups": ["CAP-PROFILE-001", "PHASE-GATE-001", "PARITY-ACCEPTANCE-001", "E2E-002"],
+      "phase_2_verdict": "pass (connector + honest-state scope; transcript-backing NOT advertised)",
+      "evidence": ["POST /api/v1/sources/public-video (T23) + tests/unit/test_public_video.py", "T23 live drive: import 201 -> transcript_state=transcript_unavailable, transcript_reason=no_compliant_adapter_without_credentials, pipeline parse_failed — explicit unavailable state, no transcript fabrication, no download"],
+      "notes": "no compliant transcript adapter exists without credentials in the selected local profile; the capability's honest effective state is recorded rather than advertised — enabling a real adapter is a later-wave decision"
+    },
+    {
+      "id": "source_optional_authenticated_restricted_repositories_through_generic_connectors",
+      "classification": "late/optional",
+      "required_test_groups": ["CAP-PROFILE-001", "PHASE-GATE-001", "E2E-002"],
+      "phase_2_verdict": "not_advertised_disabled",
+      "evidence": ["live /api/v1/capabilities: state=disabled, reason=compiled_support_missing (scratch/t25-gate/capabilities-live.json)", "artifacts/conformance.json: enabled=false, effective=false — visible, never advertised"],
+      "notes": "declared disabled per plan scope line ('explicitly disabled capability set ... late/optional ... NO implementation task'); NOT advertised anywhere in this gate"
+    },
+    {
+      "id": "source_optional_cloud_document_storage_connectors_implemented_through_generic_adapters",
+      "classification": "late/optional",
+      "required_test_groups": ["CAP-PROFILE-001", "PHASE-GATE-001", "E2E-002"],
+      "phase_2_verdict": "not_advertised_disabled",
+      "evidence": ["live /api/v1/capabilities: state=disabled, reason=compiled_support_missing", "artifacts/conformance.json: enabled=false, effective=false — visible, never advertised"],
+      "notes": "declared disabled per plan scope line (late/optional, NO implementation task); NOT advertised anywhere in this gate"
+    }
+  ],
+  "test_group_resolution": {
+    "E2E-002": "executed this task as the FULL heterogeneous journey (all 11 families, one notebook, live stack, real model) — green; text/PDF legs previously green at T20, office legs at T21, this run supersedes both in scope",
+    "E2E-006": "executed at T24 on the web family (refresh/version race) — green; referenced, not re-run (task-24 manual QA log)",
+    "CAP-PROFILE-001": "no suite carries this exact name; the existing capability-profile enforcement is tests/meta/capabilities — green in the 161-pass run; live REST capability snapshot recorded verbatim",
+    "PHASE-GATE-001": "no automated group exists (phase-0/phase-1 precedent); this gate report is the phase-2 instrument — see deferred_automated_suites",
+    "PARITY-ACCEPTANCE-001": "tests/parity/capabilities.md not authored in prototype waves (D12/D13) — deferred; phase-2 judged by live/golden/hostile evidence"
+  },
+  "disabled_and_deferred_honesty": {
+    "public_video_transcript": "connector implemented, transcript backing NOT advertised: transcript_state=transcript_unavailable / no_compliant_adapter_without_credentials (T23 live evidence)",
+    "stt": "stt_not_deployed_on_host (D16: no model/tooling acquisitions; user decision pending) — audio/video land in the explicit probed state with ms locators; never success-empty, never fabricated",
+    "restricted_connector_sources": "phase-7 late/optional cap: disabled, not advertised (registry + conformance)",
+    "optional_authenticated_restricted_repositories": "this phase's late/optional cap: disabled, not advertised (live snapshot + conformance recorded)",
+    "optional_cloud_document_storage_connectors": "this phase's late/optional cap: disabled, not advertised (live snapshot + conformance recorded)",
+    "podman_rootless_deployment": "deferred to wave 2 (task 8 owns OPS-01a deployment); this gate ran on the orchestrator-authorized real local stack — same decision recorded at phase 0/1",
+    "libreoffice_recalc": "host binary present, not invoked — no feature path recalculates; formulas stored_not_evaluated"
+  },
+  "must_not_checks": {
+    "disabled_connectors_advertised": { "violated": false, "reason": "the two late/optional connector caps plus public-video-transcript and STT are recorded as NOT advertised with their honest states; advertisement for enabled caps lives only in this report" },
+    "frozen_capabilities_seed_modified": { "violated": false, "reason": "capabilities.yaml untouched; check_capabilities meta tests green in the 161-pass run; emitter-pure conformance advertises nothing" },
+    "fakes_used_for_quality_basis": { "violated": false, "reason": "the heterogeneous chat answer came from the real llama_cpp provider (:8009), 38 streamed tokens; the fake provider was not configured" },
+    "shared_chat_server_touched": { "violated": false, "reason": ":8009 was only probed (GET /v1/models 200) and consumed; never spawned/restarted/reconfigured/killed" },
+    "evidence_faked": { "violated": false, "reason": "audio/video carry their designed unavailable-transcript state as evidence; blocked_families is empty because every family has real evidence; the two pre-existing deferrals (STT, transcript adapter) are recorded, not papered over" },
+    "scratch_committed": { "violated": false, "reason": "scratch/t25-gate/** stays uncommitted (git-ignored); results referenced by path" }
+  },
+  "findings": [
+    {
+      "id": "T25-F1",
+      "severity": "fixed in this bundle (root cause, not worked around)",
+      "finding": "T16's publication validator demanded a char-covering canonical locator for every cited evidence node. Only text/PDF parsers emit char extents; all phase-2 families (office/epub/html/image/media) persist structural locators (block/slide/sheet/bbox) and markdown emitted DOCUMENT-relative extents while chunker spans are node-relative — so no citation into any phase-2 family could ever publish (GroundingError 'evidence has no valid canonical locator'). Invisible to every existing suite (unit tests never cross the real chunk->cite->validate seam); exposed the moment E2E-002 ran one heterogeneous chat turn.",
+      "fix": "grounding.py _validate_item now accepts the node's primary locator via identity+authorization when it carries no char extents (char-typed locators still require span coverage); markdown locators are node-relative [0, len(text)] with extents dropped from containers; golden-markdown.canonical.json regenerated"
+    },
+    {
+      "id": "T25-F2",
+      "severity": "app-side prototype limitation (recorded, not fixed — wave-2 item)",
+      "finding": "Combined chunks (merged neighbor units) publish chunk.char_span of the FIRST unit while the chunk text is longer; harmless for validation (spans stay within the first node) but citation spans under-report the visible evidence text for merged chunks.",
+      "observed_in": "chunking.py _merge (char_start=first.char_start, char_end=first.char_end, text=combined)",
+      "workaround": "none needed at prototype scope; citations still validate and resolve"
+    }
+  ],
+  "grounding_change_in_bundle": {
+    "files": [
+      "packages/adapters/src/milpbooklm_adapters/grounding.py",
+      "packages/adapters/src/milpbooklm_adapters/parsers/markdown.py",
+      "tests/fixtures/sources/goldens/golden-markdown.canonical.json"
+    ],
+    "change": "heterogeneous citation validation: structural locators validate via node identity+authz; markdown emits node-relative locator extents",
+    "why_needed": "E2E-002's required heterogeneous citation (image bbox + pdf char_range both achieved) is impossible without it; phase-1 precedent shipped the analogous locator-enrichment change in its gate bundle",
+    "gates": "ruff/mypy/import-linter/pytest 161 + fixtures 12 all green with the change included"
+  },
+  "phase2_exit_row_assessment": [
+    { "item": "parser isolation (every enabled family)", "satisfied": true, "reason": "all 11 families parse inside the rootless rlimit+network-guard child; hostile corpus proves typed rejections per family (VER-INGEST-GOLDEN-001)" },
+    { "item": "canonical/provenance goldens (every enabled family)", "satisfied": true, "reason": "13 committed canonical goldens (text/pdf + 11 family fixtures incl. UTF-16LE codec leg) byte-compared through the real child; 12-test suite green this gate" },
+    { "item": "refresh/rebuild/purge (every enabled family)", "satisfied": true, "reason": "T24 machinery is canonical-document-scoped hence family-universal: resumable rebuild via generation swap, purge traversal test green, live E2E-006 refresh journey + purge erase on the web family; goldens for every family pin the canonical layer rebuilds start from" },
+    { "item": "retrieval evidence (every enabled family)", "satisfied": true, "reason": "rank-1 fused hits per family (T21/T23 legs + this gate's single-notebook 11-family journey); audio/video carry the designed probed state; eval corpus v1 spans all 13 family tags at recall@3 1.0" }
+  ],
+  "verdict": "pass",
+  "verdict_rationale": "Phase-2 exit row fully evidenced on the real local stack: every enabled family carries parser-isolation proof (child + hostile corpus), canonical/provenance goldens (12-test suite green), family-universal refresh/rebuild/purge evidence (T24 suites + live E2E-006 journey), and retrieval evidence (per-family rank-1 hits, culminating in ONE notebook holding all 11 families with 9 rank-1 probes and a real-model heterogeneous chat whose citations resolve into image (bbox) and PDF (char_range) sources with every locator jump available). The heterogeneous journey exposed and this bundle FIXED a real cross-layer citation-validation defect (T25-F1) that every automated suite missed. All 13 Table B phase-2 capabilities carry verdicts: 11 enabled at prototype scope (audio/public-video at their honest probed/unavailable scopes), 2 late/optional connectors recorded NOT advertised with live registry + conformance receipts. Frozen registry keeps advertised=0; phase-2 advertisement lives in this report per orchestrator authorization. Named PHASE-GATE-001/PARITY-ACCEPTANCE-001 automated suites remain wave-2 deferrals (phase-0/1 precedent) — recorded, not faked."
+}
