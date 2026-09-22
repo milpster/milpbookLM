@@ -48,6 +48,8 @@ INSTALLATION_ENV_KEYS = frozenset(
         "MILPBOOKLM_EMBEDDING_BASE_URL",
         "MILPBOOKLM_EMBEDDING_MODEL",
         "MILPBOOKLM_EMBEDDING_DIMENSION",
+        # RSR-01a/b: SearXNG discovery endpoint (optional; fake default).
+        "MILPBOOKLM_SEARXNG_URL",
     }
 )
 
@@ -159,6 +161,7 @@ def load_installation(env: Mapping[str, str]) -> InstallationConfig:
             resolved.get("MILPBOOKLM_EMBEDDING_DIMENSION", ""),
             key="MILPBOOKLM_EMBEDDING_DIMENSION",
         ),
+        searxng_url=_parse_optional_str(resolved.get("MILPBOOKLM_SEARXNG_URL", "")),
     )
 
 

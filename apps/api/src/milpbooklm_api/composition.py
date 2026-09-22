@@ -25,6 +25,7 @@ from milpbooklm_adapters.indexing import PgRetrievalService
 from milpbooklm_adapters.jobs import PgJobRepository, PgOutboxDispatcher, PolicyAuthzRevalidator
 from milpbooklm_adapters.models.embedding_client import LlamaCppEmbeddingClient
 from milpbooklm_adapters.notebook_repository import InMemoryNotebookRepository
+from milpbooklm_adapters.research_runs import PgResearchRunStore
 from milpbooklm_adapters.security.argon2 import Argon2PasswordHasher
 from milpbooklm_adapters.security.clock import SystemClock
 from milpbooklm_adapters.security.custody_store import PgNotebookCustodyStore
@@ -63,6 +64,13 @@ from milpbooklm_application.ports import (
     UserRepository,
 )
 from milpbooklm_application.public_video import AcquirePublicVideo
+from milpbooklm_application.research import (
+    CancelResearchRun,
+    CreateResearchRun,
+    PauseResearchRun,
+    ResumeResearchRun,
+    StartResearchRun,
+)
 from milpbooklm_application.retrieval import RetrieveChunks
 from milpbooklm_application.source_acquisition import AcquireSource, SourceCatalog
 from milpbooklm_application.source_lifecycle import NoOpBackupExpiryScheduler, SourcePurge
@@ -78,7 +86,7 @@ from .capability_routes import build_capability_router
 from .config import ChatProvider, InstallationConfig
 from .config_loader import load_config
 from .conversation_routes import build_conversation_router
-from .deps import ApiDeps
+from .deps import ApiDeps, ResearchRunDeps
 from .grounding_routes import build_grounding_router
 from .health_routes import DeploymentHealth, build_health_router
 from .job_routes import build_job_router
@@ -89,6 +97,7 @@ from .observability import (
     SecurityHeadersMiddleware,
     UnhandledErrorMiddleware,
 )
+from .research_routes import build_research_router
 from .retrieval_routes import build_retrieval_router
 from .security import (
     CsrfOriginMiddleware,
@@ -141,6 +150,7 @@ def build_app(
     grounding: PgGroundingStore | None = None,
     conversations: PgConversationStore | None = None,
     completion: LlamaCppCompletionProvider | FakeGroundingCompletionProvider | None = None,
+    research: ResearchRunDeps | None = None,
 ) -> FastAPI:
     """Build the API app from wired ports (the test/QA seam)."""
     app = FastAPI(title="MilpBook LM API")
@@ -199,6 +209,7 @@ def build_app(
             if conversations is not None and chat_turn is not None
             else None
         ),
+        research=research,
     )
     app.state.deps = deps
 
@@ -232,6 +243,8 @@ def build_app(
     app.include_router(build_notebook_overview_router(deps, principal))
     if jobs is not None:
         app.include_router(build_job_router(deps, principal, jobs))
+    if research is not None:
+        app.include_router(build_research_router(deps, principal, research))
     if source_acquisition is not None and source_catalog is not None:
         app.include_router(
             build_source_router(
@@ -334,6 +347,7 @@ def create_app() -> FastAPI:
     )
     grounding = PgGroundingStore(engine)
     conversations = PgConversationStore(engine)
+    research_store = PgResearchRunStore(engine)
     app = build_app(
         users=users,
         hasher=Argon2PasswordHasher(),
@@ -350,6 +364,14 @@ def create_app() -> FastAPI:
         grounding=grounding,
         conversations=conversations,
         completion=_completion_provider(installation.chat_provider),
+        research=ResearchRunDeps(
+            store=research_store,
+            create=CreateResearchRun(research_store),
+            start=StartResearchRun(research_store, jobs),
+            pause=PauseResearchRun(research_store),
+            resume=ResumeResearchRun(research_store, jobs),
+            cancel=CancelResearchRun(research_store, jobs),
+        ),
         health=DeploymentHealth(
             engine,
             installation.blob_root,

@@ -88,6 +88,9 @@ class InstallationConfig(BaseModel):
     embedding_base_url: str | None = None
     embedding_model: str | None = None
     embedding_dimension: int | None = Field(default=None, gt=0)
+    # RSR-01a/b: SearXNG instance root; when unset, research web.search runs
+    # against the deterministic fake (documented QA default).
+    searxng_url: str | None = None
 
 
 class UserPreferences(BaseModel):

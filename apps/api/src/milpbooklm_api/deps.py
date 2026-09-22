@@ -25,9 +25,29 @@ from milpbooklm_application.ports import (
     SessionTokenStore,
     UserRepository,
 )
+from milpbooklm_application.research import (
+    CancelResearchRun,
+    CreateResearchRun,
+    PauseResearchRun,
+    ResearchRunStore,
+    ResumeResearchRun,
+    StartResearchRun,
+)
 from milpbooklm_application.retrieval import RetrieveChunks
 
 from .security import Principal, SecuritySettings, SlidingWindowLimiter
+
+
+@dataclass(frozen=True, slots=True)
+class ResearchRunDeps:
+    """The wired research run surface (routes answer 503 when absent)."""
+
+    store: ResearchRunStore
+    create: CreateResearchRun
+    start: StartResearchRun
+    pause: PauseResearchRun
+    resume: ResumeResearchRun
+    cancel: CancelResearchRun
 
 
 @dataclass(frozen=True, slots=True)
@@ -59,6 +79,7 @@ class ApiDeps:
     conversations: ConversationStore | None = None
     chat_turn: GenerateChatTurn | None = None
     notebook_overview: GenerateNotebookOverview | None = None
+    research: ResearchRunDeps | None = None
 
 
 PrincipalDependency = Callable[[Request], Awaitable[Principal]]

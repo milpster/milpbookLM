@@ -39,6 +39,8 @@ class AuditAction(StrEnum):
     PURGE_INITIATED = "purge.initiated"
     EXPORT_INITIATED = "export.initiated"
     TOOL_INVOKED = "tool.invoked"
+    # RSR-01b: server-side research tool denial (the prompt-injection log).
+    TOOL_DENIED = "tool.denied"
 
     ACQUISITION_SUCCEEDED = "source.acquisition.succeeded"
     ACQUISITION_REJECTED = "source.acquisition.rejected"

@@ -1,0 +1,75 @@
+{
+  "task": "27",
+  "title": "RSR-01b — Research runs: durable state machine, tools surface, evidence, promotion",
+  "commit_message": "feat(research): RSR-01b research runs + tools + evidence (ARCH-11-001..012, TECH-11-001)",
+  "verdict": "done",
+  "implemented": {
+    "migration_0008": [
+      "0008_rsr_01b_research_runs (next number after the already-taken 0007; plan text said 0007 but 0007_ing_02d exists): idempotent ALTERs with IF [NOT] EXISTS + drop-before-add constraint replacement",
+      "research_runs: + mode (source_discovery|deep_research), budget JSONB, tools JSONB, approved_tools JSONB, error_code, revision (CAS); status check extended to created/running/paused/succeeded/failed/cancelled; status server_default -> created",
+      "research_run_steps: + tool_name, status (pending/running/succeeded/failed/skipped), input_manifest JSONB, error_code; step_kind check extended with browser/import/retrieve",
+      "evidence immutability was already enforced by the baseline trigger (trg_research_evidence_snapshots_guard: content fields immutable, promotion one-time)"
+    ],
+    "convergence_proofs": [
+      "Upgrade path: shared QA DB milpbooklm_t13 0007 -> 0008 applied; second upgrade run is a no-op",
+      "Fresh path: throwaway DB milpbooklm_t27_fresh bootstrapped (pgvector + uuidv7) then 0001 -> 0008 in one run; columns AND check-constraint definitions compared identical to the upgraded DB (CONVERGENCE PASS); probe DB dropped afterwards",
+      "Shared DB was never reset"
+    ],
+    "domain_state_machine": [
+      "milpbooklm_domain/research.py: ResearchRunStatus with CAS transition table (created->running->paused<->running->succeeded/failed/cancelled), RunMode, ResearchBudget (bounded 1..64 steps / 1..48 tool calls / 0..8 imports)",
+      "ResearchTool enum is EXACTLY the seven constrained tools: web.search, web.fetch, browser.open, browser.observe, browser.interact, source.import, notebook.retrieve; SIDE_EFFECT_TOOLS = {source.import, browser.interact} require recorded approval"
+    ],
+    "application_layer": [
+      "research.py: ResearchRunStore port + CreateResearchRun (validates tools subset of surface, side-effect approval, budget) + Start/Pause/Resume/Cancel use cases - all CAS through the store; start/resume enqueue the research.execute job (RESEARCH_BROWSER class) with revision-fresh idempotency keys; cancel also cancels the live orchestrator job",
+      "research_planner.py: structured tool selection - parse_action accepts ONLY the seven tools' exact argument shapes (unknown tools, extra args, non-strings, eval gestures, free-form text are ActionParseError); finish is a control pseudo-verb outside the surface; PlannerContext renders tool history inside <untrusted-tool-output> delimiters; SourceDiscoveryPlanner = deterministic search->fetch->import->finish program, a pure function of trusted run inputs",
+      "research_executor.py: single-owner step loop - per planning step records the child input manifest BEFORE the planner call; every proposal re-authorized by authorize_tool_call (surface / run tools / approvals - trusted config only); denials audited as tool.denied (the injection log) and never create tool steps; every executed tool appends an immutable evidence snapshot (content-hash, locator, access metadata); budgets enforced (steps/tool calls/imports -> explicit failed state); browser refusals recorded as evidence with browser_worker_not_deployed; promotion ONLY through IngestingSourceImport (adapter over AcquireWebSource = the normal ingestion pipeline)",
+      "research_browser.py: typed BrowserSessionPort (open/observe/interact, constrained gestures; NO eval/execute-shaped method exists)"
+    ],
+    "adapters": [
+      "PgResearchRunStore: research_runs/run_steps/evidence persistence with CAS UPDATE ... WHERE status=expected RETURNING; one-time promotion guarded WHERE promoted_source_version_id IS NULL",
+      "adapters/research/browser.py UnavailableBrowserSession: honest typed refusal naming RSR-01c (task 28) until the Playwright worker deploys",
+      "adapters/research/fakeweb.py FakeResearchWeb: pure-ASGI deterministic web + FAKE_SEARCH_RESULTS carrying a prompt-injection payload so every QA journey meets hostile content; T26 FakeSearxng annotations widened to real ASGI application types so both fakes type-check as httpx.ASGITransport apps"
+    ],
+    "worker": [
+      "research_handler.py: research.execute handler runs the executor inside one asyncio.run loop with fresh per-job async services (loop-safety); maps JobContext checkpoint/progress/should_stop; exits at pause/lease boundaries leaving durable resumable state",
+      "run.py wiring: --searxng-url (env MILPBOOKLM_SEARXNG_URL) selects the real SearXNG; --research-fake-web / unset URL selects the deterministic fake web (documented QA default); handler registered when --blob-root is present (source.import needs the normal ingestion path); search wrapped in T26 CachedWebSearch"
+    ],
+    "api": [
+      "research_routes.py: POST /api/v1/research-runs (RESEARCH_RUN policy on the notebook), GET run state with the step ledger, GET evidence, POST start/pause/resume/cancel; ownership-scoped (404 for other actors); RunControlResult maps conflicts to 409",
+      "deps.py ResearchRunDeps + composition wiring; InstallationConfig.searxng_url + MILPBOOKLM_SEARXNG_URL env key added to the closed set"
+    ]
+  },
+  "acceptance": {
+    "injection_corpus_denied_server_side": [
+      "tests/unit/test_research_executor.py::test_injection_corpus_is_denied_server_side_and_logged: adversarial planner (worst case: obeys injected content) replays browser.eval / shell.exec / eval-gesture / extra-arg grant / free-text injection / unapproved import after hostile search+fetch content entered the context - every proposal refused (malformed_action at the parse boundary, side_effect_not_approved at authz), all audited, no browser.eval evidence, no promotion, run ends in explicit budget_steps_exceeded",
+      "tests/unit/test_research_domain.py: parse_action refuses unknown tools/extra args/non-strings/eval gestures/free-form text; authorize_tool_call denies every escalation combination; surface is exactly seven tools"
+    ],
+    "cancel_mid_run_resumable": [
+      "test_pause_mid_run_leaves_resumable_state_without_duplicate_side_effects: should_stop boundary -> run stays running, evidence append-only across resume, import executed exactly once",
+      "test_cancel_mid_run_publishes_terminal_state_with_trace_intact: run-level cancel -> terminal state, later executor pass exits, step/evidence ledger retained",
+      "LIVE: pause_observed=true then resume -> succeeded (7 steps)"
+    ],
+    "promotion_normal_source_with_provenance": [
+      "test_happy_journey_...: one promotion, imports received the fetched evidence's final URL + title, promoted evidence carries origin_locator",
+      "LIVE: promoted source is a normal catalog row (type=web_url, origin=web_url:https://research-fake.invalid/, version_status=parsed by the worker, readable via GET /api/v1/sources/{id})"
+    ],
+    "e2e_008_agentic_journey": [
+      "LIVE green with the fake web: register/login/notebook -> run created (explicit mode/tools/approvals/budget) -> 202 start -> worker executes plan/search/plan/fetch/plan/import/plan -> succeeded; evidence ledger web.search+web.fetch; one promotion; attack run (tools=[web.search]) -> 30 server-side tool.denied audit rows (reason tool_not_enabled_on_run), zero non-granted tool evidence, explicit budget failure"
+    ]
+  },
+  "commands": [
+    "uv run ruff check . -> All checks passed",
+    "uv run mypy -> Success: no issues found in 197 source files",
+    "uv run lint-imports -> Contracts: 4 kept, 0 broken",
+    "uv run pytest tests/meta tests/architecture tests/unit -q -> 208 passed (baseline 185 + 23 new)",
+    "uv run pytest tests/fixtures/sources -q -> 12 passed (baseline 12)",
+    "alembic -c migrations/alembic.ini upgrade head (migration role, shared QA DB) -> 0007_ing_02d -> 0008_rsr_01b",
+    "uv run python scratch/t27-rsr/e2e008_drive.py -> E2E-008-VERDICT (all three legs green)"
+  ],
+  "deferred": [
+    "Real model-driven planner for deep_research mode (agentic_chat capability stays experimental/documented; runs in deep_research fail honestly with planner_unavailable_for_mode_deep_research until the model adapter exists - T30 gate / later wave)",
+    "browser.open/observe/interact execute against UnavailableBrowserSession until T28 deploys the Playwright worker (typed refusal recorded as evidence)",
+    "SearXNG real-instance research smoke: no SearXNG service runs on this host yet (T8 delivered compose only); live journey used the documented fake-web QA default",
+    "UI approval-flow surface (wave T18+); server contract is the run's approved_tools recorded at creation and enforced by the executor"
+  ]
+}

@@ -11,12 +11,18 @@ and every request is recorded for parameter assertions.
 from __future__ import annotations
 
 import json
-from collections.abc import Awaitable, Callable
+from collections.abc import Awaitable, Callable, MutableMapping
 from dataclasses import dataclass, field
-from typing import Final
+from typing import Any, Final
 from urllib.parse import parse_qsl
 
 import anyio
+
+type AsgiScope = MutableMapping[str, Any]
+type AsgiMessage = MutableMapping[str, Any]
+type AsgiReceive = Callable[[], Awaitable[AsgiMessage]]
+type AsgiSend = Callable[[AsgiMessage], Awaitable[None]]
+type AsgiApp = Callable[[AsgiScope, AsgiReceive, AsgiSend], Awaitable[None]]
 
 _SCOPE_TYPE_HTTP: Final = "http"
 
@@ -62,12 +68,7 @@ class FakeSearxng:
     config_engines: tuple[FakeEngineConfig, ...] = DEFAULT_CONFIG_ENGINES
     requests: list[dict[str, str]] = field(default_factory=list)
 
-    async def __call__(
-        self,
-        scope: dict[str, object],
-        receive: Callable[[], Awaitable[dict[str, object]]],
-        send: Callable[[dict[str, object]], Awaitable[None]],
-    ) -> None:
+    async def __call__(self, scope: AsgiScope, receive: AsgiReceive, send: AsgiSend) -> None:
         """Serve one ASGI HTTP request from the scripted scenario."""
         del receive  # GET-only surface: no request body is ever sent
         if scope["type"] != _SCOPE_TYPE_HTTP:

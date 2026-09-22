@@ -21,25 +21,45 @@ import logging
 import os
 import signal
 import uuid
+from collections.abc import Callable
 from datetime import timedelta
 from pathlib import Path
 
+import httpx
 import sqlalchemy as sa
 from milpbooklm_adapters.blobs import FilesystemBlobStore, PgBlobRepository
 from milpbooklm_adapters.db.connections import make_engine
+from milpbooklm_adapters.fetch import HardenedFetchService
 from milpbooklm_adapters.indexing import (
     PgCanonicalDocumentReader,
     PgChunkStore,
     PgGenerationStore,
+    PgRetrievalService,
 )
-from milpbooklm_adapters.jobs import PgJobRepository, PolicyAuthzRevalidator
+from milpbooklm_adapters.jobs import (
+    PgJobRepository,
+    PgOutboxDispatcher,
+    PolicyAuthzRevalidator,
+)
 from milpbooklm_adapters.models.embedding_client import LlamaCppEmbeddingClient
 from milpbooklm_adapters.parsers.isolation import IsolatedParser
 from milpbooklm_adapters.parsers.pg_canonical import PgCanonicalRepository
+from milpbooklm_adapters.research import (
+    FAKE_SEARCH_RESULTS,
+    FakeResearchWeb,
+    UnavailableBrowserSession,
+)
+from milpbooklm_adapters.research_runs import PgResearchRunStore
+from milpbooklm_adapters.searxng.fake import FakeSearxng
+from milpbooklm_adapters.searxng.service import SearxngSearchService
 from milpbooklm_adapters.security.clock import SystemClock
 from milpbooklm_adapters.security.notebook_reader import PgNotebookReader
-from milpbooklm_adapters.security.pg_identity import PgUserRepository
-from milpbooklm_adapters.sources import PgSourcePurge
+from milpbooklm_adapters.security.pg_identity import PgAuditLog, PgUserRepository
+from milpbooklm_adapters.sources import (
+    FilesystemQuarantineStore,
+    PgSourceCatalog,
+    PgSourcePurge,
+)
 from milpbooklm_application.blob_usecases import BlobPorts, CollectBlobGarbage, ReconcileBlobs
 from milpbooklm_application.indexing import (
     DEFAULT_EMBEDDING_BATCH_SIZE,
@@ -57,14 +77,26 @@ from milpbooklm_application.job_usecases import (
     CancelJob,
     CompleteJob,
     EnqueueJob,
+    JobPorts,
     RecoverExpiredLeases,
 )
 from milpbooklm_application.policy_engine import PolicyEngine
+from milpbooklm_application.research_executor import (
+    IngestingSourceImport,
+    ResearchRunExecutor,
+    SourceImportPort,
+)
+from milpbooklm_application.research_planner import SourceDiscoveryPlanner
+from milpbooklm_application.retrieval import RetrieveChunks
+from milpbooklm_application.source_acquisition import AcquireSource
 from milpbooklm_application.source_lifecycle import NoOpBackupExpiryScheduler
 from milpbooklm_application.structured_logging import configure_structured_logging
+from milpbooklm_application.web_fetch import AcquireWebSource
+from milpbooklm_application.web_search_cache import CachedWebSearch
 from milpbooklm_domain.blobs import MAX_BACKUP_WINDOW, gc_safety_delay_valid
 from milpbooklm_domain.indexing import STRUCTURAL_CHUNKER_V1
 from milpbooklm_domain.jobs import CapacityClass
+from milpbooklm_domain.research import RunMode
 
 from milpbooklm_workers import credential_cli
 from milpbooklm_workers.handlers import (
@@ -76,6 +108,7 @@ from milpbooklm_workers.handlers import (
 )
 from milpbooklm_workers.indexing_handler import SourceIndexHandler
 from milpbooklm_workers.loop import WorkerLoop
+from milpbooklm_workers.research_handler import ResearchRunHandler, ResearchSession
 
 ENV_WORKER_DSN = "MILPBOOKLM_WORKER_DSN"
 ENV_WORKER_ID = "MILPBOOKLM_WORKER_ID"
@@ -83,6 +116,8 @@ ENV_BLOB_ROOT = "MILPBOOKLM_BLOB_ROOT"
 ENV_EMBEDDING_BASE_URL = "MILPBOOKLM_EMBEDDING_BASE_URL"
 ENV_EMBEDDING_MODEL = "MILPBOOKLM_EMBEDDING_MODEL"
 ENV_EMBEDDING_DIMENSION = "MILPBOOKLM_EMBEDDING_DIMENSION"
+ENV_SEARXNG_URL = "MILPBOOKLM_SEARXNG_URL"
+ENV_RESEARCH_FAKE_WEB = "MILPBOOKLM_RESEARCH_FAKE_WEB"
 
 # ch21: the GC safety delay must outlive the maximum backup-copy window (24h RPO);
 # 48h is the default with one full backup cycle of headroom.
@@ -169,6 +204,22 @@ def build_parser() -> argparse.ArgumentParser:
         type=int,
         default=DEFAULT_EMBEDDING_BATCH_SIZE,
         help="texts per embedding batch (default 32)",
+    )
+    parser.add_argument(
+        "--searxng-url",
+        default=os.environ.get(ENV_SEARXNG_URL, "").strip() or None,
+        help=(
+            f"SearXNG instance root for the research web.search tool (default: ${ENV_SEARXNG_URL})"
+        ),
+    )
+    parser.add_argument(
+        "--research-fake-web",
+        default=os.environ.get(ENV_RESEARCH_FAKE_WEB, "").strip() or None,
+        metavar="{0,1}",
+        help=(
+            "force the deterministic fake web for research tools (QA default when "
+            f"no SearXNG URL is configured; ${ENV_RESEARCH_FAKE_WEB}=0|1)"
+        ),
     )
     parser.add_argument("--source-id", default=None, help="rebuild-index: the source id (uuid)")
     parser.add_argument(
@@ -259,6 +310,111 @@ def _gc_safety_delay(args: argparse.Namespace) -> timedelta:
     return delay
 
 
+def _research_fake_web(args: argparse.Namespace) -> bool:
+    """Resolve fake-web mode: explicit flag wins; unset defaults to fake (QA)."""
+    flag = str(args.research_fake_web)
+    if flag in ("0", "1"):
+        return flag == "1"
+    return args.searxng_url is None
+
+
+def _build_research_session_factory(
+    engine: sa.engine.Engine, args: argparse.Namespace
+) -> Callable[[], ResearchSession]:
+    """Build the per-job research session factory (fresh async services each run)."""
+    blob_root = Path(args.blob_root) if args.blob_root else None
+
+    def factory() -> ResearchSession:
+        return _open_research_session(engine, args, blob_root)
+
+    return factory
+
+
+def _open_research_session(
+    engine: sa.engine.Engine, args: argparse.Namespace, blob_root: Path | None
+) -> ResearchSession:
+    """Open one research session: executor + per-loop service teardown."""
+    fake_web = _research_fake_web(args)
+    if fake_web:
+        search_service = SearxngSearchService(
+            transport=httpx.ASGITransport(app=FakeSearxng(results=FAKE_SEARCH_RESULTS))
+        )
+        fetch_service = HardenedFetchService(transport=httpx.ASGITransport(app=FakeResearchWeb()))
+    elif args.searxng_url is not None:
+        search_service = SearxngSearchService(base_url=args.searxng_url)
+        fetch_service = HardenedFetchService()
+    else:
+        raise SystemExit("error: research tools need --searxng-url or fake-web mode")
+    clock = SystemClock()
+    audit = PgAuditLog(engine)
+    jobs = _build_job_ports(engine)
+    acquisition: AcquireWebSource | None = None
+    if blob_root is not None:
+        blob_store = FilesystemBlobStore(blob_root, PgBlobRepository(engine), clock)
+        acquisition = AcquireWebSource(
+            fetch=fetch_service,
+            acquire=AcquireSource(
+                quarantine=FilesystemQuarantineStore(blob_root, max_bytes=_max_acquisition_bytes()),
+                blobs=blob_store,
+                catalog=PgSourceCatalog(engine),
+                audit=audit,
+                jobs=jobs,
+            ),
+            audit=audit,
+        )
+    executor = ResearchRunExecutor(
+        store=PgResearchRunStore(engine),
+        planners={RunMode.SOURCE_DISCOVERY: SourceDiscoveryPlanner()},
+        search=CachedWebSearch(
+            inner=search_service, config_revision=search_service.config_revision
+        ),
+        fetch=fetch_service,
+        browser=UnavailableBrowserSession(),
+        imports=_require_import_port(acquisition),
+        retrieval=RetrieveChunks(
+            retrieval=PgRetrievalService(engine),
+            embeddings=None,
+            expected_dimension=None,
+        ),
+        audit=audit,
+    )
+
+    async def aclose() -> None:
+        await search_service.aclose()
+        await fetch_service.aclose()
+
+    return ResearchSession(executor=executor, aclose=aclose)
+
+
+def _require_import_port(acquisition: AcquireWebSource | None) -> SourceImportPort:
+    """Refuse honest registration when the ingestion path is not wired."""
+    if acquisition is None:
+        raise SystemExit("error: research.source.import requires --blob-root (normal ingestion)")
+    return IngestingSourceImport(acquisition)
+
+
+def _max_acquisition_bytes() -> int:
+    """Parse the shared acquisition cap (same default as the API composition)."""
+    raw = os.environ.get("MILPBOOKLM_MAX_ACQUISITION_BYTES", "").strip()
+    return int(raw) if raw else 10 * 1024 * 1024
+
+
+def _build_job_ports(engine: sa.engine.Engine) -> JobPorts:
+    """Wire the job ports over the shared adapters (worker-side instance)."""
+    users = PgUserRepository(engine)
+    notebooks = PgNotebookReader(engine)
+    repo = PgJobRepository(engine)
+    revalidator = PolicyAuthzRevalidator(engine, PolicyEngine(), users, notebooks)
+    return JobPorts(
+        repo=repo,
+        dispatcher=PgOutboxDispatcher(engine),
+        enqueue=EnqueueJob(repo, load_capacity_policy(os.environ)),
+        cancel=CancelJob(repo),
+        complete=CompleteJob(repo, revalidator),
+        recover=RecoverExpiredLeases(repo),
+    )
+
+
 def build_blob_ports(
     engine: sa.engine.Engine, blob_root: Path, safety_delay: timedelta
 ) -> BlobPorts:
@@ -305,6 +461,10 @@ def build_worker(args: argparse.Namespace) -> WorkerLoop:
         handlers[SourceIndexHandler.kind] = SourceIndexHandler(
             _build_source_index(engine, config, args.embedding_base_url)
         )
+    if args.blob_root:
+        handlers[ResearchRunHandler.kind] = ResearchRunHandler(
+            _build_research_session_factory(engine, args)
+        )
     return WorkerLoop(
         repo=repo,
         handlers=handlers,
@@ -345,18 +505,22 @@ def _run_rebuild_index(args: argparse.Namespace) -> int:
     config = _index_build_config(args)
     engine = make_engine(args.dsn)
     with engine.begin() as connection:
-        row = connection.execute(
-            sa.text(
-                """
+        row = (
+            connection.execute(
+                sa.text(
+                    """
                 SELECT s.notebook_id, s.created_by_user_id, s.current_version_id, cd.id
                 FROM sources s
                 LEFT JOIN canonical_documents cd
                   ON cd.source_version_id = s.current_version_id AND cd.active = true
                 WHERE s.id = :source_id
                 """
-            ),
-            {"source_id": source_id},
-        ).mappings().one()
+                ),
+                {"source_id": source_id},
+            )
+            .mappings()
+            .one()
+        )
     if row["current_version_id"] is None or row["id"] is None:
         raise SystemExit("error: the source has no active canonical document to index")
     source_version_id: uuid.UUID = row["current_version_id"]
@@ -364,9 +528,7 @@ def _run_rebuild_index(args: argparse.Namespace) -> int:
     notebook_id: uuid.UUID = row["notebook_id"]
     model = config.embedding.model
     dimension = config.embedding.dimension
-    generation_id = generation_id_for(
-        source_version_id, model, dimension, config.profile.revision
-    )
+    generation_id = generation_id_for(source_version_id, model, dimension, config.profile.revision)
     payload: dict[str, object] = {
         "source_id": str(source_id),
         "notebook_id": str(notebook_id),
@@ -390,10 +552,12 @@ def _run_rebuild_index(args: argparse.Namespace) -> int:
             source_version_id, model, dimension, config.profile.revision
         ),
     )
-    print(json.dumps(
-        {"job_id": str(job.id), "created": created, "generation_id": str(generation_id)},
-        sort_keys=True,
-    ))
+    print(
+        json.dumps(
+            {"job_id": str(job.id), "created": created, "generation_id": str(generation_id)},
+            sort_keys=True,
+        )
+    )
     return 0
 
 
@@ -404,23 +568,25 @@ def _run_maintenance(args: argparse.Namespace) -> int:
     ports = build_blob_ports(engine, Path(args.blob_root), _gc_safety_delay(args))
     if args.command == "reconcile":
         report = ports.reconcile()
-        print(json.dumps(
-            {
-                "scanned_at": report.at.isoformat(),
-                "findings": [
-                    {
-                        "kind": finding.kind.value,
-                        "blob_id": str(finding.blob_id) if finding.blob_id else None,
-                        "content_sha256": finding.content_sha256,
-                        "storage_path": finding.storage_path,
-                        "detail": finding.detail,
-                    }
-                    for finding in report.findings
-                ],
-            },
-            indent=2,
-            sort_keys=True,
-        ))
+        print(
+            json.dumps(
+                {
+                    "scanned_at": report.at.isoformat(),
+                    "findings": [
+                        {
+                            "kind": finding.kind.value,
+                            "blob_id": str(finding.blob_id) if finding.blob_id else None,
+                            "content_sha256": finding.content_sha256,
+                            "storage_path": finding.storage_path,
+                            "detail": finding.detail,
+                        }
+                        for finding in report.findings
+                    ],
+                },
+                indent=2,
+                sort_keys=True,
+            )
+        )
         return 0
     if args.command == "put-blob":
         _require(args, "file")
@@ -433,38 +599,48 @@ def _run_maintenance(args: argparse.Namespace) -> int:
             referrer_kind=args.referrer_kind,
             referrer_id=referrer_id,
         )
-        print(json.dumps(
-            {
-                "id": str(blob.id),
-                "content_sha256": blob.content_sha256,
-                "size_bytes": blob.size_bytes,
-                "state": blob.state.value,
-            },
-            sort_keys=True,
-        ))
+        print(
+            json.dumps(
+                {
+                    "id": str(blob.id),
+                    "content_sha256": blob.content_sha256,
+                    "size_bytes": blob.size_bytes,
+                    "state": blob.state.value,
+                },
+                sort_keys=True,
+            )
+        )
         return 0
     if args.command == "get-blob":
         blob_id = _uuid_arg(args.blob_id, "blob-id")
         data = ports.store.get(blob_id)
         if args.out:
             Path(args.out).write_bytes(data)
-        print(json.dumps(
-            {"id": str(blob_id), "bytes": len(data), "sha256": hashlib.sha256(data).hexdigest()},
-            sort_keys=True,
-        ))
+        print(
+            json.dumps(
+                {
+                    "id": str(blob_id),
+                    "bytes": len(data),
+                    "sha256": hashlib.sha256(data).hexdigest(),
+                },
+                sort_keys=True,
+            )
+        )
         return 0
     # gc: the explicit deletion action (the safety delay is enforced by the use case).
     gc_report = ports.gc()
-    print(json.dumps(
-        {
-            "at": gc_report.at.isoformat(),
-            "swept_temps": gc_report.swept_temps,
-            "deleted_finals": gc_report.deleted_finals,
-            "pending_safety_delay": gc_report.pending_safety_delay,
-            "integrity_incidents": gc_report.integrity_incidents,
-        },
-        sort_keys=True,
-    ))
+    print(
+        json.dumps(
+            {
+                "at": gc_report.at.isoformat(),
+                "swept_temps": gc_report.swept_temps,
+                "deleted_finals": gc_report.deleted_finals,
+                "pending_safety_delay": gc_report.pending_safety_delay,
+                "integrity_incidents": gc_report.integrity_incidents,
+            },
+            sort_keys=True,
+        )
+    )
     return 0
 
 

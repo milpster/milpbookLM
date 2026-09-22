@@ -14,7 +14,7 @@ from __future__ import annotations
 import sqlalchemy as sa
 from sqlalchemy.dialects.postgresql import JSONB
 
-from ._common import METADATA, created_at, updated_at, uuid_fk, uuid_pk
+from ._common import METADATA, created_at, revision_column, updated_at, uuid_fk, uuid_pk
 
 research_runs = sa.Table(
     "research_runs",
@@ -30,11 +30,21 @@ research_runs = sa.Table(
     ),
     sa.Column("goal", sa.Text, nullable=False),
     sa.Column("plan", JSONB, nullable=True),
+    # RSR-01b: explicit mode/budget/tools configuration per run (27.1).
+    sa.Column(
+        "mode",
+        sa.Text,
+        nullable=False,
+        server_default=sa.text("'source_discovery'"),
+    ),
+    sa.Column("budget", JSONB, nullable=False, server_default=sa.text("'{}'")),
+    sa.Column("tools", JSONB, nullable=False, server_default=sa.text("'[]'")),
+    sa.Column("approved_tools", JSONB, nullable=False, server_default=sa.text("'[]'")),
     sa.Column(
         "status",
         sa.Text,
         nullable=False,
-        server_default=sa.text("'running'"),
+        server_default=sa.text("'created'"),
     ),
     # Immutable initial run snapshot + append-only ledger (steps below); a final report
     # never cites unversioned mutable run state (ARCH-05-015).
@@ -42,17 +52,23 @@ research_runs = sa.Table(
     sa.Column("cost_usage", JSONB, nullable=True),
     uuid_fk("report_artifact_version_id", "artifact_versions", nullable=True, ondelete="SET NULL"),
     sa.Column("candidate_imports", JSONB, nullable=True),
+    sa.Column("error_code", sa.Text, nullable=True),
     sa.Column("started_at", sa.DateTime(timezone=True), nullable=True),
     sa.Column("finished_at", sa.DateTime(timezone=True), nullable=True),
+    revision_column(),
     created_at(),
     updated_at(),
     sa.CheckConstraint(
-        "status IN ('running', 'succeeded', 'failed', 'cancelled')",
+        "status IN ('created', 'running', 'paused', 'succeeded', 'failed', 'cancelled')",
         name="ck_research_runs_status",
     ),
     sa.CheckConstraint(
         "visibility IN ('private', 'notebook_shared')",
         name="ck_research_runs_visibility",
+    ),
+    sa.CheckConstraint(
+        "mode IN ('source_discovery', 'deep_research')",
+        name="ck_research_runs_mode",
     ),
 )
 
@@ -67,7 +83,17 @@ research_run_steps = sa.Table(
         sa.Text,
         nullable=False,
     ),
+    sa.Column("tool_name", sa.Text, nullable=True),
+    sa.Column(
+        "status",
+        sa.Text,
+        nullable=False,
+        server_default=sa.text("'pending'"),
+    ),
+    # Child input manifest recorded by every planning/model step (ARCH-11-001).
+    sa.Column("input_manifest", JSONB, nullable=True),
     sa.Column("tool_result", JSONB, nullable=True),
+    sa.Column("error_code", sa.Text, nullable=True),
     uuid_fk(
         "evidence_snapshot_id", "research_evidence_snapshots", nullable=True, ondelete="SET NULL"
     ),
@@ -77,8 +103,13 @@ research_run_steps = sa.Table(
     sa.UniqueConstraint("run_id", "step_number", name="uq_research_run_steps_run_number"),
     sa.CheckConstraint("step_number > 0", name="ck_research_run_steps_number"),
     sa.CheckConstraint(
-        "step_kind IN ('search', 'fetch', 'evaluate', 'plan', 'synthesize', 'generate')",
+        "step_kind IN ('search', 'fetch', 'browser', 'evaluate', 'plan', 'synthesize', "
+        "'generate', 'import', 'retrieve')",
         name="ck_research_run_steps_kind",
+    ),
+    sa.CheckConstraint(
+        "status IN ('pending', 'running', 'succeeded', 'failed', 'skipped')",
+        name="ck_research_run_steps_status",
     ),
 )
 
