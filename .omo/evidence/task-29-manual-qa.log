@@ -1,0 +1,36 @@
+=== task-29 manual QA — live escape/denial proofs (2026-09-22T20:18:12+02:00) ===
+host: 7.2.7-x64v3-xanmod1 | bwrap bubblewrap 0.11.0 (non-setuid, mode 755) | busybox v1.37.0
+method: probes drive the REAL provider stack (probe->images->provider->cgroups->collector->broker) over real bwrap + real delegated cgroup v2; no mocks.
+PROBE 0 (posture): execution_available=True bwrap=0.11.0 setuid=False userns=True seccomp=True
+  cgroup_root=/sys/fs/cgroup/user.slice/user-1000.slice/user@1000.service/app.slice/app-org.gnome.Terminal.slice controllers=('cpu', 'memory', 'pids')
+  note: bwrap 0.11.0 predates 0.12.0 (GHSA-pxhw-h44j-8pfx sandbox-setup symlink traversal; broker-only argv + symlink-free mount sources mitigate; admin upgrade pending)
+  note: user.slice/user-1000.slice/cgroup.subtree_control writable=False (systemd delegates at user@.service level instead)
+
+PROBE A (denial): unsigned + tampered spec against the LIVE broker Unix socket
+  A1 signature stripped         -> refused: unsigned_spec
+  A2 argv tampered post-signing -> refused: bad_signature (exfiltration argv never ran)
+
+PROBE B1 (escape): filesystem boundary attempts, clean run (declared output collected)
+  status: succeeded
+  sandbox> host-home invisible: ok
+  sandbox> host-etc invisible: ok
+  sandbox> rootfs read-only: ok
+  sandbox> staged input readable: ok
+  collected declared output: b'evidence'
+
+PROBE B2 (escape): symlink traversal attempt + planted undeclared artifact
+  status: policy_violation (policy_violation: planted symlink rejected as undeclared artifact)
+  outputs collected: () | POLICY_VIOLATION outcomes carry no content by design
+
+PROBE C (resource): memory hard boundary, swap disabled, per-exec cgroup (preexec join)
+  status: oom_killed | oom_kill_count: 1 | exit: 137
+  leftover exec cgroups after cleanup: []
+
+PROBE D (seccomp fact correction): bwrap --seccomp with a 1-instruction allow filter
+  with --seccomp: rc=0 out='Seccomp:\t2 | Seccomp_filters:\t1'
+  => kernel CAN install filters under bwrap (Seccomp: 2); executions still omit seccomp
+     because no reviewed filter is curated for the runtime image (recorded deferral).
+
+VERDICT: A refused at the signature gate; B1 boundaries hold + declared output collected;
+B2 traversal blocked + planted artifact rejected; C OOM-enforced; D corrects the host fact.
+probe-exit=0

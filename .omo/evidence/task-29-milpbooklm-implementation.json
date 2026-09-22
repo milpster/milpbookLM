@@ -1,0 +1,83 @@
+{
+  "task": "29",
+  "title": "EXE-01 \u2014 execution broker + bubblewrap sandbox + runtime images + escape suite (ARCH-12-001..018 user-space core)",
+  "commit_message": "feat(execution): EXE-01 broker+sandbox+escape suite + host GPU benchmarks (ARCH-12-001..018)",
+  "status": "done_with_recorded_deferrals",
+  "scope_split": {
+    "delivered": "user-space core: application port + typed states/refusals, adapters/execution (host_probe, spec_protocol Ed25519 signed+nonce-bound envelopes, content-addressed RuntimeImageStore w/ SBOM slot + full re-verification, DelegatedCgroupController, BubblewrapExecutionProvider, OutputCollector validate->quarantine->blob->publish-after-authz, 0600 Unix-socket ExecutionBroker + BrokerExecutionClient), 22 unit tests, 7-test live escape suite (SANDBOX-SEC-001) running REAL bwrap 0.11.0 + busybox 1.37 + delegated cgroup v2",
+    "deferred_to_admin_deployment": "see deferred[]"
+  },
+  "deliverables": [
+    "packages/application/src/milpbooklm_application/execution.py",
+    "packages/adapters/src/milpbooklm_adapters/execution/{__init__,broker,cgroups,host_probe,images,outputs,sandbox,spec_protocol}.py",
+    "tests/unit/test_execution_{broker,cgroups,host_probe,images,outputs,spec_protocol}.py",
+    "tests/security/sandbox/test_escape_suite.py",
+    ".omo/evidence/task-29-manual-qa.log"
+  ],
+  "commands": [
+    {
+      "cmd": "rtk uv run ruff check .",
+      "exit": 0,
+      "result": "All checks passed (prior review: 61 findings -> 0)"
+    },
+    {
+      "cmd": "rtk uv run mypy",
+      "exit": 0,
+      "result": "Success: no issues in 208 source files (baseline 199 + 9 new execution modules; prior review: 8 errors -> 0)"
+    },
+    {
+      "cmd": "rtk uv run import-linter lint",
+      "exit": 0,
+      "result": "Contracts: 4 kept, 0 broken"
+    },
+    {
+      "cmd": "rtk uv run pytest tests/unit/test_execution_*.py -q",
+      "exit": 0,
+      "result": "22 passed in ~0.2s"
+    },
+    {
+      "cmd": "rtk uv run pytest tests/security/sandbox/test_escape_suite.py -q",
+      "exit": 0,
+      "result": "7 passed in ~0.5s on THIS host (real bwrap; 3 consecutive runs stable)"
+    },
+    {
+      "cmd": "rtk uv run pytest tests/meta tests/architecture tests/unit -q",
+      "exit": 0,
+      "result": "246 passed in ~20s (baseline 224 + 22 new)"
+    },
+    {
+      "cmd": "rtk uv run pytest tests/fixtures/sources -q",
+      "exit": 0,
+      "result": "12 passed (baseline 12 unchanged)"
+    },
+    {
+      "cmd": "manual live probes -> .omo/evidence/task-29-manual-qa.log",
+      "exit": 0,
+      "result": "A1 unsigned->unsigned_spec; A2 tampered argv->bad_signature; B1 boundaries hold+declared output collected; B2 symlink traversal blocked + planted undeclared artifact rejected (policy_violation); C memory OOM enforced (oom_kill=1, exit 137); D seccomp fact corrected (Seccomp:2 installable)"
+    }
+  ],
+  "takeover_fixes": [
+    "import typos + PyNaCl API names: verified fixed (grep empty; crypto_sign/keypair/open correct)",
+    "envelope nonce = typed spec nonce: verified (client signs spec.nonce or mints; broker binds verified.nonce into parsed spec)",
+    "strict wire-response parsing: outcome_from_wire rewritten strict (typed PROTOCOL_TRANSPORT refusal on any drift; base64 validate=True; no coercion)",
+    "cgroup-mandatory posture: provider now constructs the real DelegatedCgroupController whenever posture verifies a delegated root (no silent killpg degradation under a cgroups-mandatory posture)",
+    "unmanifested-file rejection: images.verify compares full inventory vs manifest (verified by unit test)",
+    "undeclared-artifact rejection: OutputCollector._validate_output_tree refuses every undeclared entry (verified by unit test + escape suite)",
+    "NEW boundary defects found and fixed during QA: (1) bwrap --size applied to the wrong --tmpfs (quota now precedes --tmpfs /tmp); (2) memory.max alone was a soft ceiling \u2014 memory.swap.max=0 now written per-execution; (3) post-Popen cgroup attach raced the payload fork \u2014 replaced by preexec_fn self-join so the sandboxed tree inherits limits from its first instruction"
+  ],
+  "deferred": [
+    "admin deployment form (T8-class): dedicated unprivileged service account + systemd unit + cgroup delegation drop-in + admin-run RuntimeImageStore.install flow (installer CLI wrapping it) \u2014 prototype runs the identical user-space core under the current account",
+    "D11 GPU benchmark bundle: BLOCKED on user (GPU usage window) + D16 (download authorization) \u2014 no downloads performed; host GPU benchmark evidence intentionally absent from this commit",
+    "bwrap 0.11.0-vs-0.12.0 GHSA-pxhw-h44j-8pfx delta (sandbox-setup symlink traversal fix + setuid-mode removal, both in 0.12.0): mitigated in 0.11.0 by broker-ONLY argv construction from broker-generated symlink-free mount sources (no client-controlled path ever reaches bwrap; images reject symlinks at install AND verify); admin upgrade to 0.12.0 pending",
+    "seccomp: host fact CORRECTED during QA \u2014 the kernel CAN install bwrap seccomp filters (probe verified Seccomp:2/1 filter; the earlier EINVAL record did not hold under the real NoNewPrivs launch path); executions still omit seccomp because no reviewed filter is curated for the runtime image (SHOULD-level deferral: curate per-image filters); isolation never weakened",
+    "escape-suite CI wiring: tests/security/sandbox runs host-gated via pytest (executed green on this host); adding it to ci/run.sh's step list is deferred until the deployment form defines which hosts must run it"
+  ],
+  "host_facts": {
+    "kernel": "7.2.7-x64v3-xanmod1",
+    "bwrap": "0.11.0 at /usr/bin/bwrap, mode 755 (non-setuid, verified)",
+    "userns": "enabled (max_user_namespaces 253599)",
+    "seccomp": "installable under bwrap (Seccomp:2 verified live); not applied (no curated filter)",
+    "cgroup_v2": "systemd user@1000.service delegation; nearest writable root discovered at app.slice/...; cpu+memory+pids controllers; cgroup.kill verified",
+    "busybox": "1.37.0 (escape-suite micro-image runtime)"
+  }
+}
