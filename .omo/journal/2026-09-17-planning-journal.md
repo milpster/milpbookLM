@@ -283,3 +283,9 @@ Session: 2026-09-17, Prometheus (ulw-plan), intent=CLEAR (user asked to be inter
 - Agent-server instability defined today: two workers finished real work but degenerated into slash-walls at their final report; one abort. User fixed the server twice + ordered TTS alert protocol on agent death (scratch/alert-loop.pid; kill via pkill -f "while true; do spd-say" + pkill -x spd-say). Finisher-dispatch pattern (fresh deep session: gates+evidence+commit only) proved again — 54m for T23 after 6h+ of chaos.
 - OCR serving detail: worker needs TESSDATA_PREFIX=scratch/t23-ocr/tessdata (system tessdata lacks deu) — start-worker.sh must carry it for media parsing.
 - Progress: 23/59 tasks (7 [x], 16 [~], 36 [ ]). Pausing for user review per cadence.
+
+## Process log (cont. 27 — T24 close-out, 2026-09-22)
+
+- [~] T24 marked `- [~]` (commit `1ef1270`). Refresh semantics, all-families rebuild proof, identity-based purge closure with transactional tombstones + async erase + report, purge-closure acceptance test, expanded hostile/eval corpora. Verified first-hand: gates green (mypy 180 / pytest 161+12), purge test PASSED.
+- The interrupted dispatch actually COMPLETED before its abort — PROGRESS.md + commit told the truth the aborted report could not. Third such pattern today: trust committed state, not agent reports.
+- Progress: 24/59 tasks (7 [x], 17 [~], 35 [ ]). Next: T25 Phase-2 gate (universal ingestion evidence).
