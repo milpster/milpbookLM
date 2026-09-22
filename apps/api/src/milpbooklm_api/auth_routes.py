@@ -49,10 +49,12 @@ def _client_host(request: Request) -> str:
     return request.client.host if request.client is not None else "unknown"
 
 
-def _too_many() -> HTTPException:
+def _too_many(retry_after_seconds: int) -> HTTPException:
     """Return the uniform rate-limit rejection (identical for every limiter key)."""
     return HTTPException(
-        status_code=status.HTTP_429_TOO_MANY_REQUESTS, detail="too many attempts"
+        status_code=status.HTTP_429_TOO_MANY_REQUESTS,
+        detail={"reason": "rate_limited", "retry_after_seconds": retry_after_seconds},
+        headers={"Retry-After": str(retry_after_seconds)},
     )
 
 
@@ -103,8 +105,9 @@ def build_auth_router(deps: ApiDeps, principal: PrincipalDependency) -> APIRoute
     @router.post("/register", status_code=201)
     async def register(body: RegisterRequest, request: Request) -> dict[str, str]:
         """Create a local account (rate-limited per client IP)."""
-        if not deps.register_limiter.allow(f"register:{_client_host(request)}"):
-            raise _too_many()
+        key = f"register:{_client_host(request)}"
+        if not deps.register_limiter.allow(key):
+            raise _too_many(deps.register_limiter.retry_after_seconds(key))
         try:
             user_id = deps.register(body.email, body.display_name, body.password)
         except RegistrationError as exc:
@@ -118,7 +121,7 @@ def build_auth_router(deps: ApiDeps, principal: PrincipalDependency) -> APIRoute
         """Authenticate (uniform 401 on any failure; rate-limited per IP+account)."""
         key = f"login:{_client_host(request)}:{body.email.strip().lower()}"
         if not deps.login_limiter.allow(key):
-            raise _too_many()
+            raise _too_many(deps.login_limiter.retry_after_seconds(key))
         return _login_response(deps, body.email, body.password)
 
     @router.post("/logout", status_code=status.HTTP_204_NO_CONTENT)

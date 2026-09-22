@@ -1,7 +1,18 @@
 import type { FormEvent, ReactNode } from "react";
 import { useState } from "react";
 import type { RouteProps } from "../App";
+import { isApiError } from "../api/client";
 import { useAuth } from "../state/auth";
+
+export function authFailureMessage(error: unknown): string {
+  if (isApiError(error)) {
+    if (error.response.status === 401) return "Invalid email or password.";
+    if (error.response.status === 429) {
+      return "Too many attempts. Please wait a few minutes and try again.";
+    }
+  }
+  return "Authentication failed";
+}
 
 export function AuthRoute({ navigate }: RouteProps): ReactNode {
   const { signIn, signUp } = useAuth();
@@ -21,7 +32,7 @@ export function AuthRoute({ navigate }: RouteProps): ReactNode {
       else await signIn(email, password);
       navigate("/notebooks");
     } catch (caught) {
-      setError(caught instanceof Error ? caught.message : "Authentication failed");
+      setError(authFailureMessage(caught));
     } finally {
       setBusy(false);
     }

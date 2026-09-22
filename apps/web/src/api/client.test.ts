@@ -146,6 +146,29 @@ describe("api client session-invalidation signal", () => {
     expect(listener).not.toHaveBeenCalled();
   });
 
+  it("keeps the session on a rate-limit 429", async () => {
+    const fetchMock = vi
+      .fn()
+      .mockImplementationOnce(async () =>
+        jsonResponse(200, {
+          user_id: "2c5a3a1d-93b8-4a11-9db4-2817e88a5c40",
+          csrf_token: "csrf-token",
+        }),
+      )
+      .mockImplementationOnce(async () =>
+        jsonResponse(429, { detail: { reason: "rate_limited", retry_after_seconds: 300 } }),
+      );
+    vi.stubGlobal("fetch", fetchMock);
+    const client = await import("./client");
+    await client.login("user@example.com", "password");
+    const listener = vi.fn();
+    client.onSessionInvalidated(listener);
+
+    await expect(client.login("user@example.com", "password")).rejects.toThrow(HTTPError);
+    expect(listener).not.toHaveBeenCalled();
+    expect(client.authHeaders()).toEqual({ "x-csrf-token": "csrf-token" });
+  });
+
   it("stops notifying after the listener unsubscribes", async () => {
     vi.stubGlobal(
       "fetch",

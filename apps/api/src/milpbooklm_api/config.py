@@ -82,6 +82,12 @@ class InstallationConfig(BaseModel):
     # Deployment health gate: the PostgreSQL major this installation runs on
     # (18 in production; a dev stack may honestly pin an older major, e.g. 17).
     required_postgres_major: int = Field(default=18, gt=0)
+    # Auth rate limits (per client IP, every attempt counted): a shared-IP dev
+    # install can raise them; production keeps the reviewed defaults.
+    login_max_attempts: int = Field(default=5, ge=1)
+    login_window_minutes: float = Field(default=15, gt=0)
+    register_max_attempts: int = Field(default=3, ge=1)
+    register_window_minutes: float = Field(default=60, gt=0)
     enabled_capability_flags: tuple[str, ...] = ()
     configured_provider_capabilities: tuple[str, ...] = ()
     chat_provider: ChatProvider = ChatProvider.LLAMA_CPP

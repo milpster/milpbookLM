@@ -9,6 +9,7 @@ is the earlier skeleton wiring, kept for the existing unit tests.
 from __future__ import annotations
 
 import os
+from datetime import timedelta
 
 import sqlalchemy as sa
 from fastapi import FastAPI, HTTPException, Request
@@ -326,6 +327,10 @@ def create_app() -> FastAPI:
     settings = SecuritySettings(
         secret_key=installation.secret_key.get_secret_value(),
         base_url=installation.base_url,
+        login_max_attempts=installation.login_max_attempts,
+        login_window=timedelta(minutes=installation.login_window_minutes),
+        register_max_attempts=installation.register_max_attempts,
+        register_window=timedelta(minutes=installation.register_window_minutes),
     )
     users = PgUserRepository(engine)
     notebooks = PgNotebookReader(engine)

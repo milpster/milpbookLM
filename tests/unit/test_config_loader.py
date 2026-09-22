@@ -32,6 +32,14 @@ VALID_ENV: Mapping[str, str] = {
     "MILPBOOKLM_TRUSTED_PROXY_PEERS": "10.0.0.0/8, 192.168.1.5",
 }
 DEV_POSTGRES_MAJOR = 17
+PRODUCTION_LOGIN_MAX_ATTEMPTS = 5
+PRODUCTION_LOGIN_WINDOW_MINUTES = 15
+PRODUCTION_REGISTER_MAX_ATTEMPTS = 3
+PRODUCTION_REGISTER_WINDOW_MINUTES = 60
+DEV_LOGIN_MAX_ATTEMPTS = 50
+DEV_LOGIN_WINDOW_MINUTES = 5.5
+DEV_REGISTER_MAX_ATTEMPTS = 20
+DEV_REGISTER_WINDOW_MINUTES = 30.5
 
 
 def test_installation_loads_from_env() -> None:
@@ -139,6 +147,50 @@ def test_required_postgres_major_rejects_non_positive_values() -> None:
     with pytest.raises(ConfigError) as excinfo:
         load_installation(env)
     assert excinfo.value.keys == ("MILPBOOKLM_REQUIRED_POSTGRES_MAJOR",)
+
+
+def test_auth_rate_limits_default_to_production_values() -> None:
+    installation = load_installation(VALID_ENV)
+    assert installation.login_max_attempts == PRODUCTION_LOGIN_MAX_ATTEMPTS
+    assert installation.login_window_minutes == PRODUCTION_LOGIN_WINDOW_MINUTES
+    assert installation.register_max_attempts == PRODUCTION_REGISTER_MAX_ATTEMPTS
+    assert installation.register_window_minutes == PRODUCTION_REGISTER_WINDOW_MINUTES
+
+
+def test_auth_rate_limits_are_env_overridable() -> None:
+    env = {
+        **VALID_ENV,
+        "MILPBOOKLM_LOGIN_MAX_ATTEMPTS": str(DEV_LOGIN_MAX_ATTEMPTS),
+        "MILPBOOKLM_LOGIN_WINDOW_MINUTES": str(DEV_LOGIN_WINDOW_MINUTES),
+        "MILPBOOKLM_REGISTER_MAX_ATTEMPTS": str(DEV_REGISTER_MAX_ATTEMPTS),
+        "MILPBOOKLM_REGISTER_WINDOW_MINUTES": str(DEV_REGISTER_WINDOW_MINUTES),
+    }
+    installation = load_installation(env)
+    assert installation.login_max_attempts == DEV_LOGIN_MAX_ATTEMPTS
+    assert installation.login_window_minutes == DEV_LOGIN_WINDOW_MINUTES
+    assert installation.register_max_attempts == DEV_REGISTER_MAX_ATTEMPTS
+    assert installation.register_window_minutes == DEV_REGISTER_WINDOW_MINUTES
+
+
+@pytest.mark.parametrize(
+    ("key", "value"),
+    [
+        ("MILPBOOKLM_LOGIN_MAX_ATTEMPTS", "0"),
+        ("MILPBOOKLM_LOGIN_MAX_ATTEMPTS", "1.5"),
+        ("MILPBOOKLM_REGISTER_MAX_ATTEMPTS", "-1"),
+        ("MILPBOOKLM_REGISTER_MAX_ATTEMPTS", "many"),
+        ("MILPBOOKLM_LOGIN_WINDOW_MINUTES", "0"),
+        ("MILPBOOKLM_LOGIN_WINDOW_MINUTES", "nan"),
+        ("MILPBOOKLM_REGISTER_WINDOW_MINUTES", "-1"),
+        ("MILPBOOKLM_REGISTER_WINDOW_MINUTES", "minutes"),
+    ],
+)
+def test_auth_rate_limits_reject_invalid_values(key: str, value: str) -> None:
+    env = {**VALID_ENV, key: value}
+    with pytest.raises(ConfigError) as excinfo:
+        load_installation(env)
+    assert excinfo.value.keys == (key,)
+    assert "must be a positive" in str(excinfo.value)
 
 
 def test_missing_required_key_is_a_typed_config_error() -> None:

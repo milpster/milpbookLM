@@ -12,6 +12,7 @@ token, so validation needs no storage round-trip).
 from __future__ import annotations
 
 import hmac
+import math
 import uuid
 from collections import deque
 from dataclasses import dataclass
@@ -77,6 +78,15 @@ class SlidingWindowLimiter:
             return False
         events.append(now)
         return True
+
+    def retry_after_seconds(self, key: str) -> int:
+        """Whole seconds until the oldest recorded event leaves the window."""
+        now = self._clock.now().timestamp()
+        window_seconds = self._window.total_seconds()
+        events = self._events.get(key)
+        if not events:
+            return int(window_seconds)
+        return max(1, math.ceil(events[0] + window_seconds - now))
 
 
 def origin_of(url: str) -> str:

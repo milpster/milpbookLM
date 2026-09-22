@@ -8,6 +8,7 @@ preference and notebook policy scopes at the boundary into typed models.
 
 from __future__ import annotations
 
+import math
 from collections.abc import Mapping
 from pathlib import Path
 
@@ -41,6 +42,10 @@ INSTALLATION_ENV_KEYS = frozenset(
         "MILPBOOKLM_MAX_ACQUISITION_BYTES",
         "MILPBOOKLM_PREREQUISITES_PATH",
         "MILPBOOKLM_REQUIRED_POSTGRES_MAJOR",
+        "MILPBOOKLM_LOGIN_MAX_ATTEMPTS",
+        "MILPBOOKLM_LOGIN_WINDOW_MINUTES",
+        "MILPBOOKLM_REGISTER_MAX_ATTEMPTS",
+        "MILPBOOKLM_REGISTER_WINDOW_MINUTES",
         "MILPBOOKLM_ENABLED_CAPABILITY_FLAGS",
         "MILPBOOKLM_CONFIGURED_PROVIDER_CAPABILITIES",
         "MILPBOOKLM_CHAT_PROVIDER",
@@ -146,6 +151,26 @@ def load_installation(env: Mapping[str, str]) -> InstallationConfig:
             key="MILPBOOKLM_REQUIRED_POSTGRES_MAJOR",
             default=18,
         ),
+        login_max_attempts=_parse_positive_int(
+            resolved.get("MILPBOOKLM_LOGIN_MAX_ATTEMPTS", ""),
+            key="MILPBOOKLM_LOGIN_MAX_ATTEMPTS",
+            default=5,
+        ),
+        login_window_minutes=_parse_positive_float(
+            resolved.get("MILPBOOKLM_LOGIN_WINDOW_MINUTES", ""),
+            key="MILPBOOKLM_LOGIN_WINDOW_MINUTES",
+            default=15,
+        ),
+        register_max_attempts=_parse_positive_int(
+            resolved.get("MILPBOOKLM_REGISTER_MAX_ATTEMPTS", ""),
+            key="MILPBOOKLM_REGISTER_MAX_ATTEMPTS",
+            default=3,
+        ),
+        register_window_minutes=_parse_positive_float(
+            resolved.get("MILPBOOKLM_REGISTER_WINDOW_MINUTES", ""),
+            key="MILPBOOKLM_REGISTER_WINDOW_MINUTES",
+            default=60,
+        ),
         enabled_capability_flags=_parse_csv(
             resolved.get("MILPBOOKLM_ENABLED_CAPABILITY_FLAGS", "")
         ),
@@ -208,6 +233,19 @@ def _parse_positive_int(raw: str, *, key: str, default: int) -> int:
         raise ConfigError(f"{key} must be a positive integer", keys=(key,)) from exc
     if parsed <= 0:
         raise ConfigError(f"{key} must be a positive integer", keys=(key,))
+    return parsed
+
+
+def _parse_positive_float(raw: str, *, key: str, default: float) -> float:
+    value = raw.strip()
+    if not value:
+        return default
+    try:
+        parsed = float(value)
+    except ValueError as exc:
+        raise ConfigError(f"{key} must be a positive number", keys=(key,)) from exc
+    if not math.isfinite(parsed) or parsed <= 0:
+        raise ConfigError(f"{key} must be a positive number", keys=(key,))
     return parsed
 
 

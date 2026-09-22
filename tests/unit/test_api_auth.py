@@ -4,7 +4,7 @@ from __future__ import annotations
 
 import hashlib
 import uuid
-from datetime import UTC, datetime
+from datetime import UTC, datetime, timedelta
 
 from fastapi.testclient import TestClient
 from milpbooklm_adapters.security.fakes import (
@@ -34,6 +34,10 @@ class FakeClock:
     def now(self) -> datetime:
         return self._now
 
+    def advance(self, seconds: float) -> None:
+        """Move the deterministic clock forward (limiter window tests)."""
+        self._now = self._now + timedelta(seconds=seconds)
+
 
 class FakeHasher:
     """Deterministic hasher (no real argon2 work in unit tests)."""
@@ -54,20 +58,18 @@ class FakeHasher:
         return self._h(password) == self._h("milpbooklm-dummy")
 
 
-def make_client(login_max_attempts: int = 5) -> TestClient:
+def make_client(settings: SecuritySettings | None = None) -> TestClient:
     """Build a wired TestClient over the fakes (secure-cookie-friendly base URL)."""
     clock = FakeClock()
-    settings = SecuritySettings(
-        secret_key="api-test-secret", base_url=ORIGIN, login_max_attempts=login_max_attempts
-    )
+    resolved_settings = settings or SecuritySettings(secret_key="api-test-secret", base_url=ORIGIN)
     app = build_app(
         users=InMemoryUserRepository(),
         hasher=FakeHasher(),
-        sessions=InMemorySessionTokenStore(secret_key="api-test-secret", clock=clock),
+        sessions=InMemorySessionTokenStore(secret_key=resolved_settings.secret_key, clock=clock),
         custody=InMemoryNotebookCustodyStore(),
         audit=InMemoryAuditLog(),
         notebooks=InMemoryNotebookReader(),
-        settings=settings,
+        settings=resolved_settings,
         clock=clock,
     )
     return TestClient(app, base_url=ORIGIN)
@@ -224,7 +226,9 @@ def test_owner_allowed_viewer_denied_on_mutate() -> None:
 
 
 def test_login_rate_limit_uniform_429() -> None:
-    client = make_client(login_max_attempts=2)
+    client = make_client(
+        SecuritySettings(secret_key="api-test-secret", base_url=ORIGIN, login_max_attempts=2)
+    )
     register(client, "a@example.com")
     first = client.post(
         "/api/v1/auth/login",
@@ -244,7 +248,91 @@ def test_login_rate_limit_uniform_429() -> None:
     assert first.status_code == status.HTTP_401_UNAUTHORIZED
     assert second.status_code == status.HTTP_401_UNAUTHORIZED
     assert third.status_code == status.HTTP_429_TOO_MANY_REQUESTS
-    assert third.json() == {"detail": "too many attempts"}
+    assert third.json() == {"detail": {"reason": "rate_limited", "retry_after_seconds": 900}}
+    assert third.headers["retry-after"] == "900"
+
+
+def test_login_rate_limit_counts_successful_attempts() -> None:
+    client = make_client(
+        SecuritySettings(secret_key="api-test-secret", base_url=ORIGIN, login_max_attempts=2)
+    )
+    register(client, "a@example.com")
+    login(client, "a@example.com")
+    client.cookies.clear()
+    login(client, "a@example.com")
+    client.cookies.clear()
+
+    denied = client.post(
+        "/api/v1/auth/login",
+        json={"email": "a@example.com", "password": "password-123"},
+        headers=HEADERS,
+    )
+    assert denied.status_code == status.HTTP_429_TOO_MANY_REQUESTS
+
+
+def test_login_rate_limit_honors_configured_window_and_reports_retry_hint() -> None:
+    login_window = timedelta(minutes=5)
+    client = make_client(
+        SecuritySettings(
+            secret_key="api-test-secret",
+            base_url=ORIGIN,
+            login_max_attempts=2,
+            login_window=login_window,
+        )
+    )
+    register(client, "a@example.com")
+    clock = client.app.state.deps.clock
+    assert isinstance(clock, FakeClock)
+    wrong = {"email": "a@example.com", "password": "wrong"}
+    assert (
+        client.post("/api/v1/auth/login", json=wrong, headers=HEADERS).status_code
+        == status.HTTP_401_UNAUTHORIZED
+    )
+    assert (
+        client.post("/api/v1/auth/login", json=wrong, headers=HEADERS).status_code
+        == status.HTTP_401_UNAUTHORIZED
+    )
+    denied = client.post("/api/v1/auth/login", json=wrong, headers=HEADERS)
+    assert denied.status_code == status.HTTP_429_TOO_MANY_REQUESTS
+    assert denied.json()["detail"]["reason"] == "rate_limited"
+    assert denied.json()["detail"]["retry_after_seconds"] == int(login_window.total_seconds())
+    assert denied.headers["retry-after"] == str(int(login_window.total_seconds()))
+    clock.advance(login_window.total_seconds() + 1)
+    after_window = client.post("/api/v1/auth/login", json=wrong, headers=HEADERS)
+    assert after_window.status_code == status.HTTP_401_UNAUTHORIZED
+
+
+def test_register_rate_limit_honors_configured_attempts_and_window() -> None:
+    register_window = timedelta(minutes=7)
+    client = make_client(
+        SecuritySettings(
+            secret_key="api-test-secret",
+            base_url=ORIGIN,
+            register_max_attempts=2,
+            register_window=register_window,
+        )
+    )
+    register(client, "a@example.com")
+    register(client, "b@example.com")
+
+    denied = client.post(
+        "/api/v1/auth/register",
+        json={"email": "c@example.com", "display_name": "c", "password": "password-123"},
+        headers=HEADERS,
+    )
+    assert denied.status_code == status.HTTP_429_TOO_MANY_REQUESTS
+    assert denied.json() == {
+        "detail": {
+            "reason": "rate_limited",
+            "retry_after_seconds": int(register_window.total_seconds()),
+        }
+    }
+    assert denied.headers["retry-after"] == str(int(register_window.total_seconds()))
+
+    clock = client.app.state.deps.clock
+    assert isinstance(clock, FakeClock)
+    clock.advance(register_window.total_seconds() + 1)
+    register(client, "c@example.com")
 
 
 def test_login_failure_uniform_unknown_vs_wrong_password() -> None:
