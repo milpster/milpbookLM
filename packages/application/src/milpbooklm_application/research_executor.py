@@ -50,6 +50,7 @@ from .research_browser import (
     BrowserSessionPort,
     BrowserUnavailableError,
 )
+from .research_browser_policy import browser_automation_denial
 from .research_planner import (
     ActionParseError,
     BrowserInteractAction,
@@ -277,7 +278,7 @@ class ResearchRunExecutor:
                 evidence_appended += 1
             checkpoint({"next_step": len(self._store.list_steps(run_id)) + 1})
 
-    async def _dispatch(  # noqa: C901, PLR0911 - one branch per tool action
+    async def _dispatch(  # noqa: C901, PLR0911, PLR0912, PLR0915 - tool dispatch
         self, run: ResearchRunView, action: PlannerAction
     ) -> ToolTurn:
         """Execute one authorized tool call and append immutable evidence."""
@@ -312,7 +313,20 @@ class ResearchRunExecutor:
                     )
                     return ToolTurn(tool, True, None, summary, str(evidence.evidence_id))
                 case FetchAction(url=url):
-                    fetched = await self._fetch.fetch(WebFetchCommand(url=url))
+                    try:
+                        fetched = await self._fetch.fetch(WebFetchCommand(url=url))
+                    except Exception as exc:
+                        # The url rides in the step summary so the automation
+                        # gate (guide/11: static fetch insufficient) can match
+                        # it on resume as well as mid-run.
+                        summary = f"fetch failed for {url}: {exc}"
+                        self._store.finish_step(
+                            step_id,
+                            status="failed",
+                            error_code=type(exc).__name__,
+                            tool_result={"summary": summary},
+                        )
+                        return ToolTurn(tool, False, type(exc).__name__, summary)
                     evidence = self._append_fetched(run, fetched)
                     summary = (
                         f"fetch ok: {fetched.record.final_url} "
@@ -326,9 +340,25 @@ class ResearchRunExecutor:
                     )
                     return ToolTurn(tool, True, None, summary, str(evidence.evidence_id))
                 case BrowserOpenAction(url=url):
+                    denial = browser_automation_denial(
+                        run.approved_tools,
+                        self._turns_from(self._store.list_steps(run.run_id)),
+                        url,
+                    )
+                    if denial is not None:
+                        self._deny(run, denial, tool=tool, step_id=step_id)
+                        return ToolTurn(tool, False, denial, "browser automation not authorized")
                     page = await self._browser.open(url)
                     evidence = self._append_evidence(
-                        run, tool, {"url": page.url, "title": page.title}, page.url
+                        run,
+                        tool,
+                        {
+                            "url": page.url,
+                            "title": page.title,
+                            "requested_url": url,
+                            "http_status": page.http_status,
+                        },
+                        page.url,
                     )
                     self._store.finish_step(
                         step_id, status="succeeded", evidence_snapshot_id=evidence.evidence_id

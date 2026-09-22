@@ -1,0 +1,49 @@
+{
+  "task": "28",
+  "title": "RSR-01c — Playwright browser worker + deterministic local web",
+  "commit_message": "feat(research): RSR-01c Playwright browser worker + local web fixtures",
+  "verdict": "done_with_recorded_deferrals",
+  "deferred": [
+    "rootless-container worker form (version-matched Chromium image, Playwright 1.63 pins, dedicated network policy): T8-class, no container runtime as this user — user-space Node subprocess form delivered instead; local install is Playwright 1.58.2/Chromium 145, pin reconciliation recorded for the container form",
+    "download size cap is post-completion only (no transfer-progress hook in Playwright): oversized artifacts are deleted and refused",
+    "Firefox is the product-E2E browser only; research worker is Chromium-normative (guide/11)"
+  ],
+  "implemented": {
+    "worker_node_side": [
+      "packages/adapters/src/milpbooklm_adapters/research/browser_worker.mjs: line-JSON stdio worker; launches full Chromium (channel 'chromium') with chromiumSandbox:true — NEVER --no-sandbox (Playwright's default launch silently injects it: verified by /proc scan)",
+      "startup_check PROVES posture: no --no-sandbox anywhere in the browser process tree + >=1 renderer with NoNewPrivs=1 and Seccomp=2 (kernel seccomp-bpf); Chromium rewrites child argv so Seccomp=2 is the discriminator (type flags are consumed)",
+      "one disposable context per worker process (= per research session): no storage state, no inherited credentials, disposed on close",
+      "route guard on every request: host classified against the Python-exported T22 tables (IPv4 + IPv6 incl. v4-mapped), hostnames resolved and refused when ANY candidate is non-public (rebinding defense), failures abort pre-connect and are reported as denial events",
+      "downloads: captured into the quarantine dir, size-capped post-completion, sanitized unique names, reported as quarantined/refused events; main-frame downloads need a concurrent page-level waitForEvent (context event alone never fires — empirical)"
+    ],
+    "worker_python_side": [
+      "packages/adapters/src/milpbooklm_adapters/research/browser_worker.py: PlaywrightBrowserSession (BrowserSessionPort) + BrowserWorkerConfig; lazy start() with posture assertion; pre-connect navigation validation via milpbooklm_adapters.fetch.addressing.select_pinned_address (same tables as the static fetch — exported as integer ranges in the init handshake, single source of truth)",
+      "allowed_origins: explicit per-deployment loopback exemption, EMPTY by default; private ranges stay blocked regardless (tests prove 10/8 denial while the fixture origin is allowed)",
+      "typed refusals mapped from worker codes onto BrowserErrorCode (address_blocked, navigation_timeout, download_limit_exceeded, sandbox_*, gesture_failed, worker_failure); denials + download events drained from every response and logged (the denial log)"
+    ],
+    "automation_gate": [
+      "packages/application/src/milpbooklm_application/research_browser_policy.py: guide/11 rule enforced server-side in the executor's BrowserOpenAction dispatch — browser.open only when (a) approved_tools includes browser.open (authorized workflow) or (b) a prior web.fetch of the SAME url failed (static fetch insufficient, matched via the persisted step summary); otherwise audited tool.denied 'browser_automation_not_authorized'",
+      "failed fetch steps now persist tool_result.summary carrying the URL so the gate survives resume"
+    ],
+    "tools_wiring": [
+      "workers CLI: --research-browser {off,on} (default off = honest UnavailableBrowserSession), --browser-playwright-root, --browser-quarantine-dir (default <blob-root>/quarantine/browser), --browser-allowed-origin (repeatable); ResearchSession.aclose disposes the browser session"
+    ],
+    "fixtures": [
+      "tests/fixtures/web/localweb.py: deterministic loopback HTTP server — redirect chain (2 hops), js-render (markers composed at runtime so static bytes cannot contain them), robots.txt + disallowed private page, 403 policy outcome, prompt-injection page, download + huge-download, slow + hang, private-links page (JS probes 10.0.0.1/169.254.169.254/192.168.0.10 recorded as DOM markers), storage page (disposable-context proof)"
+    ]
+  },
+  "verification": {
+    "startup_sandbox_posture_test": "tests/unit/test_browser_worker.py::test_startup_proves_sandbox_posture — green (no_sandbox_args False, sandboxed_renderers>=1, probe Seccomp=2 NNP=1)",
+    "private_network_refused": "pre-connect refusal for 10/8, 192.168/16, 169.254/16 (metadata), unallowed loopback, [::1]; route-level denial of 10.0.0.1 from page JS with denial-log assertion (acceptance QA case)",
+    "js_render_vs_static": "static fetch sees only the stub; worker open/observe materializes the JS content (unit + live)",
+    "e2e_008_browser_legs": "live driver verdict in task-28-milpbooklm-implementation-manual-qa.log: api journey shows NO browser step when static fetch suffices; browser leg shows refused static fetch → authorized browser fallback → PG evidence rows; 10.0.0.1 denial logged",
+    "gates": {
+      "ruff": "All checks passed",
+      "mypy": "Success: no issues found in 199 source files (T27 baseline tree: 197 files, zero errors; growth is T28 sources)",
+      "import_linter": "4 kept, 0 broken",
+      "pytest_meta_architecture_unit": "224 passed (baseline 208; +13 worker suite, +3 gate tests)",
+      "pytest_fixtures": "12 passed (baseline 12)",
+      "web_gates": "apps/web untouched — unaffected"
+    }
+  }
+}

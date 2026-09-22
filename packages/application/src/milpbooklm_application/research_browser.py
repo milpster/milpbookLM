@@ -20,6 +20,14 @@ class BrowserErrorCode:
 
     WORKER_NOT_DEPLOYED = "browser_worker_not_deployed"
     UNSUPPORTED = "unsupported"
+    SANDBOX_UNAVAILABLE = "browser_sandbox_unavailable"
+    SANDBOX_POSTURE_VIOLATED = "browser_sandbox_posture_violated"
+    ADDRESS_BLOCKED = "browser_address_blocked"
+    NAVIGATION_TIMEOUT = "browser_navigation_timeout"
+    DOWNLOAD_LIMIT_EXCEEDED = "browser_download_limit_exceeded"
+    DOWNLOAD_REFUSED = "browser_download_refused"
+    GESTURE_FAILED = "browser_gesture_failed"
+    WORKER_FAILURE = "browser_worker_failure"
 
 
 class BrowserUnavailableError(Exception):
@@ -50,6 +58,7 @@ class BrowserPage:
     url: str
     title: str
     text_excerpt: str
+    http_status: int | None = None
 
 
 @dataclass(frozen=True, slots=True)

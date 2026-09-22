@@ -532,7 +532,7 @@ def test_browser_tools_refuse_honestly_until_worker_deploys() -> None:
         ]
     )
     executor, _audit = _executor(store, planner)
-    run_id = _running_run(store)
+    run_id = _running_run(store, approved=frozenset({"browser.open", "browser.interact"}))
 
     _drive(executor, run_id)
 
@@ -547,6 +547,99 @@ def test_browser_tools_refuse_honestly_until_worker_deploys() -> None:
     run = store.get_run(run_id)
     assert run is not None
     assert run.status is ResearchRunStatus.SUCCEEDED
+
+
+def test_browser_automation_gate_denies_unauthorized_open() -> None:
+    """guide/11: automation only on authorization or proven fetch failure."""
+    store = MemoryRunStore()
+    planner = ScriptedPlanner(
+        [
+            {"tool": "browser.open", "args": {"url": FAKE_URL}},
+            {"tool": "finish", "args": {"summary": "no browser"}},
+        ]
+    )
+    executor, audit = _executor(store, planner)
+    run_id = _running_run(store, approved=frozenset({"source.import", "browser.interact"}))
+
+    outcome = _drive(executor, run_id)
+
+    denials = [r for r in audit.records if r["action"] == "tool.denied"]
+    assert any(
+        d["details"]["reason"] == "browser_automation_not_authorized" for d in denials
+    ), "unauthorized automation must be audited"
+    browser_entries = [e for e in store.steps[run_id] if e["view"].tool_name == "browser.open"]
+    assert browser_entries[-1]["view"].error_code == "denied:browser_automation_not_authorized"
+    assert [row for row in store.list_evidence(run_id) if row.origin_tool == "browser.open"] == []
+    assert outcome.run_status is ResearchRunStatus.SUCCEEDED
+
+
+class FailingFetch:
+    """WebFetchPort double whose every fetch fails (static fetch insufficient)."""
+
+    def __init__(self) -> None:
+        self.urls: list[str] = []
+
+    async def fetch(self, command: WebFetchCommand) -> FetchedWebContent:
+        self.urls.append(command.url)
+        raise RuntimeError(f"connection refused for {command.url}")
+
+
+def test_browser_automation_gate_allows_after_failed_static_fetch() -> None:
+    """A failed web.fetch of the SAME url authorizes the fallback to rendering."""
+    store = MemoryRunStore()
+    planner = ScriptedPlanner(
+        [
+            {"tool": "web.fetch", "args": {"url": FAKE_URL}},
+            {"tool": "browser.open", "args": {"url": FAKE_URL}},
+            {"tool": "finish", "args": {"summary": "rendered after fetch failed"}},
+        ]
+    )
+    audit = RecordingAudit()
+    failing = FailingFetch()
+    executor = ResearchRunExecutor(
+        store=store,
+        planners={RunMode.SOURCE_DISCOVERY: planner},
+        search=FakeSearch(),
+        fetch=failing,
+        browser=UnavailableBrowser(),
+        imports=FakeImport(),
+        retrieval=RetrieveChunks(
+            retrieval=FakeRetrieval(), embeddings=None, expected_dimension=None
+        ),
+        audit=audit,
+    )
+    run_id = _running_run(store, approved=frozenset({"browser.interact"}))
+
+    outcome = _drive(executor, run_id)
+
+    assert failing.urls == [FAKE_URL]
+    # The gate passed (no automation denial) and the honest worker refusal
+    # was recorded instead - proving the browser call was reached.
+    denials = [r for r in audit.records if r["action"] == "tool.denied"]
+    assert not any("automation" in str(d["details"]["reason"]) for d in denials)
+    browser_entries = [e for e in store.steps[run_id] if e["view"].tool_name == "browser.open"]
+    assert browser_entries[-1]["view"].error_code == "browser_worker_not_deployed"
+    assert outcome.run_status is ResearchRunStatus.SUCCEEDED
+
+
+def test_browser_automation_gate_allows_approved_workflow() -> None:
+    """browser.open in approved_tools = explicit authorized workflow."""
+    store = MemoryRunStore()
+    planner = ScriptedPlanner(
+        [
+            {"tool": "browser.open", "args": {"url": FAKE_URL}},
+            {"tool": "finish", "args": {"summary": "authorized"}},
+        ]
+    )
+    executor, audit = _executor(store, planner)
+    run_id = _running_run(store, approved=frozenset({"browser.open", "browser.interact"}))
+
+    _drive(executor, run_id)
+
+    denials = [r for r in audit.records if r["action"] == "tool.denied"]
+    assert not any("automation" in str(d["details"]["reason"]) for d in denials)
+    browser_entries = [e for e in store.steps[run_id] if e["view"].tool_name == "browser.open"]
+    assert browser_entries[-1]["view"].error_code == "browser_worker_not_deployed"
 
 
 def test_pause_mid_run_leaves_resumable_state_without_duplicate_side_effects() -> None:

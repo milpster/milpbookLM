@@ -1,6 +1,10 @@
 """Research runtime adapters: browser ports and the deterministic fake web."""
 
 from milpbooklm_adapters.research.browser import UnavailableBrowserSession
+from milpbooklm_adapters.research.browser_worker import (
+    BrowserWorkerConfig,
+    PlaywrightBrowserSession,
+)
 from milpbooklm_adapters.research.fakeweb import (
     FAKE_SEARCH_RESULTS,
     FAKE_WEB_PAGES,
@@ -10,6 +14,8 @@ from milpbooklm_adapters.research.fakeweb import (
 __all__ = [
     "FAKE_SEARCH_RESULTS",
     "FAKE_WEB_PAGES",
+    "BrowserWorkerConfig",
     "FakeResearchWeb",
+    "PlaywrightBrowserSession",
     "UnavailableBrowserSession",
 ]

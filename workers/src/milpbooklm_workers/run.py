@@ -46,7 +46,9 @@ from milpbooklm_adapters.parsers.isolation import IsolatedParser
 from milpbooklm_adapters.parsers.pg_canonical import PgCanonicalRepository
 from milpbooklm_adapters.research import (
     FAKE_SEARCH_RESULTS,
+    BrowserWorkerConfig,
     FakeResearchWeb,
+    PlaywrightBrowserSession,
     UnavailableBrowserSession,
 )
 from milpbooklm_adapters.research_runs import PgResearchRunStore
@@ -81,6 +83,7 @@ from milpbooklm_application.job_usecases import (
     RecoverExpiredLeases,
 )
 from milpbooklm_application.policy_engine import PolicyEngine
+from milpbooklm_application.research_browser import BrowserSessionPort
 from milpbooklm_application.research_executor import (
     IngestingSourceImport,
     ResearchRunExecutor,
@@ -118,6 +121,8 @@ ENV_EMBEDDING_MODEL = "MILPBOOKLM_EMBEDDING_MODEL"
 ENV_EMBEDDING_DIMENSION = "MILPBOOKLM_EMBEDDING_DIMENSION"
 ENV_SEARXNG_URL = "MILPBOOKLM_SEARXNG_URL"
 ENV_RESEARCH_FAKE_WEB = "MILPBOOKLM_RESEARCH_FAKE_WEB"
+ENV_RESEARCH_BROWSER = "MILPBOOKLM_RESEARCH_BROWSER"
+ENV_BROWSER_PLAYWRIGHT_ROOT = "MILPBOOKLM_BROWSER_PLAYWRIGHT_ROOT"
 
 # ch21: the GC safety delay must outlive the maximum backup-copy window (24h RPO);
 # 48h is the default with one full backup cycle of headroom.
@@ -219,6 +224,36 @@ def build_parser() -> argparse.ArgumentParser:
         help=(
             "force the deterministic fake web for research tools (QA default when "
             f"no SearXNG URL is configured; ${ENV_RESEARCH_FAKE_WEB}=0|1)"
+        ),
+    )
+    parser.add_argument(
+        "--research-browser",
+        default=os.environ.get(ENV_RESEARCH_BROWSER, "").strip() or "off",
+        metavar="{off,on}",
+        help=(
+            "enable the sandboxed Playwright browser worker for research browser "
+            "tools (default off = honest typed refusals; the automation gate in "
+            "the executor still applies)"
+        ),
+    )
+    parser.add_argument(
+        "--browser-playwright-root",
+        default=os.environ.get(ENV_BROWSER_PLAYWRIGHT_ROOT, "").strip() or None,
+        help="directory whose node_modules contains playwright for the browser worker",
+    )
+    parser.add_argument(
+        "--browser-quarantine-dir",
+        default=None,
+        help="browser download quarantine directory (default: <blob-root>/quarantine/browser)",
+    )
+    parser.add_argument(
+        "--browser-allowed-origin",
+        action="append",
+        default=[],
+        metavar="ORIGIN",
+        help=(
+            "explicitly allow ONE http(s) origin for browser navigation (repeatable; "
+            "default: none — loopback/private stays blocked, tests use this for fixtures)"
         ),
     )
     parser.add_argument("--source-id", default=None, help="rebuild-index: the source id (uuid)")
@@ -330,6 +365,35 @@ def _build_research_session_factory(
     return factory
 
 
+def _research_browser_session(
+    args: argparse.Namespace, blob_root: Path | None
+) -> BrowserSessionPort:
+    """Wire the browser tool port: real sandboxed worker or honest refusal."""
+    mode = str(args.research_browser)
+    if mode not in ("on", "off"):
+        raise SystemExit(f"error: --research-browser must be off or on: {mode}")
+    if mode != "on":
+        return UnavailableBrowserSession()
+    quarantine_raw = str(getattr(args, "browser_quarantine_dir", "") or "")
+    if quarantine_raw:
+        quarantine = Path(quarantine_raw)
+    elif blob_root is not None:
+        quarantine = blob_root / "quarantine" / "browser"
+    else:
+        raise SystemExit(
+            "error: --research-browser needs --browser-quarantine-dir (or --blob-root)"
+        )
+    return PlaywrightBrowserSession(
+        BrowserWorkerConfig(
+            quarantine_dir=quarantine,
+            playwright_root=str(args.browser_playwright_root)
+            if args.browser_playwright_root
+            else None,
+            allowed_origins=tuple(args.browser_allowed_origin),
+        )
+    )
+
+
 def _open_research_session(
     engine: sa.engine.Engine, args: argparse.Namespace, blob_root: Path | None
 ) -> ResearchSession:
@@ -362,6 +426,7 @@ def _open_research_session(
             ),
             audit=audit,
         )
+    browser = _research_browser_session(args, blob_root)
     executor = ResearchRunExecutor(
         store=PgResearchRunStore(engine),
         planners={RunMode.SOURCE_DISCOVERY: SourceDiscoveryPlanner()},
@@ -369,7 +434,7 @@ def _open_research_session(
             inner=search_service, config_revision=search_service.config_revision
         ),
         fetch=fetch_service,
-        browser=UnavailableBrowserSession(),
+        browser=browser,
         imports=_require_import_port(acquisition),
         retrieval=RetrieveChunks(
             retrieval=PgRetrievalService(engine),
@@ -382,6 +447,8 @@ def _open_research_session(
     async def aclose() -> None:
         await search_service.aclose()
         await fetch_service.aclose()
+        if isinstance(browser, PlaywrightBrowserSession):
+            await browser.aclose()
 
     return ResearchSession(executor=executor, aclose=aclose)
 

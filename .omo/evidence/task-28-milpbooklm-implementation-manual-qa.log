@@ -1,0 +1,93 @@
+# T28 manual QA log — RSR-01c Playwright browser worker + local web (D13-minimal)
+
+## 1. Sandbox-posture probe (scratch/t28-browser/probe-sandbox*.mjs)
+
+- Playwright 1.58.2 (Node, /home/srcds/node_modules — the existing product-E2E install;
+  browsers at ~/.cache/ms-playwright: chromium-1208 = Chrome for Testing 145.0.7632.6,
+  chromium-1234, firefox-1509). Python playwright NOT installed — worker is a Node
+  subprocess driven by the Python adapter over line-JSON stdio.
+- CRITICAL: Playwright's DEFAULT chromium launch injects `--no-sandbox`
+  (chromiumSandbox defaults to false). Verified by /proc cmdline scan: default launch
+  → renderer carries `--no-sandbox`, Seccomp=0 (kernel seccomp OFF).
+- Launch used by the worker: `{ headless: true, chromiumSandbox: true, channel: "chromium" }`
+  (full version-matched Chromium binary, not the headless-shell):
+  no `--no-sandbox` anywhere in the process tree; renderer processes show
+  NoNewPrivs=1 + Seccomp=2. Chromium rewrites child argv (`--type` consumed), so the
+  kernel-proof discriminator is Seccomp=2 — present ONLY in sandboxed renderers.
+- `chrome://sandbox` navigation fails headless (ERR_INVALID_URL) — /proc-based probe
+  is the honest alternative and is what startup_check implements.
+
+## 2. Worker smoke (scratch/t28-browser/smoke-worker.py)
+
+- start() → posture: chromium=145.0.7632.6, no_sandbox_args=False, sandboxed_renderers=3
+- open/observe(focus)/interact(click) on a loopback page: all green, content asserted
+- open("http://10.0.0.1/x") → BrowserUnavailableError browser_address_blocked
+  "10.0.0.1: private_range" + denial recorded (phase=navigate)
+
+## 3. pytest integration suite (tests/unit/test_browser_worker.py)
+
+13 passed in ~16s against the real worker + tests/fixtures/web loopback server:
+startup posture proof; private targets (10/8, 192.168/16, 169.254/16 metadata,
+unallowed loopback, [::1]) refused pre-connect with denial log; /private-links page
+(allowed origin) whose JS probes 10.0.0.1 + 169.254.169.254 + 192.168.0.10 → every
+probe "blocked", denial log carries all three (phase=route); JS-render fixture:
+static httpx fetch sees only "js-stub-loading" (marker composed at runtime from
+fragments so it cannot appear in static bytes) while the worker materializes
+js-rendered-marker-DYNAMIC-7834; disposable contexts (session A localStorage never
+reaches session B); downloads land in quarantine with exact bytes and the oversized
+one is refused (download_limit_exceeded, file deleted); /slow?delay_ms=8000 with a
+1000ms nav budget → typed navigation_timeout; redirect chain resolves to final URL;
+403 page records http_status; robots.txt + disallowed private page readable as data;
+injection page observed strictly as data; executor journey (fetch fails → gate
+authorizes → browser.open/observe → finish) with evidence rows.
+
+Executor gate units (tests/unit/test_research_executor.py): 11 passed —
+unauthorized browser.open denied + audited (browser_automation_not_authorized);
+allowed via approved workflow; allowed after failed static fetch of the SAME url.
+
+## 4. Live E2E-008 browser legs (scratch/t28-browser/e2e008_browser_drive.py)
+
+Stack: PG 29521 (shared QA DB, never reset), API :8000 (restarted once via
+scratch/t20-gate/start-api.sh after the register limiter exhausted — task-owned),
+t25/t27 workers untouched; additional t28-w1 worker booted green with
+`--research-browser on --browser-quarantine-dir scratch/t28-browser/quarantine-worker`
+(pid recorded, killed after QA).
+
+Verdict (E2E-008-BROWSER-VERDICT):
+- api_journey: run with ALL tools + browser.open/browser.interact approved →
+  succeeded with tools [web.search, web.fetch, source.import];
+  browser_steps_used=[] — automation NOT invoked when static fetch suffices
+  (guide/11 rule visible live).
+- browser_leg: run 7aae817b… — web.fetch of the JS fixture REFUSED by the production
+  static-fetch policy (WebFetchRefusedError), automation gate authorized the
+  fallback, browser.open + browser.observe succeeded, Chromium 145.0.7632.6
+  (no_sandbox_args=false, sandboxed_renderers=3); PG research_run_steps shows
+  fetch/failed → browser/succeeded ×2; research_evidence_snapshots holds
+  browser.open + browser.observe rows with the fixture locator (immutable evidence).
+- denial leg: open("http://10.0.0.1/private-probe") →
+  browser_address_blocked "10.0.0.1: private_range", denial log:
+  ["10.0.0.1:private_range"].
+
+## 5. Gates
+
+- ruff check . → All checks passed
+- mypy (workspace) → Success: no issues found in 199 source files (baseline: 197
+  files with the T27-era tree; count grew with T28 sources, zero errors both then and now)
+- import-linter lint → 4 kept, 0 broken
+- pytest tests/meta tests/architecture tests/unit -q → 224 passed (T27 baseline 208;
+  +13 worker suite, +3 gate suites)
+- pytest tests/fixtures -q → 12 passed (baseline 12 unchanged; web fixtures module
+  is exercised through tests/unit/test_browser_worker.py)
+- apps/web untouched (git status confirms) → web gates unaffected
+
+## 6. Deferrals (recorded)
+
+- Rootless-container worker form (version-matched Chromium image via Playwright 1.63
+  pins, dedicated network policy): T8-class — no usable container runtime as this
+  user; the user-space worker above is the delivered form. Version honesty: local
+  install is Playwright 1.58.2 / Chromium 145 (plan's 1.63/Chromium 153 pins apply to
+  the container image and must be reconciled when the container form lands).
+- Download size cap is enforced post-completion (Playwright exposes no
+  transfer-progress hook); oversized artifacts are deleted and refused.
+- Firefox parity for research is not wired (Firefox remains the product-E2E browser
+  per guide/11; research is Chromium-normative).
