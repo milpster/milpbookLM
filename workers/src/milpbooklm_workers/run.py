@@ -102,6 +102,7 @@ from milpbooklm_domain.jobs import CapacityClass
 from milpbooklm_domain.research import RunMode
 
 from milpbooklm_workers import credential_cli
+from milpbooklm_workers.execution_handler import ExecutionRunHandler, open_execution_stack
 from milpbooklm_workers.handlers import (
     BlobIntegrityScanHandler,
     DemoEchoHandler,
@@ -123,6 +124,9 @@ ENV_SEARXNG_URL = "MILPBOOKLM_SEARXNG_URL"
 ENV_RESEARCH_FAKE_WEB = "MILPBOOKLM_RESEARCH_FAKE_WEB"
 ENV_RESEARCH_BROWSER = "MILPBOOKLM_RESEARCH_BROWSER"
 ENV_BROWSER_PLAYWRIGHT_ROOT = "MILPBOOKLM_BROWSER_PLAYWRIGHT_ROOT"
+ENV_EXECUTION_ROOT = "MILPBOOKLM_EXECUTION_ROOT"
+ENV_EXECUTION_RUNTIME_IMAGE = "MILPBOOKLM_EXECUTION_RUNTIME_IMAGE"
+ENV_EXECUTION_IMAGE_NAME = "MILPBOOKLM_EXECUTION_IMAGE_NAME"
 
 # ch21: the GC safety delay must outlive the maximum backup-copy window (24h RPO);
 # 48h is the default with one full backup cycle of headroom.
@@ -255,6 +259,24 @@ def build_parser() -> argparse.ArgumentParser:
             "explicitly allow ONE http(s) origin for browser navigation (repeatable; "
             "default: none — loopback/private stays blocked, tests use this for fixtures)"
         ),
+    )
+    parser.add_argument(
+        "--execution-runtime-image",
+        default=os.environ.get(ENV_EXECUTION_RUNTIME_IMAGE, "").strip() or None,
+        help=(
+            "reviewed execution runtime rootfs; enables execution.run "
+            f"(default: ${ENV_EXECUTION_RUNTIME_IMAGE})"
+        ),
+    )
+    parser.add_argument(
+        "--execution-root",
+        default=os.environ.get(ENV_EXECUTION_ROOT, "").strip() or None,
+        help=f"execution broker/work/quarantine root (default: ${ENV_EXECUTION_ROOT})",
+    )
+    parser.add_argument(
+        "--execution-image-name",
+        default=os.environ.get(ENV_EXECUTION_IMAGE_NAME, "").strip() or "busybox",
+        help="runtime image name recorded in the image manifest (default: busybox)",
     )
     parser.add_argument("--source-id", default=None, help="rebuild-index: the source id (uuid)")
     parser.add_argument(
@@ -508,6 +530,8 @@ def build_worker(args: argparse.Namespace) -> WorkerLoop:
     revalidator = PolicyAuthzRevalidator(engine, PolicyEngine(), users, notebooks)
     worker_id = args.worker_id or f"worker-{os.getpid()}"
     handlers: dict[str, JobHandler] = {DemoEchoHandler.kind: DemoEchoHandler()}
+    teardown: list[Callable[[], None]] = []
+    blob_ports: BlobPorts | None = None
     if args.blob_root:
         blob_ports = build_blob_ports(engine, Path(args.blob_root), _gc_safety_delay(args))
         handlers[BlobIntegrityScanHandler.kind] = BlobIntegrityScanHandler(blob_ports.reconcile)
@@ -532,6 +556,24 @@ def build_worker(args: argparse.Namespace) -> WorkerLoop:
         handlers[ResearchRunHandler.kind] = ResearchRunHandler(
             _build_research_session_factory(engine, args)
         )
+    if args.execution_runtime_image:
+        if blob_ports is None:
+            raise SystemExit("error: --execution-runtime-image requires --blob-root")
+        execution_root = (
+            Path(args.execution_root)
+            if args.execution_root
+            else Path(args.blob_root) / "execution"
+        )
+        execution = open_execution_stack(
+            root=execution_root,
+            runtime_image=Path(args.execution_runtime_image),
+            image_name=str(args.execution_image_name),
+            blobs=blob_ports.store,
+            revalidator=revalidator,
+            audit=PgAuditLog(engine),
+        )
+        handlers[ExecutionRunHandler.kind] = execution.handler
+        teardown.append(execution.close)
     return WorkerLoop(
         repo=repo,
         handlers=handlers,
@@ -544,6 +586,7 @@ def build_worker(args: argparse.Namespace) -> WorkerLoop:
         recover=RecoverExpiredLeases(repo),
         cancel=CancelJob(repo),
         revalidator=revalidator,
+        teardown=teardown,
     )
 
 

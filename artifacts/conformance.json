@@ -2,17 +2,17 @@
   "schema_version": 1,
   "generated_by": "tools/spec/emit_conformance.py",
   "task": "FND-02",
-  "build": "40f85302ff2b41f79d68960e0295b2cdc75f591f",
-  "timestamp": "2026-09-22T14:30:00.867047+00:00",
+  "build": "d0281acb899010a9f9af07849e99143025e87124",
+  "timestamp": "2026-09-22T22:18:16.664258+00:00",
   "requirements_total": 507,
   "capabilities": [
     {
       "id": "notebook_management",
       "classification": "stable/core",
-      "implementation_status": "not_started",
-      "enabled": false,
+      "implementation_status": "implemented",
+      "enabled": true,
       "effective": false,
-      "effective_reason": "no compiled support (not implemented/enabled in registry)",
+      "effective_reason": "feature flag 'cap.notebook_management' not enabled by policy",
       "dependencies": [
         "postgresql",
         "blob_store"
@@ -27,10 +27,10 @@
     {
       "id": "notebook_instructions",
       "classification": "stable/core",
-      "implementation_status": "not_started",
-      "enabled": false,
+      "implementation_status": "implemented",
+      "enabled": true,
       "effective": false,
-      "effective_reason": "no compiled support (not implemented/enabled in registry)",
+      "effective_reason": "feature flag 'cap.notebook_instructions' not enabled by policy",
       "dependencies": [
         "postgresql",
         "blob_store"
@@ -45,10 +45,10 @@
     {
       "id": "notebook_overview",
       "classification": "stable/core",
-      "implementation_status": "not_started",
-      "enabled": false,
+      "implementation_status": "implemented",
+      "enabled": true,
       "effective": false,
-      "effective_reason": "no compiled support (not implemented/enabled in registry)",
+      "effective_reason": "feature flag 'cap.notebook_overview' not enabled by policy",
       "dependencies": [
         "postgresql",
         "blob_store",
@@ -65,10 +65,10 @@
     {
       "id": "sources",
       "classification": "stable/core",
-      "implementation_status": "not_started",
-      "enabled": false,
+      "implementation_status": "implemented",
+      "enabled": true,
       "effective": false,
-      "effective_reason": "no compiled support (not implemented/enabled in registry)",
+      "effective_reason": "feature flag 'cap.sources' not enabled by policy",
       "dependencies": [
         "postgresql",
         "blob_store"
@@ -84,10 +84,10 @@
     {
       "id": "source_guide",
       "classification": "stable/core",
-      "implementation_status": "not_started",
-      "enabled": false,
+      "implementation_status": "implemented",
+      "enabled": true,
       "effective": false,
-      "effective_reason": "no compiled support (not implemented/enabled in registry)",
+      "effective_reason": "feature flag 'cap.source_guide' not enabled by policy",
       "dependencies": [
         "postgresql",
         "blob_store",
@@ -104,10 +104,10 @@
     {
       "id": "source_organization",
       "classification": "stable/core",
-      "implementation_status": "not_started",
-      "enabled": false,
+      "implementation_status": "implemented",
+      "enabled": true,
       "effective": false,
-      "effective_reason": "no compiled support (not implemented/enabled in registry)",
+      "effective_reason": "feature flag 'cap.source_organization' not enabled by policy",
       "dependencies": [
         "postgresql",
         "blob_store"
@@ -122,10 +122,10 @@
     {
       "id": "grounded_chat",
       "classification": "stable/core",
-      "implementation_status": "not_started",
-      "enabled": false,
+      "implementation_status": "implemented",
+      "enabled": true,
       "effective": false,
-      "effective_reason": "no compiled support (not implemented/enabled in registry)",
+      "effective_reason": "feature flag 'cap.grounded_chat' not enabled by policy",
       "dependencies": [
         "postgresql",
         "blob_store",
@@ -143,10 +143,10 @@
     {
       "id": "chat_configuration",
       "classification": "stable/core",
-      "implementation_status": "not_started",
-      "enabled": false,
+      "implementation_status": "implemented",
+      "enabled": true,
       "effective": false,
-      "effective_reason": "no compiled support (not implemented/enabled in registry)",
+      "effective_reason": "feature flag 'cap.chat_configuration' not enabled by policy",
       "dependencies": [
         "postgresql",
         "blob_store",
@@ -184,10 +184,10 @@
     {
       "id": "chat_lifecycle",
       "classification": "stable/core",
-      "implementation_status": "not_started",
-      "enabled": false,
+      "implementation_status": "implemented",
+      "enabled": true,
       "effective": false,
-      "effective_reason": "no compiled support (not implemented/enabled in registry)",
+      "effective_reason": "feature flag 'cap.chat_lifecycle' not enabled by policy",
       "dependencies": [
         "postgresql",
         "blob_store"
@@ -202,10 +202,10 @@
     {
       "id": "citations",
       "classification": "stable/core",
-      "implementation_status": "not_started",
-      "enabled": false,
+      "implementation_status": "implemented",
+      "enabled": true,
       "effective": false,
-      "effective_reason": "no compiled support (not implemented/enabled in registry)",
+      "effective_reason": "feature flag 'cap.citations' not enabled by policy",
       "dependencies": [
         "postgresql",
         "blob_store"
@@ -872,10 +872,10 @@
     {
       "id": "source_markdown",
       "classification": "stable/core",
-      "implementation_status": "not_started",
-      "enabled": false,
+      "implementation_status": "implemented",
+      "enabled": true,
       "effective": false,
-      "effective_reason": "no compiled support (not implemented/enabled in registry)",
+      "effective_reason": "feature flag 'cap.source_markdown' not enabled by policy",
       "dependencies": [
         "parser_registry"
       ],
@@ -890,10 +890,10 @@
     {
       "id": "source_docx",
       "classification": "stable/core",
-      "implementation_status": "not_started",
-      "enabled": false,
+      "implementation_status": "implemented",
+      "enabled": true,
       "effective": false,
-      "effective_reason": "no compiled support (not implemented/enabled in registry)",
+      "effective_reason": "feature flag 'cap.source_docx' not enabled by policy",
       "dependencies": [
         "parser_registry"
       ],
@@ -908,10 +908,10 @@
     {
       "id": "source_pptx",
       "classification": "stable/core",
-      "implementation_status": "not_started",
-      "enabled": false,
+      "implementation_status": "implemented",
+      "enabled": true,
       "effective": false,
-      "effective_reason": "no compiled support (not implemented/enabled in registry)",
+      "effective_reason": "feature flag 'cap.source_pptx' not enabled by policy",
       "dependencies": [
         "parser_registry"
       ],
@@ -926,10 +926,10 @@
     {
       "id": "source_csv",
       "classification": "stable/core",
-      "implementation_status": "not_started",
-      "enabled": false,
+      "implementation_status": "implemented",
+      "enabled": true,
       "effective": false,
-      "effective_reason": "no compiled support (not implemented/enabled in registry)",
+      "effective_reason": "feature flag 'cap.source_csv' not enabled by policy",
       "dependencies": [
         "parser_registry"
       ],
@@ -944,10 +944,10 @@
     {
       "id": "source_spreadsheet_files_formats",
       "classification": "stable/core",
-      "implementation_status": "not_started",
-      "enabled": false,
+      "implementation_status": "implemented",
+      "enabled": true,
       "effective": false,
-      "effective_reason": "no compiled support (not implemented/enabled in registry)",
+      "effective_reason": "feature flag 'cap.source_spreadsheet_files_formats' not enabled by policy",
       "dependencies": [
         "parser_registry"
       ],
@@ -962,10 +962,10 @@
     {
       "id": "source_images",
       "classification": "stable/core",
-      "implementation_status": "not_started",
-      "enabled": false,
+      "implementation_status": "implemented",
+      "enabled": true,
       "effective": false,
-      "effective_reason": "no compiled support (not implemented/enabled in registry)",
+      "effective_reason": "feature flag 'cap.source_images' not enabled by policy",
       "dependencies": [
         "parser_registry"
       ],
@@ -980,10 +980,10 @@
     {
       "id": "source_audio",
       "classification": "stable/core",
-      "implementation_status": "not_started",
-      "enabled": false,
+      "implementation_status": "implemented",
+      "enabled": true,
       "effective": false,
-      "effective_reason": "no compiled support (not implemented/enabled in registry)",
+      "effective_reason": "feature flag 'cap.source_audio' not enabled by policy",
       "dependencies": [
         "parser_registry"
       ],
@@ -998,10 +998,10 @@
     {
       "id": "source_epub_files",
       "classification": "stable/core",
-      "implementation_status": "not_started",
-      "enabled": false,
+      "implementation_status": "implemented",
+      "enabled": true,
       "effective": false,
-      "effective_reason": "no compiled support (not implemented/enabled in registry)",
+      "effective_reason": "feature flag 'cap.source_epub_files' not enabled by policy",
       "dependencies": [
         "parser_registry"
       ],
@@ -1033,10 +1033,10 @@
     {
       "id": "source_web_urls",
       "classification": "stable/core",
-      "implementation_status": "not_started",
-      "enabled": false,
+      "implementation_status": "implemented",
+      "enabled": true,
       "effective": false,
-      "effective_reason": "no compiled support (not implemented/enabled in registry)",
+      "effective_reason": "feature flag 'cap.source_web_urls' not enabled by policy",
       "dependencies": [
         "parser_registry"
       ],
@@ -1051,10 +1051,10 @@
     {
       "id": "source_public_youtube_urls_transcript_backed_video_sources",
       "classification": "stable/core",
-      "implementation_status": "not_started",
-      "enabled": false,
+      "implementation_status": "implemented",
+      "enabled": true,
       "effective": false,
-      "effective_reason": "no compiled support (not implemented/enabled in registry)",
+      "effective_reason": "feature flag 'cap.source_public_youtube_urls_transcript_backed_video_sources' not enabled by policy",
       "dependencies": [
         "parser_registry"
       ],

@@ -148,3 +148,17 @@ def test_discard_rejects_forged_quarantine_identity(tmp_path: Path) -> None:
         collector.discard((replace(collected[0], quarantine_path=str(outside)),))
 
     assert outside.read_text() == "keep"
+
+
+def test_empty_output_collection_creates_no_quarantine_directory(tmp_path: Path) -> None:
+    outputs = tmp_path / "outputs"
+    outputs.mkdir()
+    quarantine = tmp_path / "quarantine"
+    collector = OutputCollector(quarantine)
+
+    collected, undeclared = collector.collect(outputs, (), ExecutionLimits(), "run-empty")
+    collector.discard(collected)
+
+    assert collected == ()
+    assert undeclared == 0
+    assert tuple(quarantine.iterdir()) == ()

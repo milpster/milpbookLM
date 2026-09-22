@@ -1,0 +1,100 @@
+{
+  "schema": "milpbooklm.phase-gate/0",
+  "task": "30. Phase-3 gate - Research and execution evidence bundle",
+  "phase": 3,
+  "generated_at": "2026-09-23",
+  "build_head": "d0281ac (plus this task's execution handler, tests, and gate bundle)",
+  "scope": "REST/worker Phase-3 gate; UI unchanged and the user-required all-features Playwright story remains Atlas-owned after T30",
+  "exit_row_source": "PLANNING-HANDOFF Phase 3 + guide chapters 11/12/22",
+  "exit_row_required": "research policy and injection resistance, SSRF refusal, browser and execution isolation, cancellation/timeout recovery, and honest capability publication",
+  "deployment_form": {
+    "execution": "user-space in-process broker prototype under the current account; dedicated systemd account/socket remains T8-class deferred",
+    "database": "shared scratch PostgreSQL socket scratch/t13-smoke:29521 was not reset",
+    "api": "127.0.0.1:8000 was not listening during final E2E re-evidence; no shared service was restarted",
+    "ui": "unchanged; REST/worker-only task"
+  },
+  "implementation": {
+    "path": "execution.run job -> signed Unix broker -> real bubblewrap -> OutputCollector validation/quarantine -> authorization revalidation -> finalized blob publication",
+    "startup": "worker CLI accepts reviewed runtime rootfs/root/name, registers execution.run only when configured, and closes the broker from WorkerLoop finally",
+    "publication_lifecycle": "authorization is evaluated from the durable server-owned JobRecord before any output blob write; quarantine is discarded in finally on success or refusal; finalized published blobs are retained",
+    "identity": "payload actor/notebook duplicates are rejected on mismatch; durable JobRecord actor/notebook are authoritative"
+  },
+  "suites": {
+    "execution_handler_focused": {
+      "command": "uv run pytest tests/unit/test_execution_handler.py tests/unit/test_execution_outputs.py tests/unit/test_worker_loop_lifecycle.py -q",
+      "result": "10 passed",
+      "status": "green"
+    },
+    "real_bwrap": {
+      "command": "uv run pytest tests/security/sandbox/test_escape_suite.py tests/security/sandbox/test_execution_handler_integration.py -q",
+      "result": "8 passed; real signed broker/bwrap publication path plus escape, timeout/cgroup, OOM, network and tamper cases",
+      "status": "green"
+    },
+    "ssrf_browser_research": {
+      "command": "uv run pytest tests/unit/test_hardened_fetch.py tests/unit/test_browser_worker.py tests/unit/test_research_domain.py tests/unit/test_research_executor.py -q",
+      "result": "55 passed; static-fetch SSRF, real Chromium sandbox, research authorization/injection and cancellation",
+      "status": "green"
+    },
+    "recovery": {
+      "command": "uv run pytest tests/unit/test_research_executor.py::test_cancel_mid_run_publishes_terminal_state_with_trace_intact tests/security/sandbox/test_escape_suite.py::test_timeout_and_ignored_signals_leave_no_cgroup_survivors -q",
+      "result": "2 passed; cancelled research retained terminal trace; timed-out execution used cgroup.kill and left zero exec-* cgroups",
+      "status": "green"
+    },
+    "full_python": {
+      "command": "uv run pytest tests/meta tests/architecture tests/unit -q",
+      "result": "273 passed",
+      "status": "green"
+    },
+    "fixtures_sources": {
+      "command": "uv run pytest tests/fixtures/sources -q",
+      "result": "12 passed",
+      "status": "green"
+    },
+    "quality": {
+      "ruff": "green",
+      "mypy": "green - no issues",
+      "import_linter": "green - 4 kept, 0 broken"
+    },
+    "e2e_008_live_rerun": {
+      "command": "uv run python scratch/t27-rsr/e2e008_drive.py",
+      "result": "not run to product behavior: connection refused because :8000 was not listening",
+      "status": "deferred_environment",
+      "prior_evidence": "T27 and T28 evidence bundles record green research, injection and Chromium browser legs"
+    }
+  },
+  "conformance": {
+    "command": "uv run python tools/spec/emit_conformance.py",
+    "path": "artifacts/conformance.json",
+    "result": "generated successfully at HEAD",
+    "code_data_analysis": "disabled/not_started in registry and seed; not advertised"
+  },
+  "capability_decision": {
+    "code_data_analysis_enabled": false,
+    "reason": "The worker path is live and real-bwrap tested, but there is no dedicated server-owned execution API/input-blob authorization surface, reviewed dev runtime image, or deployed admin broker form. The generic jobs endpoint is not an acceptable user-facing capability boundary. Registry, seed, and dev environment remain unchanged."
+  },
+  "test_group_resolution": {
+    "PHASE-GATE-001": "no concrete test files exist; this report is the gate instrument and the absence is not represented as green",
+    "E2E-008": "current deterministic unit/integration legs are green; live API rerun deferred because :8000 was unavailable; prior T27/T28 live evidence retained",
+    "SANDBOX-SEC-001": "8 real-host tests green including the integrated handler path"
+  },
+  "deferrals": [
+    "real SearXNG deployment",
+    "rootless-container browser worker form",
+    "dedicated-account admin execution deployment and D11 GPU evidence",
+    "STT deployment per D16",
+    "bubblewrap 0.11/0.12 delta and curated per-image seccomp filter",
+    "PHASE-GATE-001 named suite because no concrete files exist",
+    "live E2E-008 rerun because API :8000 was unavailable",
+    "Atlas-owned full Playwright all-features user story after T30"
+  ],
+  "must_not_checks": {
+    "security_weakened": false,
+    "published_outputs_deleted": false,
+    "capability_advertised_without_end_to_end_boundary": false,
+    "shared_model_embedding_web_restarted": false,
+    "ui_changed": false,
+    "evidence_faked": false
+  },
+  "verdict": "partial_with_honest_deferrals",
+  "verdict_rationale": "The complete worker execution path and its security/recovery primitives are proven on the real host, all required static and deterministic suites are green, and publication ordering/authz cleanup are regression-tested. Phase 3 is not declared fully green because the live API E2E rerun could not start and code_data_analysis lacks a safe product API/deployment boundary, so the capability remains disabled."
+}

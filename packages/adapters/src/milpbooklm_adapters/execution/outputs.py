@@ -102,6 +102,8 @@ class OutputCollector:
                 "execution quarantine identity is invalid",
             )
         _validate_output_tree(outputs_dir, declared)
+        if not declared:
+            return (), 0
         quarantine_dir = self._root / f"exec-{execution_id}"
         quarantine_dir.mkdir(mode=0o700)
         directory_info = quarantine_dir.stat(follow_symlinks=False)

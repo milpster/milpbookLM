@@ -14,7 +14,7 @@ from __future__ import annotations
 
 import logging
 import time
-from collections.abc import Mapping, Sequence
+from collections.abc import Callable, Mapping, Sequence
 
 from milpbooklm_application.job_ports import AuthzRevalidator, JobCasConflictError, JobRepository
 from milpbooklm_application.job_usecases import (
@@ -102,6 +102,7 @@ class WorkerLoop:
         cancel: CancelJob,
         revalidator: AuthzRevalidator | None = None,
         preemptor: InteractivePreemptor | None = None,
+        teardown: Sequence[Callable[[], None]] = (),
     ) -> None:
         """Wire the ports, the handler table, and the loop's timing/identity."""
         self._repo = repo
@@ -116,6 +117,7 @@ class WorkerLoop:
         self._cancel = cancel
         self._revalidator = revalidator
         self._preemptor = preemptor
+        self._teardown = tuple(teardown)
         self._stopping = False
 
     def request_stop(self) -> None:
@@ -137,11 +139,18 @@ class WorkerLoop:
             self._lease_seconds,
             self._poll_seconds,
         )
-        while not self._stopping:
-            self._poll_once()
-            if not self._stopping:
-                time.sleep(self._poll_seconds)
-        logger.info("worker %s stopped", self._worker_id)
+        try:
+            while not self._stopping:
+                self._poll_once()
+                if not self._stopping:
+                    time.sleep(self._poll_seconds)
+        finally:
+            for close in reversed(self._teardown):
+                try:
+                    close()
+                except Exception:
+                    logger.exception("worker %s teardown failed", self._worker_id)
+            logger.info("worker %s stopped", self._worker_id)
 
     def _poll_once(self) -> None:
         """Recover expired leases, then claim + run one job per class."""
