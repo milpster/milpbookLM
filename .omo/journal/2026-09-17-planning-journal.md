@@ -276,3 +276,10 @@ Session: 2026-09-17, Prometheus (ulw-plan), intent=CLEAR (user asked to be inter
 - Orchestrator verification: all gates green first-hand (mypy 174 / pytest 154+26); live SSRF probes all refused pre-connect with stable reasons; port allowlist stricter than plan text.
 - Routing observation: quick-category dispatch died INSTANTLY at usage limit (remote upstream); deep category ran on local llamacpp/:8009 fine. When limits hit, dispatch deep, not quick.
 - HALT per user order (stop after T22): 22/59 tasks done (7 [x], 15 [~]), 37 remaining (T23+ wave 2). Stack live: PG :29521, :8009 (user), :8010, :8000, :5173, worker.
+
+## Process log (cont. 26 — T23 close-out, 2026-09-22)
+
+- [~] T23 marked `- [~]` (4 sessions, commit `d6a6473`). Images+OCR (deu+eng, bbox locators, rank-1 search proof), A/V probe (ms locators, container allowlist), public-video honest states — all live-verified. STT deferred (no whisper assets; D16; user decision pending).
+- Agent-server instability defined today: two workers finished real work but degenerated into slash-walls at their final report; one abort. User fixed the server twice + ordered TTS alert protocol on agent death (scratch/alert-loop.pid; kill via pkill -f "while true; do spd-say" + pkill -x spd-say). Finisher-dispatch pattern (fresh deep session: gates+evidence+commit only) proved again — 54m for T23 after 6h+ of chaos.
+- OCR serving detail: worker needs TESSDATA_PREFIX=scratch/t23-ocr/tessdata (system tessdata lacks deu) — start-worker.sh must carry it for media parsing.
+- Progress: 23/59 tasks (7 [x], 16 [~], 36 [ ]). Pausing for user review per cadence.
