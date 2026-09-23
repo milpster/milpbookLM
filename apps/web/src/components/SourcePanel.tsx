@@ -1,8 +1,9 @@
-import { useMutation, useQueryClient } from "@tanstack/react-query";
+import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import type { FormEvent, ReactNode } from "react";
 import { useState } from "react";
 import {
   isApiError,
+  listSources,
   pasteSource,
   removeSource,
   renameSource,
@@ -12,6 +13,7 @@ import {
 import { queryKeys } from "../api/query-keys";
 import type { Source } from "../api/schemas";
 import { useJobs } from "../state/jobs";
+import { mergeSources } from "../state/source-list";
 
 type Props = { readonly actorId: string; readonly notebookId: string };
 
@@ -19,7 +21,15 @@ export function SourcePanel({ actorId, notebookId }: Props): ReactNode {
   const queryClient = useQueryClient();
   const { watch } = useJobs();
   const key = queryKeys.sources(actorId, notebookId);
-  const sources = queryClient.getQueryData<readonly Source[]>(key) ?? [];
+  const persistedSources = useQuery({
+    queryKey: key,
+    queryFn: async () => {
+      const persisted = await listSources(notebookId);
+      const session = queryClient.getQueryData<readonly Source[]>(key) ?? [];
+      return mergeSources(persisted, session);
+    },
+  });
+  const sources = persistedSources.data ?? [];
   const [error, setError] = useState("");
   const addSource = (source: Source): void => {
     queryClient.setQueryData<readonly Source[]>(key, (current = []) => [
@@ -119,13 +129,22 @@ export function SourcePanel({ actorId, notebookId }: Props): ReactNode {
         <div>
           <h2 id="source-list-title">Sources</h2>
           <p className="muted">
-            This prototype session lists newly added sources. The current API has no source-list
-            route.
+            Persisted source versions remain available after reload and login.
           </p>
         </div>
-        {sources.length === 0 ? (
+        {persistedSources.isPending ? (
+          <p className="muted" role="status">
+            Loading persisted sources...
+          </p>
+        ) : null}
+        {persistedSources.isError ? (
+          <p className="notice error" role="alert">
+            Persisted sources could not be loaded. Try again without leaving this notebook.
+          </p>
+        ) : null}
+        {!persistedSources.isPending && !persistedSources.isError && sources.length === 0 ? (
           <div className="empty-state">
-            <h3>No sources in this session</h3>
+            <h3>No sources yet</h3>
             <p>Paste text or upload a file to begin.</p>
           </div>
         ) : null}

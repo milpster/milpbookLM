@@ -34,6 +34,23 @@ const notebookBody = {
   membership: null,
 };
 
+const actorBody = {
+  user_id: "2c5a3a1d-93b8-4a11-9db4-2817e88a5c40",
+  email: "user@example.com",
+  display_name: "User",
+  status: "active",
+  installation_admin: false,
+  csrf_token: "restored-csrf-token",
+};
+
+const conversationBody = {
+  id: "735ed65a-c69e-48b3-940f-aceb99cd0bf3",
+  notebook_id: notebookBody.notebook_id,
+  config: { style: "standard", length: "default", output_language: "EN" },
+  instructions: "",
+  messages: [],
+};
+
 describe("api client session-invalidation signal", () => {
   beforeEach(() => {
     vi.resetModules();
@@ -87,7 +104,7 @@ describe("api client session-invalidation signal", () => {
   });
 
   it.each(["origin_rejected", "csrf_rejected"])(
-    "fires the signal on a 403 credential failure (%s)",
+    "keeps the session on an actionable 403 security rejection (%s)",
     async (reason) => {
       vi.stubGlobal(
         "fetch",
@@ -98,9 +115,28 @@ describe("api client session-invalidation signal", () => {
       client.onSessionInvalidated(listener);
 
       await expect(client.createNotebook({ title: "Notebook" })).rejects.toThrow(HTTPError);
-      expect(listener).toHaveBeenCalledTimes(1);
+      expect(listener).not.toHaveBeenCalled();
     },
   );
+
+  it("restores CSRF from auth/me before starting chat after a reload", async () => {
+    const fetchMock = vi
+      .fn()
+      .mockImplementationOnce(async () => jsonResponse(200, actorBody))
+      .mockImplementationOnce(async () => jsonResponse(201, conversationBody));
+    vi.stubGlobal("fetch", fetchMock);
+    const client = await import("./client");
+
+    await client.getActor();
+    const conversation = await client.createConversation(notebookBody.notebook_id, {
+      style: "standard",
+      length: "default",
+      output_language: "EN",
+    });
+
+    expect(client.authHeaders()).toEqual({ "x-csrf-token": "restored-csrf-token" });
+    expect(conversation.id).toBe(conversationBody.id);
+  });
 
   it("keeps the session on a 403 authorization denial", async () => {
     vi.stubGlobal(

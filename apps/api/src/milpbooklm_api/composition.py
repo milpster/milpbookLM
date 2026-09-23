@@ -9,6 +9,8 @@ is the earlier skeleton wiring, kept for the existing unit tests.
 from __future__ import annotations
 
 import os
+import uuid
+from collections.abc import Callable
 from datetime import timedelta
 from typing import assert_never
 
@@ -83,6 +85,7 @@ from milpbooklm_application.note_lifecycle import (
     SaveResponseToNote,
     TransformNotes,
 )
+from milpbooklm_application.onboarding import SeedFeatureGuide
 from milpbooklm_application.policy_engine import PolicyEngine
 from milpbooklm_application.ports import (
     AuditLog,
@@ -218,6 +221,7 @@ def build_app(
     research: ResearchRunDeps | None = None,
     artifacts: ArtifactDeps | None = None,
     notes: NoteDeps | None = None,
+    seed_onboarding: Callable[[uuid.UUID], None] | None = None,
 ) -> FastAPI:
     """Build the API app from wired ports (the test/QA seam)."""
     app = FastAPI(title="MilpBook LM API")
@@ -279,6 +283,7 @@ def build_app(
         research=research,
         artifacts=artifacts,
         notes=notes,
+        seed_onboarding=seed_onboarding,
     )
     app.state.deps = deps
 
@@ -427,6 +432,7 @@ def create_app() -> FastAPI:
     research_store = PgResearchRunStore(engine)
     artifact_store = PgArtifactStore(engine)
     note_store = PgNoteStore(engine)
+    notebook_store = PgNotebookStore(engine)
     artifact_registry = build_recipe_registry()
     artifacts = ArtifactDeps(
         store=artifact_store,
@@ -462,7 +468,7 @@ def create_app() -> FastAPI:
         custody=PgNotebookCustodyStore(engine),
         audit=audit,
         notebooks=notebooks,
-        notebook_store=PgNotebookStore(engine),
+        notebook_store=notebook_store,
         settings=settings,
         clock=clock,
         jobs=jobs,
@@ -481,6 +487,7 @@ def create_app() -> FastAPI:
         ),
         artifacts=artifacts,
         notes=notes,
+        seed_onboarding=SeedFeatureGuide(notebook_store, CreateNote(note_store)),
         health=DeploymentHealth(
             engine,
             installation.blob_root,

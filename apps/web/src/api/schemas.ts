@@ -6,6 +6,7 @@ export const actorSchema = z.object({
   display_name: z.string(),
   status: z.string(),
   installation_admin: z.boolean(),
+  csrf_token: z.string(),
 });
 
 export const loginSchema = z.object({ user_id: z.string().uuid(), csrf_token: z.string() });

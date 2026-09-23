@@ -110,7 +110,10 @@ def _note_deps() -> NoteDeps:
     )
 
 
-def make_client(settings: SecuritySettings | None = None) -> TestClient:
+def make_client(
+    settings: SecuritySettings | None = None,
+    seed_onboarding: Mock | None = None,
+) -> TestClient:
     """Build a wired TestClient over the fakes (secure-cookie-friendly base URL)."""
     clock = FakeClock()
     resolved_settings = settings or SecuritySettings(secret_key="api-test-secret", base_url=ORIGIN)
@@ -124,6 +127,7 @@ def make_client(settings: SecuritySettings | None = None) -> TestClient:
         settings=resolved_settings,
         clock=clock,
         notes=_note_deps(),
+        seed_onboarding=seed_onboarding,
     )
     return TestClient(app, base_url=ORIGIN)
 
@@ -173,11 +177,45 @@ def test_me_with_session_and_without() -> None:
     register(client, "a@example.com")
     anonymous = client.get("/api/v1/auth/me")
     assert anonymous.status_code == status.HTTP_401_UNAUTHORIZED
-    login(client, "a@example.com")
+    logged_in = login(client, "a@example.com")
     me = client.get("/api/v1/auth/me")
     assert me.status_code == status.HTTP_200_OK
     assert me.json()["email"] == "a@example.com"
     assert me.json()["installation_admin"] is False
+    assert me.json()["csrf_token"] == logged_in["csrf_token"]
+
+
+def test_register_seeds_onboarding_for_the_new_user() -> None:
+    # Given
+    seed_onboarding = Mock()
+    client = make_client(seed_onboarding=seed_onboarding)
+
+    # When
+    user_id = register(client, "seeded@example.com")
+
+    # Then
+    seed_onboarding.assert_called_once_with(uuid.UUID(user_id))
+
+
+def test_register_succeeds_when_onboarding_seed_fails() -> None:
+    # Given
+    seed_onboarding = Mock(side_effect=RuntimeError("seed unavailable"))
+    client = make_client(seed_onboarding=seed_onboarding)
+
+    # When
+    response = client.post(
+        "/api/v1/auth/register",
+        json={
+            "email": "best-effort@example.com",
+            "display_name": "best effort",
+            "password": "password-123",
+        },
+        headers=HEADERS,
+    )
+
+    # Then
+    assert response.status_code == status.HTTP_201_CREATED
+    assert uuid.UUID(response.json()["user_id"])
 
 
 def test_unsafe_without_origin_rejected() -> None:

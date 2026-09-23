@@ -280,6 +280,44 @@ class PgSourceCatalog(SourceCatalog):
             ).mappings().first()
         return None if row is None else self._view(row)
 
+    def list(self, notebook_id: uuid.UUID, actor_id: uuid.UUID) -> list[SourceView]:
+        """List each notebook source at its newest persisted version."""
+        with self._engine.begin() as connection:
+            rows = connection.execute(
+                sa.select(
+                    sources.c.id.label("source_id"),
+                    sources.c.notebook_id,
+                    sources.c.type,
+                    sources.c.display_title,
+                    sources.c.availability,
+                    sources.c.etag,
+                    source_versions.c.id.label("source_version_id"),
+                    source_versions.c.content_sha256,
+                    source_versions.c.content_size_bytes,
+                    source_versions.c.status.label("version_status"),
+                    source_versions.c.original_blob_id,
+                )
+                .join(source_versions, source_versions.c.source_id == sources.c.id)
+                .join(
+                    notebook_memberships,
+                    notebook_memberships.c.notebook_id == sources.c.notebook_id,
+                )
+                .where(
+                    sources.c.notebook_id == notebook_id,
+                    notebook_memberships.c.user_id == actor_id,
+                )
+                .order_by(sources.c.updated_at.desc(), source_versions.c.version_number.desc())
+            ).mappings()
+            latest: list[SourceView] = []
+            seen: set[uuid.UUID] = set()
+            for row in rows:
+                source_id = row["source_id"]
+                if source_id in seen:
+                    continue
+                seen.add(source_id)
+                latest.append(self._view(row))
+        return latest
+
     def rename(
         self, source_id: uuid.UUID, actor_id: uuid.UUID, title: str, etag: str
     ) -> SourceView:

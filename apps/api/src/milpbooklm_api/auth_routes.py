@@ -9,6 +9,7 @@ uniform 409-free 429 body per key class.
 from __future__ import annotations
 
 import logging
+import uuid
 
 from fastapi import APIRouter, Depends, HTTPException, Request
 from fastapi.responses import JSONResponse, Response
@@ -98,6 +99,19 @@ def _login_response(deps: ApiDeps, email: str, password: str) -> JSONResponse:
     return response
 
 
+def _seed_onboarding(deps: ApiDeps, user_id: uuid.UUID) -> None:
+    if deps.seed_onboarding is None:
+        return
+    try:
+        deps.seed_onboarding(user_id)
+    except Exception:
+        logger.warning(
+            "onboarding seed failed",
+            extra={"user_id": str(user_id)},
+            exc_info=True,
+        )
+
+
 def build_auth_router(deps: ApiDeps, principal: PrincipalDependency) -> APIRouter:
     """Build the /api/v1/auth router over the wired dependencies."""
     router = APIRouter(prefix="/api/v1/auth", tags=["auth"])
@@ -114,6 +128,7 @@ def build_auth_router(deps: ApiDeps, principal: PrincipalDependency) -> APIRoute
             raise HTTPException(
                 status_code=status.HTTP_409_CONFLICT, detail=str(exc)
             ) from exc
+        _seed_onboarding(deps, user_id)
         return {"user_id": str(user_id)}
 
     @router.post("/login")
@@ -154,6 +169,7 @@ def build_auth_router(deps: ApiDeps, principal: PrincipalDependency) -> APIRoute
             "display_name": principal.user.display_name,
             "status": principal.user.status.value,
             "installation_admin": principal.user.installation_admin,
+            "csrf_token": principal.csrf_token,
         }
 
     return router

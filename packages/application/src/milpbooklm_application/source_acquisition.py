@@ -127,6 +127,10 @@ class SourceCatalog(Protocol):
         """Return one membership-visible source."""
         ...
 
+    def list(self, notebook_id: uuid.UUID, actor_id: uuid.UUID) -> list[SourceView]:
+        """List each persisted source at its newest membership-visible version."""
+        ...
+
     def rename(
         self, source_id: uuid.UUID, actor_id: uuid.UUID, title: str, etag: str
     ) -> SourceView:

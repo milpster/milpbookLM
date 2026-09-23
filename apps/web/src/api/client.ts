@@ -1,12 +1,12 @@
 import ky, { HTTPError } from "ky";
-import { z } from "zod";
+import type { z } from "zod";
 import type {
   CreateNotebookRequest,
   LoginRequest,
   PasteSourceRequest,
   RegisterRequest,
 } from "./contract";
-import type { ChatConfig, Source } from "./schemas";
+import type { Actor, ChatConfig, Source } from "./schemas";
 import {
   actorSchema,
   capabilitiesSchema,
@@ -19,12 +19,6 @@ import {
 } from "./schemas";
 
 let csrfToken = "";
-
-// 403 bodies the security middleware uses for credential/environment drift
-// (origin + CSRF failures). Authorization denials reuse the same body shape
-// with policy reason codes ("deny:*"), so the trigger set is an exact allowlist.
-const credentialFailureReasons: ReadonlySet<string> = new Set(["origin_rejected", "csrf_rejected"]);
-const rejectionBodySchema = z.object({ detail: z.object({ reason: z.string() }) });
 
 type SessionInvalidationListener = () => void;
 const sessionInvalidationListeners = new Set<SessionInvalidationListener>();
@@ -42,18 +36,6 @@ function emitSessionInvalidation(): void {
   for (const listener of sessionInvalidationListeners) listener();
 }
 
-async function isCredentialFailure(response: Response): Promise<boolean> {
-  if (response.status === 401) return true;
-  if (response.status !== 403) return false;
-  const body = rejectionBodySchema.safeParse(
-    await response
-      .clone()
-      .json()
-      .catch(() => null),
-  );
-  return body.success && credentialFailureReasons.has(body.data.detail.reason);
-}
-
 const api = ky.create({
   prefixUrl: "/api/v1",
   credentials: "include",
@@ -69,7 +51,7 @@ const api = ky.create({
     ],
     afterResponse: [
       async (_request, _options, response) => {
-        if (await isCredentialFailure(response)) emitSessionInvalidation();
+        if (response.status === 401) emitSessionInvalidation();
         return undefined; // never intercept: per-caller error handling stays intact
       },
     ],
@@ -106,12 +88,18 @@ export async function logout(): Promise<void> {
   csrfToken = "";
 }
 
-export const getActor = () => parsed(api.get("auth/me"), actorSchema);
+export async function getActor(): Promise<Actor> {
+  const actor = await parsed(api.get("auth/me"), actorSchema);
+  csrfToken = actor.csrf_token;
+  return actor;
+}
 export const getCapabilities = () => parsed(api.get("capabilities"), capabilitiesSchema);
 export const listNotebooks = () => parsed(api.get("notebooks"), notebookSchema.array());
 export const getNotebook = (id: string) => parsed(api.get(`notebooks/${id}`), notebookSchema);
 export const createNotebook = (input: CreateNotebookRequest) =>
   parsed(api.post("notebooks", { json: input }), notebookSchema);
+export const listSources = (notebookId: string) =>
+  parsed(api.get("sources", { searchParams: { notebook_id: notebookId } }), sourceSchema.array());
 
 export const pasteSource = (input: PasteSourceRequest) =>
   parsed(api.post("sources/paste", { json: input }), sourceSchema);

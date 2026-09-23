@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+import uuid
 from collections.abc import Awaitable, Callable
 from dataclasses import dataclass
 
@@ -134,6 +135,7 @@ class ApiDeps:
     research: ResearchRunDeps | None = None
     artifacts: ArtifactDeps | None = None
     notes: NoteDeps | None = None
+    seed_onboarding: Callable[[uuid.UUID], None] | None = None
 
 
 PrincipalDependency = Callable[[Request], Awaitable[Principal]]

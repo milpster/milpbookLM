@@ -7,6 +7,7 @@ import {
   createConversation,
   getCapabilities,
   getConversation,
+  isApiError,
   updateConversationConfig,
 } from "../api/client";
 import { queryKeys } from "../api/query-keys";
@@ -30,6 +31,7 @@ export function ChatPanel({ actorId, notebookId, navigate }: Props): ReactNode {
   );
   const [streamed, setStreamed] = useState("");
   const [status, setStatus] = useState("Ready");
+  const [createError, setCreateError] = useState("");
   const controller = useRef<AbortController | null>(null);
   const capabilities = useQuery({ queryKey: queryKeys.capabilities(), queryFn: getCapabilities });
   const chatCapability = capabilities.data?.capabilities.find(
@@ -43,11 +45,18 @@ export function ChatPanel({ actorId, notebookId, navigate }: Props): ReactNode {
   });
   const create = useMutation({
     mutationFn: () => createConversation(notebookId, defaultConfig),
+    onMutate: () => setCreateError(""),
     onSuccess: (state) => {
       setConversationId(state.id);
       rememberActiveConversation(notebookId, state.id);
       queryClient.setQueryData(queryKeys.privateConversation(actorId, state.id), state);
     },
+    onError: (error: unknown) =>
+      setCreateError(
+        isApiError(error) && error.response.status === 403
+          ? "Security check rejected the request. Reload once; if it persists, open MilBook LM at its configured web address."
+          : "Could not start the private conversation. Your session is still available; try again.",
+      ),
   });
   const updateConfig = useMutation({
     mutationFn: ({ id, config }: { readonly id: string; readonly config: ChatConfig }) =>
@@ -126,6 +135,11 @@ export function ChatPanel({ actorId, notebookId, navigate }: Props): ReactNode {
         >
           {create.isPending ? "Starting..." : "New conversation"}
         </button>
+        {createError === "" ? null : (
+          <p className="notice error" role="alert">
+            {createError}
+          </p>
+        )}
       </div>
     );
   const state = conversation.data;
