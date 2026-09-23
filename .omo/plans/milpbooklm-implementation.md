@@ -400,7 +400,7 @@ Blocks column = DIRECT dependants only (tasks listing X in their Depends on); a 
   QA scenarios: happy — framework suite green (evidence VER-ARCH-13-* batch); failure — export after restriction tightening → download denied (evidence authz log). Evidence <attemptDir>/task-31-milpbooklm-implementation.json
   Commit: Y | feat(studio): STD-01 artifact framework (ARCH-13-001..014, TECH-13-001, ARCH-14-001)
 
-- [ ] 32. STD-02a — Notes: revisions, transforms, promotion, note-to-source
+- [x] 32. STD-02a — Notes: revisions, transforms, promotion, note-to-source
   What to do / Must NOT do: notes/note_revisions immutable revisions; transforms (saved-response → note, note transforms); promotion to source via ingestion; explicit selection of notes as version-pinned prompt context (chats); editability rules + collaboration-safe semantics; note-to-source conversion with provenance edges. MUST NOT: implicitly share private notes; auto-index notes into retrieval (only explicit selection).
   Micro-index: 32.1 revisions (32.1.1 immutable edits; 32.1.2 transforms) · 32.2 promotion + provenance · 32.3 chat-context pinning (32.3.1 explicit-only selection) · 32.4 UI flows.
   Parallelization: Wave 4 | Blocked by: 18,31 | Blocks: 35, 36 (gate), 46
