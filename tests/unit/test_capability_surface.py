@@ -18,8 +18,10 @@ from milpbooklm_api.capability_registry import RegistryEntry, load_capability_re
 from milpbooklm_api.capability_routes import build_capability_router
 from milpbooklm_application.capabilities import CapabilityRuntime, compute_capabilities
 from milpbooklm_domain.capabilities import (
+    CapabilityClassification,
     CapabilityDefinition,
     CapabilityId,
+    CapabilityReason,
     CapabilityState,
     DependencyId,
     FeatureFlag,
@@ -62,6 +64,99 @@ HEALTHY_DEPENDENCIES = {
 CORE_PROVIDERS = frozenset(
     {DependencyId("chat_provider"), DependencyId("embedding_provider")}
 )
+
+IMPLEMENTED_EVIDENCE = {
+    "notebook_management": (
+        "apps/api/notebook_routes.py: notebook routes + tests/unit/test_api_auth.py"
+    ),
+    "notebook_instructions": "apps/api/conversation_routes.py: chat configuration payload",
+    "notebook_overview": "apps/api/notebook_overview_routes.py: overview route",
+    "sources": "apps/api/source_routes.py: source collection/import/lifecycle routes",
+    "source_guide": "apps/api/source_guide_routes.py: source guide route",
+    "source_organization": "apps/api/source_lifecycle_routes.py: selection/metadata routes",
+    "grounded_chat": "apps/api/conversation_routes.py + apps/api/retrieval_routes.py",
+    "chat_configuration": "apps/api/conversation_routes.py: ConversationConfigRequest",
+    "chat_lifecycle": "apps/api/conversation_routes.py: private conversation lifecycle",
+    "citations": "apps/api/grounding_routes.py + tests/unit/db/test_note_routes.py",
+    "notes": "apps/api/note_mutation_routes.py + tests/unit/db/test_note_routes.py",
+    "artifact_lifecycle": "apps/api/artifact_routes.py + tests/unit/db/test_artifact_store.py",
+    "source_markdown": "parsers/child.py:text/markdown -> parse_markdown + tests/fixtures/sources",
+    "source_docx": "parsers/child.py:docx -> parse_docx + tests/fixtures/sources",
+    "source_pptx": (
+        "parsers/child.py:pptx -> parse_pptx + tests/fixtures/sources/ver-ingest-golden-001.py"
+    ),
+    "source_csv": "parsers/child.py:text/csv -> parse_csv + tests/fixtures/sources",
+    "source_spreadsheet_files_formats": (
+        "parsers/child.py:xlsx -> parse_xlsx + tests/fixtures/sources"
+    ),
+    "source_images": "parsers/child.py:image/* -> parse_image + tests/fixtures/sources",
+    "source_audio": "parsers/child.py:audio/* -> parse_media + tests/fixtures/sources",
+    "source_epub_files": (
+        "parsers/child.py:application/epub+zip -> parse_epub + tests/fixtures/sources"
+    ),
+    "source_web_urls": "apps/api/source_import_routes.py:/web-url + application/web_fetch.py",
+    "source_public_youtube_urls_transcript_backed_video_sources": (
+        "apps/api/source_import_routes.py:/public-video + application/public_video.py"
+    ),
+}
+
+PROVISIONAL_EVIDENCE = {
+    "evolving_note_integration": "announced/provisional; no implemented route or adapter",
+    "editable_study_aids_and_performance_follow_up": (
+        "announced/provisional; no implemented route or adapter"
+    ),
+    "realtime_notebook_voice_chat": "announced/provisional; no implemented route or adapter",
+    "recorded_audio_capture": "announced/provisional; no implemented route or adapter",
+}
+
+DISABLED_EVIDENCE = {
+    "agentic_chat": "no implemented agent/tool-capable route; future research dependency",
+    "reports": "no implemented report route or recipe",
+    "interactive_learning_overview": "no implemented interactive-learning route or recipe",
+    "data_tables": "no implemented data-table route or recipe",
+    "mind_maps": "no implemented mind-map route or recipe",
+    "flashcards": "no implemented flashcard route or recipe",
+    "quizzes": "no implemented quiz route or recipe",
+    "audio_overview": "no implemented audio-overview route or provider adapter",
+    "interactive_audio_overview": (
+        "no implemented interactive-audio route or provider adapter"
+    ),
+    "video_overview": "no implemented video-overview route or media recipe",
+    "cinematic_video": "no implemented cinematic-video route or media recipe",
+    "slide_decks": "no implemented slide-deck route or renderer recipe",
+    "infographics": "no implemented infographic route or renderer recipe",
+    "starter_artifacts": "no implemented starter-artifact route or lifecycle hook",
+    "source_discovery": (
+        "no implemented discovery route; research route is not source discovery"
+    ),
+    "deep_research": "no implemented deep-research execution adapter",
+    "code_data_analysis": (
+        "no implemented analysis route; bubblewrap probe is not execution support"
+    ),
+    "private_sharing": "no implemented private-sharing route or ACL adapter",
+    "public_notebooks": "no implemented public-notebook route or signed-link adapter",
+    "notebook_copying": "no implemented notebook-copy route",
+    "featured_published_notebooks": "no implemented publishing/discovery route",
+    "usage_analytics": "no implemented product-analytics route",
+    "restricted_connector_sources": "no implemented connector restriction adapter",
+    "output_language": "no implemented user preference route",
+    "appearance": "no implemented appearance preference route",
+    "responsive_web_access": "architecture property, not a separately implemented capability route",
+    "custom_providers": "no implemented provider-configuration route",
+    "source_pdf": "PDF parser exists, but PDF ingestion is deferred: no go-live promotion",
+    "source_plain_text_and_pasted_text": (
+        "paste route/parser exist, but source-family activation is not promoted "
+        "from parser presence"
+    ),
+    "source_optional_authenticated_restricted_repositories_through_generic_connectors": (
+        "no connector adapter"
+    ),
+    "source_optional_cloud_document_storage_connectors_implemented_through_generic_adapters": (
+        "no connector adapter"
+    ),
+}
+
+TARGET_AUDIT_EVIDENCE = {**IMPLEMENTED_EVIDENCE, **PROVISIONAL_EVIDENCE, **DISABLED_EVIDENCE}
 
 
 def _effective(
@@ -174,3 +269,63 @@ def test_unimplemented_capabilities_stay_disabled_under_fully_satisfied_inputs()
         CapabilityId("code_data_analysis"),
     ):
         assert effective[capability_id] is CapabilityState.DISABLED, capability_id
+
+
+def test_every_target_capability_has_audited_evidence_and_conservative_state() -> None:
+    definitions = load_capability_registry()
+    target_ids = {
+        definition.id
+        for definition in definitions
+        if definition.classification is not CapabilityClassification.NON_TARGET
+    }
+    assert target_ids == set(TARGET_AUDIT_EVIDENCE)
+    assert all(TARGET_AUDIT_EVIDENCE[capability_id].strip() for capability_id in target_ids)
+
+    runtime = CapabilityRuntime(
+        enabled_feature_flags=frozenset(
+            definition.feature_flag
+            for definition in definitions
+            if definition.feature_flag is not None
+        ),
+        configured_providers=frozenset(
+            dependency
+            for definition in definitions
+            for dependency in definition.dependencies
+            if dependency.endswith("_provider")
+        ),
+    )
+    dependency_health = {
+        dependency: True
+        for definition in definitions
+        for dependency in definition.dependencies
+    }
+    effective = {
+        capability.id: capability
+        for capability in compute_capabilities(definitions, runtime, dependency_health)
+    }
+
+    for definition in definitions:
+        if definition.classification is CapabilityClassification.NON_TARGET:
+            assert definition.id not in effective
+            continue
+        capability = effective[definition.id]
+        if definition.id in PROVISIONAL_EVIDENCE:
+            assert capability.state is CapabilityState.PROVISIONAL
+            assert capability.reason is CapabilityReason.PROVISIONAL_NOT_CLAIMED
+        elif not definition.implemented:
+            assert capability.state is CapabilityState.DISABLED
+            assert capability.reason is CapabilityReason.COMPILED_SUPPORT_MISSING
+        elif not definition.enabled:
+            assert capability.state is CapabilityState.DISABLED
+            assert capability.reason is CapabilityReason.ADMIN_POLICY_DISABLED
+        else:
+            assert capability.state is CapabilityState.AVAILABLE
+            assert capability.reason is None
+
+    registry = {definition.id: definition for definition in definitions}
+    assert registry[CapabilityId("notes")].implemented is True
+    assert registry[CapabilityId("notes")].enabled is False
+    assert registry[CapabilityId("source_pdf")].implemented is False
+    assert registry[CapabilityId("source_pdf")].enabled is False
+    assert registry[CapabilityId("source_plain_text_and_pasted_text")].implemented is False
+    assert registry[CapabilityId("source_plain_text_and_pasted_text")].enabled is False

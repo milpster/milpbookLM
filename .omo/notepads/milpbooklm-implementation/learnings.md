@@ -444,3 +444,14 @@ ALL agent scratch (drivers, fixtures, DB clusters, logs, screenshots) lives unde
 ## FND-05 (2026-09-24)
 
 1. **Direct minja template regression inputs**: `build-sync0920/bin/test-chat-template --no-common --json <fixture> sharp_chat_template.jinja` evaluates the actual Jinja runtime with arbitrary root context, including `tool_call_format`. The tracked XML and JSON inputs in `tests/sharp-chat-template-regression-{xml,json}.json` each cover a nested call with a mapping argument, a flat call with `{}` arguments, and a flat call with no `arguments` key. Both exit 0; XML emits an empty function body for the two flat cases, while JSON emits `"arguments": {}` for each.
+
+## Capability descriptions (2026-09-24)
+
+1. **Commit `d1967cd`**: descriptions are mandatory in registry Pydantic parsing and web Zod parsing, propagate through the HTTP API into Settings cards, and the capability checker validated all 61 entries.
+
+## Go-live capability state audit (2026-09-24)
+
+1. The exhaustive capability audit keeps `notes` implemented but disabled by admin policy: note routes, PostgreSQL storage, transformations, promotion, and E2E coverage exist, while the registry intentionally does not enable the client surface.
+2. `source_pdf` remains disabled with compiled-support-missing because the parser and child dispatch are not sufficient evidence for go-live ingestion; PDF promotion is deferred to the named downstream task.
+3. `source_plain_text_and_pasted_text` remains disabled with compiled-support-missing: `/paste` and `text/plain` parsing exist, but parser presence alone does not establish the complete promoted source-family contract. The audit test records this boundary explicitly.
+4. Every other non-target entry is now represented in the tracked audit table with either concrete route/adapter/test evidence or a reason it remains conservatively disabled/provisional.
