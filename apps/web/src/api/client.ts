@@ -12,6 +12,7 @@ import {
   capabilitiesSchema,
   conversationSchema,
   jobSchema,
+  instanceStatsSchema,
   locatorSchema,
   loginSchema,
   noteListSchema,
@@ -98,6 +99,7 @@ export async function getActor(): Promise<Actor> {
   return actor;
 }
 export const getCapabilities = () => parsed(api.get("capabilities"), capabilitiesSchema);
+export const getInstanceStats = () => parsed(api.get("auth/instance-stats"), instanceStatsSchema);
 export const listNotebooks = () => parsed(api.get("notebooks"), notebookSchema.array());
 export const getNotebook = (id: string) => parsed(api.get(`notebooks/${id}`), notebookSchema);
 export const createNotebook = (input: CreateNotebookRequest) =>

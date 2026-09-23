@@ -111,6 +111,15 @@ class PgSessionTokenStore:
             return None
         return (row.id, row.user_id)
 
+    def count_live_users(self, *, now: datetime) -> int:
+        """Count distinct users with a currently live session."""
+        with self._engine.begin() as conn:
+            return conn.execute(
+                sa.select(sa.func.count(sa.distinct(sessions.c.user_id))).where(
+                    sessions.c.revoked_at.is_(None), sessions.c.expires_at > now
+                )
+            ).scalar_one()
+
     def revoke(self, session_id: uuid.UUID) -> None:
         """Revoke one session (idempotent)."""
         with self._engine.begin() as conn:
@@ -201,6 +210,15 @@ class InMemorySessionTokenStore:
                     return None
                 return (row.session_id, row.user_id)
         return None
+
+    def count_live_users(self, *, now: datetime) -> int:
+        return len(
+            {
+                row.user_id
+                for row in self._rows.values()
+                if row.revoked_at is None and row.expires_at > now
+            }
+        )
 
     def revoke(self, session_id: uuid.UUID) -> None:
         """Revoke one session (idempotent)."""

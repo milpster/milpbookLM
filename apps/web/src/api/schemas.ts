@@ -9,6 +9,11 @@ export const actorSchema = z.object({
   csrf_token: z.string(),
 });
 
+export const instanceStatsSchema = z.object({
+  registered_users: z.number().int().nonnegative(),
+  logged_in_users: z.number().int().nonnegative(),
+});
+
 export const loginSchema = z.object({ user_id: z.string().uuid(), csrf_token: z.string() });
 
 export const notebookSchema = z.object({

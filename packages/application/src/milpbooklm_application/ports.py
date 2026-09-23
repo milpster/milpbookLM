@@ -94,6 +94,10 @@ class SessionTokenStore(Protocol):
         """Replace a live session with a fresh token (rotation on privilege change)."""
         ...
 
+    def count_live_users(self, *, now: datetime) -> int:
+        """Count distinct users with an unexpired, non-revoked session."""
+        ...
+
 
 class UserRepository(Protocol):
     """Local account persistence (the users table)."""

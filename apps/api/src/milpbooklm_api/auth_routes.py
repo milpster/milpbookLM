@@ -45,6 +45,15 @@ class LoginRequest(BaseModel):
     password: str
 
 
+class InstanceStatsResponse(BaseModel):
+    """Aggregate instance counts; identity and session details never leave the server."""
+
+    model_config = ConfigDict(frozen=True)
+
+    registered_users: int
+    logged_in_users: int
+
+
 def _client_host(request: Request) -> str:
     """Return the client IP for limiter keys ('unknown' when unresolvable)."""
     return request.client.host if request.client is not None else "unknown"
@@ -171,5 +180,14 @@ def build_auth_router(deps: ApiDeps, principal: PrincipalDependency) -> APIRoute
             "installation_admin": principal.user.installation_admin,
             "csrf_token": principal.csrf_token,
         }
+
+    @router.get("/instance-stats", response_model=InstanceStatsResponse)
+    async def instance_stats(principal: Principal = Depends(principal)) -> InstanceStatsResponse:
+        """Return authenticated aggregate user counts without identity details."""
+        del principal
+        return InstanceStatsResponse(
+            registered_users=deps.users.count(),
+            logged_in_users=deps.sessions.count_live_users(now=deps.clock.now()),
+        )
 
     return router
