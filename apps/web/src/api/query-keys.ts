@@ -6,6 +6,12 @@ export const queryKeys = {
     ["actor", actorId, "notebook", notebookId] as const,
   sources: (actorId: string, notebookId: string) =>
     ["actor", actorId, "notebook", notebookId, "sources"] as const,
+  notes: (actorId: string, notebookId: string) =>
+    ["actor", actorId, "notebook", notebookId, "notes"] as const,
+  note: (actorId: string, notebookId: string, noteId: string) =>
+    ["actor", actorId, "notebook", notebookId, "note", noteId] as const,
+  noteRevisions: (actorId: string, notebookId: string, noteId: string) =>
+    ["actor", actorId, "notebook", notebookId, "note", noteId, "revisions"] as const,
   source: (actorId: string, notebookId: string, sourceId: string, versionId: string) =>
     ["actor", actorId, "notebook", notebookId, "source", sourceId, versionId] as const,
   privateConversation: (actorId: string, conversationId: string) =>

@@ -14,7 +14,11 @@ import {
   jobSchema,
   locatorSchema,
   loginSchema,
+  noteListSchema,
+  noteSchema,
+  noteSnapshotSchema,
   notebookSchema,
+  revisionListSchema,
   sourceSchema,
 } from "./schemas";
 
@@ -137,6 +141,25 @@ export const updateConversationConfig = (id: string, config: ChatConfig) =>
 export const cancelConversation = async (id: string): Promise<void> => {
   await api.post(`conversations/${id}/cancel`);
 };
+export const listNotes = (notebookId: string) =>
+  parsed(api.get(`notebooks/${notebookId}/notes`), noteListSchema);
+export const getNote = (id: string) => parsed(api.get(`notes/${id}`), noteSchema);
+export const listNoteRevisions = (id: string) =>
+  parsed(api.get(`notes/${id}/revisions`), revisionListSchema);
+export const createNote = (
+  notebookId: string,
+  title: string,
+  content: Record<string, unknown>,
+) =>
+  parsed(
+    api.post(`notebooks/${notebookId}/notes`, { json: { title, content } }),
+    noteSnapshotSchema,
+  );
+export const editNote = (id: string, etag: string, content: Record<string, unknown>) =>
+  parsed(
+    api.post(`notes/${id}/revisions`, { json: { content }, headers: { "If-Match": etag } }),
+    noteSnapshotSchema,
+  );
 export const getJob = (id: string) => parsed(api.get(`jobs/${id}`), jobSchema);
 export const resolveLocator = (versionId: string, nodeId: string) =>
   parsed(api.get(`source-versions/${versionId}/nodes/${nodeId}`), locatorSchema);

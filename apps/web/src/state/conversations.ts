@@ -1,4 +1,4 @@
-export type NotebookTab = "sources" | "chat";
+export type NotebookTab = "sources" | "chat" | "notes";
 
 // Module-level (route-external) notebook UI state. It survives SPA route
 // unmounts within a tab, so a citation-chip -> viewer -> browser-back

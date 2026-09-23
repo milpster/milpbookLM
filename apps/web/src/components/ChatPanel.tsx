@@ -1,5 +1,5 @@
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
-import type { FormEvent, ReactNode } from "react";
+import type { FormEvent, KeyboardEvent, ReactNode } from "react";
 import { useRef, useState } from "react";
 import { streamChat } from "../api/chat-stream";
 import {
@@ -109,6 +109,13 @@ export function ChatPanel({ actorId, notebookId, navigate }: Props): ReactNode {
     }
   };
 
+  const onMessageKeyDown = (event: KeyboardEvent<HTMLTextAreaElement>): void => {
+    if (event.key === "Enter" && !event.shiftKey && !event.nativeEvent.isComposing) {
+      event.preventDefault();
+      event.currentTarget.form?.requestSubmit();
+    }
+  };
+
   if (!chatAvailable)
     return (
       <div className="empty-state">
@@ -195,7 +202,14 @@ export function ChatPanel({ actorId, notebookId, navigate }: Props): ReactNode {
         </p>
         <form className="composer" onSubmit={(event) => void send(event)}>
           <label htmlFor="chat-message">Ask about selected sources</label>
-          <textarea id="chat-message" name="message" rows={3} required maxLength={10_000} />
+          <textarea
+            id="chat-message"
+            name="message"
+            rows={3}
+            required
+            maxLength={10_000}
+            onKeyDown={onMessageKeyDown}
+          />
           <div className="action-cluster">
             <button className="primary" type="submit" disabled={controller.current !== null}>
               Send

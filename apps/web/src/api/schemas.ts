@@ -18,17 +18,36 @@ export const notebookSchema = z.object({
   membership: z.string().nullable(),
 });
 
+// Exact values from the server enums (source_versions.status / sources.availability).
+export const sourcePipelineStatusSchema = z.enum([
+  "activating",
+  "parsing",
+  "parsed",
+  "encrypted",
+  "parse_failed",
+  "active",
+  "inactive",
+  "tombstoned",
+]);
+
+export const sourceAvailabilitySchema = z.enum([
+  "active",
+  "stale",
+  "inaccessible_revoked",
+  "deleted_tombstoned",
+]);
+
 export const sourceSchema = z.object({
   source_id: z.string().uuid(),
   source_version_id: z.string().uuid(),
   notebook_id: z.string().uuid(),
   source_type: z.string(),
   display_title: z.string(),
-  availability: z.string(),
+  availability: sourceAvailabilitySchema,
   content_sha256: z.string(),
   content_size_bytes: z.number(),
   status: z.string(),
-  pipeline_status: z.string(),
+  pipeline_status: sourcePipelineStatusSchema,
   etag: z.string(),
   job_id: z.string().uuid().optional(),
 });
@@ -83,11 +102,24 @@ export const capabilitySchema = z.object({
 
 export const capabilitiesSchema = z.object({ capabilities: z.array(capabilitySchema) });
 
+// Exact values from the durable JobState enum (ch15).
+export const jobStateSchema = z.enum([
+  "queued",
+  "leased",
+  "running",
+  "succeeded",
+  "failed",
+  "cancelled",
+  "waiting_external",
+  "waiting_capacity",
+  "retry_scheduled",
+]);
+
 export const jobSchema = z.object({
   job_id: z.string().uuid(),
   kind: z.string(),
   capacity_class: z.string(),
-  state: z.string(),
+  state: jobStateSchema,
   waiting_reason: z.string().nullable(),
   priority: z.number(),
   attempts: z.number(),
@@ -115,6 +147,44 @@ export const locatorSchema = z.discriminatedUnion("state", [
   }),
 ]);
 
+// Exact values from the NoteKind domain enum.
+export const noteKindSchema = z.enum(["user", "saved_chat_response", "derived_from_source"]);
+
+export const noteContentRefSchema = z.object({
+  kind: z.string(),
+  id: z.string().uuid(),
+});
+
+export const noteRevisionSchema = z.object({
+  revision_id: z.string().uuid(),
+  note_id: z.string().uuid(),
+  revision_number: z.number().int().positive(),
+  content: z.record(z.string(), z.unknown()),
+  content_sha256: z.string(),
+  author_user_id: z.string().uuid(),
+  provenance_refs: z.array(noteContentRefSchema),
+  content_dependencies: z.array(noteContentRefSchema),
+  created_at: z.string(),
+});
+
+export const noteSchema = z.object({
+  note_id: z.string().uuid(),
+  notebook_id: z.string().uuid(),
+  kind: noteKindSchema,
+  editable: z.boolean(),
+  title: z.string(),
+  current_revision_id: z.string().uuid().nullable(),
+  revision: z.number().int().positive(),
+  etag: z.string(),
+  created_by_user_id: z.string().uuid(),
+  created_at: z.string(),
+  updated_at: z.string(),
+});
+
+export const noteListSchema = z.object({ notes: z.array(noteSchema) });
+export const revisionListSchema = z.object({ revisions: z.array(noteRevisionSchema) });
+export const noteSnapshotSchema = z.object({ note: noteSchema, revision: noteRevisionSchema });
+
 export type Actor = z.infer<typeof actorSchema>;
 export type Capability = z.infer<typeof capabilitySchema>;
 export type ChatConfig = z.infer<typeof chatConfigSchema>;
@@ -122,6 +192,17 @@ export type Citation = z.infer<typeof citationSchema>;
 export type Conversation = z.infer<typeof conversationSchema>;
 export type Job = z.infer<typeof jobSchema>;
 export type Locator = z.infer<typeof locatorSchema>;
+export type Note = z.infer<typeof noteSchema>;
+export type NoteKind = z.infer<typeof noteKindSchema>;
+export type NoteRevision = z.infer<typeof noteRevisionSchema>;
+export type NoteSnapshot = z.infer<typeof noteSnapshotSchema>;
 export type Notebook = z.infer<typeof notebookSchema>;
 export type Source = z.infer<typeof sourceSchema>;
 export type Terminal = z.infer<typeof terminalSchema>;
+
+// Domain TERMINAL_STATES for durable jobs; drives one refetch per finished job.
+export const terminalJobStates: ReadonlySet<Job["state"]> = new Set([
+  "succeeded",
+  "failed",
+  "cancelled",
+]);

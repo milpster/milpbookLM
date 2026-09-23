@@ -5,15 +5,17 @@ import type { RouteProps } from "../App";
 import { getNotebook } from "../api/client";
 import { queryKeys } from "../api/query-keys";
 import { ChatPanel } from "../components/ChatPanel";
+import { NotesPanel } from "../components/NotesPanel";
 import { SourcePanel } from "../components/SourcePanel";
 import { useAuth } from "../state/auth";
+import type { NotebookTab } from "../state/conversations";
 import { getNotebookTab, rememberNotebookTab } from "../state/conversations";
 
 export function NotebookRoute({ navigate, params }: RouteProps): ReactNode {
   const notebookId = params["notebookId"] ?? "";
   const { actor } = useAuth();
-  const [tab, setTabState] = useState(() => getNotebookTab(notebookId));
-  const setTab = (next: "sources" | "chat"): void => {
+  const [tab, setTabState] = useState<NotebookTab>(() => getNotebookTab(notebookId));
+  const setTab = (next: NotebookTab): void => {
     rememberNotebookTab(notebookId, next);
     setTabState(next);
   };
@@ -38,6 +40,9 @@ export function NotebookRoute({ navigate, params }: RouteProps): ReactNode {
           <button type="button" aria-pressed={tab === "chat"} onClick={() => setTab("chat")}>
             Chat
           </button>
+          <button type="button" aria-pressed={tab === "notes"} onClick={() => setTab("notes")}>
+            Notes
+          </button>
         </fieldset>
       </header>
       {notebook.isError ? (
@@ -47,8 +52,10 @@ export function NotebookRoute({ navigate, params }: RouteProps): ReactNode {
       ) : null}
       {tab === "sources" ? (
         <SourcePanel actorId={actor.user_id} notebookId={notebookId} />
-      ) : (
+      ) : tab === "chat" ? (
         <ChatPanel actorId={actor.user_id} notebookId={notebookId} navigate={navigate} />
+      ) : (
+        <NotesPanel actorId={actor.user_id} notebookId={notebookId} />
       )}
     </section>
   );

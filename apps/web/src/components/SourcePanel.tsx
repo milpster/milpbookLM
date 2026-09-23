@@ -1,6 +1,6 @@
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import type { FormEvent, ReactNode } from "react";
-import { useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import {
   isApiError,
   listSources,
@@ -12,6 +12,7 @@ import {
 } from "../api/client";
 import { queryKeys } from "../api/query-keys";
 import type { Source } from "../api/schemas";
+import { terminalJobStates } from "../api/schemas";
 import { useJobs } from "../state/jobs";
 import { mergeSources } from "../state/source-list";
 
@@ -19,7 +20,7 @@ type Props = { readonly actorId: string; readonly notebookId: string };
 
 export function SourcePanel({ actorId, notebookId }: Props): ReactNode {
   const queryClient = useQueryClient();
-  const { watch } = useJobs();
+  const { jobs, watch } = useJobs();
   const key = queryKeys.sources(actorId, notebookId);
   const persistedSources = useQuery({
     queryKey: key,
@@ -29,6 +30,22 @@ export function SourcePanel({ actorId, notebookId }: Props): ReactNode {
       return mergeSources(persisted, session);
     },
   });
+  // When a watched job reaches a terminal state, drop the stale creation-response
+  // rows for that job (mergeSources prefers session entries) and refetch so the
+  // row shows the server's terminal pipeline_status/availability.
+  const processedTerminalJobs = useRef<Set<string>>(new Set());
+  useEffect(() => {
+    const newlyFinished = jobs.filter(
+      (job) => terminalJobStates.has(job.state) && !processedTerminalJobs.current.has(job.job_id),
+    );
+    if (newlyFinished.length === 0) return;
+    for (const job of newlyFinished) processedTerminalJobs.current.add(job.job_id);
+    const finishedIds = new Set(newlyFinished.map((job) => job.job_id));
+    queryClient.setQueryData<readonly Source[]>(key, (current = []) =>
+      current.filter((source) => source.job_id === undefined || !finishedIds.has(source.job_id)),
+    );
+    void queryClient.invalidateQueries({ queryKey: key });
+  }, [jobs, queryClient, key]);
   const sources = persistedSources.data ?? [];
   const [error, setError] = useState("");
   const addSource = (source: Source): void => {
