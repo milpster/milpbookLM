@@ -7,11 +7,16 @@ import { queryKeys } from "../api/query-keys";
 import { ChatPanel } from "../components/ChatPanel";
 import { SourcePanel } from "../components/SourcePanel";
 import { useAuth } from "../state/auth";
+import { getNotebookTab, rememberNotebookTab } from "../state/conversations";
 
 export function NotebookRoute({ navigate, params }: RouteProps): ReactNode {
-  const notebookId = params["notebookId"];
+  const notebookId = params["notebookId"] ?? "";
   const { actor } = useAuth();
-  const [tab, setTab] = useState<"sources" | "chat">("sources");
+  const [tab, setTabState] = useState(() => getNotebookTab(notebookId));
+  const setTab = (next: "sources" | "chat"): void => {
+    rememberNotebookTab(notebookId, next);
+    setTabState(next);
+  };
   const notebook = useQuery({
     queryKey: queryKeys.notebook(actor?.user_id ?? "anonymous", notebookId ?? ""),
     queryFn: () => getNotebook(notebookId ?? ""),

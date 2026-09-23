@@ -12,6 +12,8 @@ import {
 import { queryKeys } from "../api/query-keys";
 import type { ChatConfig, Conversation } from "../api/schemas";
 import { chatConfigSchema } from "../api/schemas";
+import { getActiveConversation, rememberActiveConversation } from "../state/conversations";
+import { citationKey, dedupeCitations } from "./citations";
 
 type Props = {
   readonly actorId: string;
@@ -22,7 +24,10 @@ const defaultConfig: ChatConfig = { style: "standard", length: "default", output
 
 export function ChatPanel({ actorId, notebookId, navigate }: Props): ReactNode {
   const queryClient = useQueryClient();
-  const [conversationId, setConversationId] = useState<string | null>(null);
+  // Seeded from the route-external store: this state must survive SPA unmounts.
+  const [conversationId, setConversationId] = useState<string | null>(() =>
+    getActiveConversation(notebookId),
+  );
   const [streamed, setStreamed] = useState("");
   const [status, setStatus] = useState("Ready");
   const controller = useRef<AbortController | null>(null);
@@ -40,6 +45,7 @@ export function ChatPanel({ actorId, notebookId, navigate }: Props): ReactNode {
     mutationFn: () => createConversation(notebookId, defaultConfig),
     onSuccess: (state) => {
       setConversationId(state.id);
+      rememberActiveConversation(notebookId, state.id);
       queryClient.setQueryData(queryKeys.privateConversation(actorId, state.id), state);
     },
   });
@@ -138,28 +144,31 @@ export function ChatPanel({ actorId, notebookId, navigate }: Props): ReactNode {
       <section className="conversation" aria-labelledby="conversation-title">
         <h2 id="conversation-title">Conversation</h2>
         <ol className="message-log">
-          {state?.messages.map((message) => (
-            <li key={message.id} className={`message ${message.role}`}>
-              <p className="resource-meta">{message.role}</p>
-              <div className="message-content">{message.content}</div>
-              {message.citations.length === 0 ? null : (
-                <fieldset className="citation-list" aria-label="Citations">
-                  {message.citations.map((citation) => (
-                    <a
-                      key={`${message.id}-${citation.evidence_id}`}
-                      href={`/viewer/${citation.source_version_id}/${citation.node_id}`}
-                      onClick={(event) => {
-                        event.preventDefault();
-                        navigate(`/viewer/${citation.source_version_id}/${citation.node_id}`);
-                      }}
-                    >
-                      {citation.label}
-                    </a>
-                  ))}
-                </fieldset>
-              )}
-            </li>
-          ))}
+          {state?.messages.map((message) => {
+            const citations = dedupeCitations(message.citations);
+            return (
+              <li key={message.id} className={`message ${message.role}`}>
+                <p className="resource-meta">{message.role}</p>
+                <div className="message-content">{message.content}</div>
+                {citations.length === 0 ? null : (
+                  <fieldset className="citation-list" aria-label="Citations">
+                    {citations.map((citation) => (
+                      <a
+                        key={citationKey(citation)}
+                        href={`/viewer/${citation.source_version_id}/${citation.node_id}`}
+                        onClick={(event) => {
+                          event.preventDefault();
+                          navigate(`/viewer/${citation.source_version_id}/${citation.node_id}`);
+                        }}
+                      >
+                        {citation.label}
+                      </a>
+                    ))}
+                  </fieldset>
+                )}
+              </li>
+            );
+          })}
         </ol>
         {streamed === "" ? null : (
           <div className="message assistant streaming">

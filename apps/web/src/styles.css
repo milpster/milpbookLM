@@ -150,10 +150,18 @@ code {
   background: var(--surface-panel);
 }
 .wordmark {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--space-2);
   color: var(--text-primary);
   font-weight: 650;
   text-decoration: none;
   letter-spacing: -0.02em;
+}
+.brand-mark {
+  inline-size: 1.375rem;
+  block-size: 1.375rem;
+  flex: none;
 }
 .wordmark span {
   color: var(--accent-hover);

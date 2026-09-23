@@ -1,6 +1,7 @@
 import type { ReactNode } from "react";
 import { useAuth } from "../state/auth";
 import { useJobs } from "../state/jobs";
+import { BrandMark } from "./BrandMark";
 
 type ShellProps = {
   readonly path: string;
@@ -33,6 +34,7 @@ export function Shell({ path, navigate, children }: ShellProps): ReactNode {
             navigate("/notebooks");
           }}
         >
+          <BrandMark className="brand-mark" />
           MilpBook <span>LM</span>
         </a>
         {actor === null ? null : <p className="actor-label">{actor.display_name}</p>}

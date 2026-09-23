@@ -117,6 +117,7 @@ export const locatorSchema = z.discriminatedUnion("state", [
 export type Actor = z.infer<typeof actorSchema>;
 export type Capability = z.infer<typeof capabilitySchema>;
 export type ChatConfig = z.infer<typeof chatConfigSchema>;
+export type Citation = z.infer<typeof citationSchema>;
 export type Conversation = z.infer<typeof conversationSchema>;
 export type Job = z.infer<typeof jobSchema>;
 export type Locator = z.infer<typeof locatorSchema>;

@@ -8,6 +8,7 @@
     "dev": "vite --host 127.0.0.1",
     "build": "tsc --build && vite build",
     "typecheck": "tsc --build",
+    "test": "vitest run",
     "generate:api": "bash scripts/generate-api-types.sh",
     "preview": "vite preview --host 127.0.0.1"
   },
