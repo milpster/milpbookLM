@@ -13,7 +13,9 @@ from milpbooklm_application.grounding import (
     GroundedAnswer,
     GroundingError,
     GroundingRequest,
+    NoteContext,
 )
+from milpbooklm_application.note_core import note_content_text
 from milpbooklm_contracts.canonical_document import BBOX_COORDINATE_COUNT
 
 from milpbooklm_adapters.db.tables.collaboration import notebook_memberships
@@ -30,6 +32,7 @@ from milpbooklm_adapters.db.tables.sources import (
     source_versions,
     sources,
 )
+from milpbooklm_adapters.db.tables.studio import note_revisions, notes
 
 _PURGED_AVAILABILITY: Final = "deleted_tombstoned"
 
@@ -42,9 +45,10 @@ class PgGroundingStore:
         self._engine = engine
 
     def freeze(self, *, request: GroundingRequest, normalized_question: str) -> FrozenManifest:
-        """Record the authorization-filtered version scope before retrieval begins."""
+        """Record the authorization-filtered source and explicit-note scope."""
         with self._engine.begin() as connection:
             source_version_ids = self._selected_versions(connection, request)
+            note_contexts = self._selected_note_contexts(connection, request)
             manifest_id = uuid.uuid4()
             _ = connection.execute(
                 sa.insert(generation_input_manifests).values(
@@ -53,18 +57,23 @@ class PgGroundingStore:
                     created_by_user_id=request.actor_user_id,
                     op_kind="ordinary_chat",
                     config_snapshot={
-                        "source_only": True,
+                        "source_only": not note_contexts,
                         "question": normalized_question,
                         "chat": request.chat_config_snapshot or {},
                         "instructions": request.instructions_snapshot,
+                        "selected_note_revision_ids": [
+                            str(context.revision_id) for context in note_contexts
+                        ],
                     },
                     context_snapshot=[str(value) for value in request.context_message_ids],
                     retrieval_version="grounding-v1",
                     retrieval_settings={"reranker": "absent"},
                 )
             )
-            self._insert_manifest_items(connection, manifest_id, source_version_ids, request)
-        return FrozenManifest(manifest_id, frozenset(source_version_ids))
+            self._insert_manifest_items(
+                connection, manifest_id, source_version_ids, note_contexts
+            )
+        return FrozenManifest(manifest_id, frozenset(source_version_ids), note_contexts)
 
     def publish(
         self,
@@ -88,16 +97,20 @@ class PgGroundingStore:
                     content="".join(span.text for span in draft.spans),
                     manifest_id=manifest.id,
                     selected_source_refs=[str(item.source_version_id) for item in evidence],
-                    selected_note_refs=[str(item) for item in request.selected_note_revision_ids],
+                    selected_note_refs=[
+                        str(context.revision_id) for context in manifest.note_contexts
+                    ],
                     model_metadata={"retrieval_trace": retrieval_trace},
                     provider_status="local",
-                    citations=self._citation_payload(connection, evidence, draft),
+                    citations=self._citation_payload(
+                        connection, evidence, manifest.note_contexts, draft
+                    ),
                 )
             )
         return GroundedAnswer(message_id, manifest.id, draft.spans, evidence, False)
 
     def abstain(self, *, manifest: FrozenManifest, retrieval_trace: str) -> GroundedAnswer:
-        """Return source-only insufficiency without an assistant-message row."""
+        """Return context insufficiency without an assistant-message row."""
         del retrieval_trace
         return GroundedAnswer(None, manifest.id, (), (), True)
 
@@ -199,13 +212,55 @@ class PgGroundingStore:
         return tuple(connection.execute(statement).scalars())
 
     @staticmethod
+    def _selected_note_contexts(
+        connection: sa.engine.Connection, request: GroundingRequest
+    ) -> tuple[NoteContext, ...]:
+        """Resolve only explicit revisions that remain readable in this notebook."""
+        selected_ids = request.selected_note_revision_ids
+        if not selected_ids:
+            return ()
+        if len(set(selected_ids)) != len(selected_ids):
+            raise GroundingError("selected note revisions must be unique")
+        rows = connection.execute(
+            sa.select(
+                note_revisions.c.id.label("revision_id"),
+                note_revisions.c.content,
+                notes.c.id.label("note_id"),
+                notes.c.title,
+            )
+            .join(notes, notes.c.id == note_revisions.c.note_id)
+            .join(
+                notebook_memberships,
+                notebook_memberships.c.notebook_id == notes.c.notebook_id,
+            )
+            .where(
+                note_revisions.c.id.in_(selected_ids),
+                notes.c.notebook_id == request.notebook_id,
+                notebook_memberships.c.user_id == request.actor_user_id,
+            )
+        ).mappings()
+        rows_by_id = {row["revision_id"]: row for row in rows}
+        if set(rows_by_id) != set(selected_ids):
+            raise GroundingError("one or more selected note revisions are unavailable")
+        return tuple(
+            NoteContext(
+                id=f"n{index}",
+                note_id=rows_by_id[revision_id]["note_id"],
+                revision_id=revision_id,
+                title=rows_by_id[revision_id]["title"],
+                text=note_content_text(rows_by_id[revision_id]["content"]),
+            )
+            for index, revision_id in enumerate(selected_ids, start=1)
+        )
+
+    @staticmethod
     def _insert_manifest_items(
         connection: sa.engine.Connection,
         manifest_id: uuid.UUID,
         source_version_ids: tuple[uuid.UUID, ...],
-        request: GroundingRequest,
+        note_contexts: tuple[NoteContext, ...],
     ) -> None:
-        """Attach every selected immutable source and note revision to the manifest."""
+        """Attach every selected immutable source and resolved note revision."""
         for source_version_id in source_version_ids:
             _ = connection.execute(
                 sa.insert(generation_manifest_items).values(
@@ -215,13 +270,13 @@ class PgGroundingStore:
                     item_id=source_version_id,
                 )
             )
-        for note_revision_id in request.selected_note_revision_ids:
+        for context in note_contexts:
             _ = connection.execute(
                 sa.insert(generation_manifest_items).values(
                     id=uuid.uuid4(),
                     manifest_id=manifest_id,
                     item_kind="note_revision",
-                    item_id=note_revision_id,
+                    item_id=context.revision_id,
                 )
             )
 
@@ -233,18 +288,22 @@ class PgGroundingStore:
         evidence: tuple[Evidence, ...],
         draft: AnswerDraft,
     ) -> None:
-        """Enforce evidence existence, manifest membership, authz, locator, and claim links."""
-        by_id = {item.id: item for item in evidence}
+        """Recheck source and explicit-note authorization before publication."""
+        if self._selected_note_contexts(connection, request) != manifest.note_contexts:
+            raise GroundingError("note context is no longer authorized")
+        evidence_by_id = {item.id: item for item in evidence}
+        note_context_by_id = {item.id: item for item in manifest.note_contexts}
         for span in draft.spans:
             if not span.text.strip() or not span.evidence_ids:
                 raise GroundingError("every factual span needs cited evidence")
             for evidence_id in span.evidence_ids:
-                item = by_id.get(evidence_id)
-                if item is None:
+                item = evidence_by_id.get(evidence_id)
+                if item is not None:
+                    if item.source_version_id not in manifest.source_version_ids:
+                        raise GroundingError("evidence is outside the frozen manifest")
+                    self._validate_item(connection, request, item)
+                elif evidence_id not in note_context_by_id:
                     raise GroundingError("unsupported evidence id")
-                if item.source_version_id not in manifest.source_version_ids:
-                    raise GroundingError("evidence is outside the frozen manifest")
-                self._validate_item(connection, request, item)
 
     def _validate_item(
         self, connection: sa.engine.Connection, request: GroundingRequest, item: Evidence
@@ -323,14 +382,31 @@ class PgGroundingStore:
 
     @staticmethod
     def _citation_payload(
-        connection: sa.engine.Connection, evidence: tuple[Evidence, ...], draft: AnswerDraft
+        connection: sa.engine.Connection,
+        evidence: tuple[Evidence, ...],
+        note_contexts: tuple[NoteContext, ...],
+        draft: AnswerDraft,
     ) -> list[dict[str, str | int]]:
-        """Resolve labels and locators server-side after every citation is validated."""
+        """Resolve source locators and exact note-revision links after validation."""
         evidence_by_id = {item.id: item for item in evidence}
+        note_by_id = {item.id: item for item in note_contexts}
         payload: list[dict[str, str | int]] = []
         for span in draft.spans:
             for evidence_id in span.evidence_ids:
-                item = evidence_by_id[evidence_id]
+                item = evidence_by_id.get(evidence_id)
+                if item is None:
+                    note = note_by_id[evidence_id]
+                    payload.append(
+                        {
+                            "evidence_id": note.id,
+                            "label": note.title,
+                            "note_id": str(note.note_id),
+                            "note_revision_id": str(note.revision_id),
+                            "locator_kind": "note_revision",
+                            "url": f"/api/v1/note-revisions/{note.revision_id}",
+                        }
+                    )
+                    continue
                 locator = (
                     connection.execute(
                         sa.select(

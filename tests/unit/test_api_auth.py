@@ -5,6 +5,7 @@ from __future__ import annotations
 import hashlib
 import uuid
 from datetime import UTC, datetime, timedelta
+from unittest.mock import Mock
 
 from fastapi.testclient import TestClient
 from milpbooklm_adapters.security.fakes import (
@@ -15,9 +16,19 @@ from milpbooklm_adapters.security.fakes import (
 )
 from milpbooklm_adapters.security.session_store import InMemorySessionTokenStore
 from milpbooklm_api.composition import build_app
+from milpbooklm_api.deps import NoteDeps
 from milpbooklm_api.security import SecuritySettings
+from milpbooklm_application.note_core import NoteRevisionView, NoteSnapshot, NoteView
+from milpbooklm_application.note_lifecycle import (
+    CreateNote,
+    EditNote,
+    PromoteNoteToSource,
+    SaveResponseToNote,
+    TransformNotes,
+)
 from milpbooklm_application.ports import NotebookView
 from milpbooklm_domain.identity import User
+from milpbooklm_domain.notes import NoteKind
 from milpbooklm_domain.ownership import MembershipRole
 from starlette import status
 
@@ -58,6 +69,47 @@ class FakeHasher:
         return self._h(password) == self._h("milpbooklm-dummy")
 
 
+def _note_deps() -> NoteDeps:
+    """Return a narrow note fake for route-level policy tests."""
+    now = datetime(2026, 9, 19, 12, 0, 0, tzinfo=UTC)
+    note_id = uuid.uuid4()
+    revision_id = uuid.uuid4()
+    snapshot = NoteSnapshot(
+        note=NoteView(
+            note_id=note_id,
+            notebook_id=uuid.uuid4(),
+            kind=NoteKind.USER,
+            editable=True,
+            title="Policy note",
+            current_revision_id=revision_id,
+            created_by_user_id=uuid.uuid4(),
+            revision=1,
+            etag="1",
+            created_at=now,
+            updated_at=now,
+        ),
+        revision=NoteRevisionView(
+            revision_id=revision_id,
+            note_id=note_id,
+            revision_number=1,
+            content={"blocks": [{"type": "paragraph", "text": "allowed"}]},
+            content_sha256="sha256",
+            author_user_id=uuid.uuid4(),
+            provenance_refs=(),
+            content_dependencies=(),
+            created_at=now,
+        ),
+    )
+    return NoteDeps(
+        store=Mock(),
+        create=Mock(spec=CreateNote, return_value=snapshot),
+        edit=Mock(spec=EditNote),
+        save_response=Mock(spec=SaveResponseToNote),
+        transform=Mock(spec=TransformNotes),
+        promote=Mock(spec=PromoteNoteToSource),
+    )
+
+
 def make_client(settings: SecuritySettings | None = None) -> TestClient:
     """Build a wired TestClient over the fakes (secure-cookie-friendly base URL)."""
     clock = FakeClock()
@@ -71,6 +123,7 @@ def make_client(settings: SecuritySettings | None = None) -> TestClient:
         notebooks=InMemoryNotebookReader(),
         settings=resolved_settings,
         clock=clock,
+        notes=_note_deps(),
     )
     return TestClient(app, base_url=ORIGIN)
 
@@ -199,13 +252,17 @@ def test_owner_allowed_viewer_denied_on_mutate() -> None:
     deps = client.app.state.deps
     body = login(client, "owner@example.com")
     assert client.get(f"/api/v1/notebooks/{notebook_id}").status_code == status.HTTP_200_OK
-    draft = client.post(
-        f"/api/v1/notebooks/{notebook_id}/note-draft",
+    created = client.post(
+        f"/api/v1/notebooks/{notebook_id}/notes",
+        json={
+            "title": "Policy note",
+            "content": {"blocks": [{"type": "paragraph", "text": "allowed"}]},
+        },
         headers={**HEADERS, "x-csrf-token": body["csrf_token"]},
     )
-    assert draft.status_code == status.HTTP_200_OK
+    assert created.status_code == status.HTTP_201_CREATED
 
-    client.cookies.clear()  # a fresh visitor registers without a live session
+    client.cookies.clear()
     register(client, "viewer@example.com")
     viewer = deps.users.get_by_email("viewer@example.com")
     viewer_view = NotebookView(
@@ -217,12 +274,16 @@ def test_owner_allowed_viewer_denied_on_mutate() -> None:
     deps.notebooks.add_view(viewer.id, viewer_view)
     client.cookies.clear()
     viewer_body = login(client, "viewer@example.com")
-    draft = client.post(
-        f"/api/v1/notebooks/{notebook_id}/note-draft",
+    denied = client.post(
+        f"/api/v1/notebooks/{notebook_id}/notes",
+        json={
+            "title": "Denied note",
+            "content": {"blocks": [{"type": "paragraph", "text": "denied"}]},
+        },
         headers={**HEADERS, "x-csrf-token": viewer_body["csrf_token"]},
     )
-    assert draft.status_code == status.HTTP_403_FORBIDDEN
-    assert draft.json() == {"detail": {"reason": "deny:role"}}
+    assert denied.status_code == status.HTTP_403_FORBIDDEN
+    assert denied.json() == {"detail": {"reason": "deny:role"}}
 
 
 def test_login_rate_limit_uniform_429() -> None:

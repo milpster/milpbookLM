@@ -15,7 +15,7 @@ from milpbooklm_application.chat import (
     ConversationStore,
     GenerateChatTurn,
 )
-from milpbooklm_application.grounding import GroundedAnswer
+from milpbooklm_application.grounding import GroundedAnswer, GroundingError
 from milpbooklm_domain.policy import PolicyAction
 from pydantic import BaseModel, ConfigDict, Field
 
@@ -60,6 +60,10 @@ class InstructionsRequest(BaseModel):
     instructions: str = Field(max_length=10_000)
 
 
+class _ConversationDependencyUnavailableError(RuntimeError):
+    pass
+
+
 def _state(state: ConversationState) -> dict[str, object]:
     return {
         "id": str(state.id),
@@ -102,14 +106,14 @@ def _unavailable(deps: ApiDeps) -> JSONResponse | None:
 def _conversation_store(deps: ApiDeps) -> ConversationStore:
     """Return the configured store after the route's availability boundary."""
     if deps.conversations is None:
-        raise RuntimeError("conversation store is unavailable")
+        raise _ConversationDependencyUnavailableError
     return deps.conversations
 
 
 def _chat_turn(deps: ApiDeps) -> GenerateChatTurn:
     """Return the configured use case after its route availability boundary."""
     if deps.chat_turn is None:
-        raise RuntimeError("chat turn is unavailable")
+        raise _ConversationDependencyUnavailableError
     return deps.chat_turn
 
 
@@ -241,9 +245,15 @@ def _build_generation_router(  # noqa: C901
     ) -> JSONResponse:
         if deps.chat_turn is None:
             return problem("chat_unavailable", "ordinary chat is not configured", 503)
-        answer = deps.chat_turn(
-            principal.user.id, conversation_id, body.content, body.selected_note_revision_ids
-        )
+        try:
+            answer = deps.chat_turn(
+                principal.user.id,
+                conversation_id,
+                body.content,
+                body.selected_note_revision_ids,
+            )
+        except GroundingError as error:
+            return problem("grounding_invalid", str(error), 422)
         if answer is None:
             return problem("conversation_not_found", "conversation not found", 404)
         state = (
@@ -274,6 +284,12 @@ def _build_generation_router(  # noqa: C901
             while True:
                 try:
                     token = next(generation)
+                except GroundingError as error:
+                    failure = json.dumps(
+                        {"code": "grounding_invalid", "detail": str(error)}
+                    )
+                    yield f"event: error\ndata: {failure}\n\n"
+                    return
                 except StopIteration as finished:
                     answer = finished.value
                     if answer is None:

@@ -5,10 +5,10 @@ from __future__ import annotations
 from collections.abc import Generator
 from dataclasses import dataclass
 from enum import StrEnum
-from typing import Final
+from typing import Final, assert_never
 
 import httpx
-from milpbooklm_application.grounding import AnswerDraft, AnswerSpan, Evidence
+from milpbooklm_application.grounding import AnswerDraft, AnswerSpan, Evidence, NoteContext
 from pydantic import BaseModel, ConfigDict
 
 from milpbooklm_adapters.models.openai_schema import ChatChunkPayload
@@ -30,43 +30,64 @@ class FakeCompletionScenario(StrEnum):
 
 
 class FakeGroundingCompletionProvider:
-    """Scriptable completion seam that never resolves labels, URLs, or locators."""
+    """Scriptable completion seam that uses only supplied server-owned context IDs."""
 
     def __init__(self, scenario: FakeCompletionScenario = FakeCompletionScenario.VALID) -> None:
         """Choose the deterministic answer contract outcome."""
         self._scenario = scenario
 
-    def complete(self, question: str, evidence: tuple[Evidence, ...]) -> AnswerDraft:
-        """Return the selected deterministic response for the supplied evidence IDs."""
+    def complete(
+        self,
+        question: str,
+        evidence: tuple[Evidence, ...],
+        note_contexts: tuple[NoteContext, ...] = (),
+    ) -> AnswerDraft:
+        """Return the selected deterministic response for supplied context IDs."""
         match self._scenario:
             case FakeCompletionScenario.VALID:
-                if not evidence:
+                if not evidence and not note_contexts:
                     return AnswerDraft((), insufficient_evidence=True)
+                if evidence:
+                    context_id = evidence[0].id
+                    context_label = evidence[0].label
+                    context_text = evidence[0].text
+                else:
+                    context_id = note_contexts[0].id
+                    context_label = note_contexts[0].title
+                    context_text = note_contexts[0].text
                 if question.startswith("Suggest three grounded starting questions"):
-                    evidence_id = evidence[0].id
-                    label = evidence[0].label
                     return AnswerDraft(
                         (
-                            AnswerSpan(f"What is the main argument in {label}?", (evidence_id,)),
                             AnswerSpan(
-                                f"Which evidence in {label} is most important?", (evidence_id,)
+                                f"What is the main argument in {context_label}?",
+                                (context_id,),
                             ),
                             AnswerSpan(
-                                f"What should I investigate next in {label}?", (evidence_id,)
+                                f"Which evidence in {context_label} is most important?",
+                                (context_id,),
+                            ),
+                            AnswerSpan(
+                                f"What should I investigate next in {context_label}?",
+                                (context_id,),
                             ),
                         )
                     )
-                return AnswerDraft((AnswerSpan(evidence[0].text, (evidence[0].id,)),))
+                return AnswerDraft((AnswerSpan(context_text, (context_id,)),))
             case FakeCompletionScenario.INVENTED_EVIDENCE:
                 return AnswerDraft((AnswerSpan("unsupported claim", ("invented-evidence-id",)),))
             case FakeCompletionScenario.INSUFFICIENT:
                 return AnswerDraft((), insufficient_evidence=True)
+            case unreachable:
+                assert_never(unreachable)
 
     def stream(
-        self, question: str, evidence: tuple[Evidence, ...]
+        self,
+        question: str,
+        evidence: tuple[Evidence, ...],
+        note_contexts: tuple[NoteContext, ...] = (),
     ) -> Generator[str, None, AnswerDraft]:
         """Yield deterministic answer text as best-effort word chunks."""
-        draft = self.complete(question, evidence)
+        draft = self.complete(question, evidence, note_contexts)
         for span in draft.spans:
             for token in span.text.split(" "):
                 yield f"{token} "
@@ -122,10 +143,17 @@ class LlamaCppCompletionProvider:
     base_url: str = LLAMA_CPP_COMPLETIONS_URL
     model: str = LLAMA_CPP_MODEL
 
-    def complete(self, question: str, evidence: tuple[Evidence, ...]) -> AnswerDraft:
-        """Request structured spans whose citations can only be opaque evidence IDs."""
+    def complete(
+        self,
+        question: str,
+        evidence: tuple[Evidence, ...],
+        note_contexts: tuple[NoteContext, ...] = (),
+    ) -> AnswerDraft:
+        """Request structured spans citing only supplied opaque context IDs."""
         with httpx.Client(base_url=self.base_url, timeout=120.0) as client:
-            response = client.post("/chat/completions", json=self._payload(question, evidence))
+            response = client.post(
+                "/chat/completions", json=self._payload(question, evidence, note_contexts)
+            )
             response.raise_for_status()
         envelope = _CompletionResponsePayload.model_validate_json(response.text)
         if not envelope.choices:
@@ -142,10 +170,13 @@ class LlamaCppCompletionProvider:
         )
 
     def stream(
-        self, question: str, evidence: tuple[Evidence, ...]
+        self,
+        question: str,
+        evidence: tuple[Evidence, ...],
+        note_contexts: tuple[NoteContext, ...] = (),
     ) -> Generator[str, None, AnswerDraft]:
         """Stream local provider deltas and return their completed structured draft."""
-        payload = self._payload(question, evidence)
+        payload = self._payload(question, evidence, note_contexts)
         payload["stream"] = True
         fragments: list[str] = []
         with (
@@ -186,7 +217,16 @@ class LlamaCppCompletionProvider:
             raise GroundingCompletionError("models response has no data list")
         return tuple(str(item["id"]) for item in data if isinstance(item, dict) and "id" in item)
 
-    def _payload(self, question: str, evidence: tuple[Evidence, ...]) -> dict[str, object]:
+    def _payload(
+        self,
+        question: str,
+        evidence: tuple[Evidence, ...],
+        note_contexts: tuple[NoteContext, ...],
+    ) -> dict[str, object]:
+        context_lines = [f"[{item.id}] {item.text}" for item in evidence]
+        context_lines.extend(
+            f"[{item.id}] Note '{item.title}': {item.text}" for item in note_contexts
+        )
         return {
             "model": self.model,
             "temperature": 0,
@@ -195,9 +235,9 @@ class LlamaCppCompletionProvider:
                 {
                     "role": "system",
                     "content": (
-                        "Answer only from evidence. Return JSON with spans [{text, evidence_ids}] "
-                        "and insufficient_evidence. Cite only supplied IDs. "
-                        "If insufficient, return "
+                        "Answer only from supplied source evidence and explicitly selected note "
+                        "contexts. Return JSON with spans [{text, evidence_ids}] and "
+                        "insufficient_evidence. Cite only supplied IDs. If insufficient, return "
                         '{"spans":[],"insufficient_evidence":true}.'
                     ),
                 },
@@ -205,8 +245,8 @@ class LlamaCppCompletionProvider:
                     "role": "user",
                     "content": "Question: "
                     + question
-                    + "\nEvidence: "
-                    + "\n".join(f"[{item.id}] {item.text}" for item in evidence),
+                    + "\nContext: "
+                    + "\n".join(context_lines),
                 },
             ],
         }

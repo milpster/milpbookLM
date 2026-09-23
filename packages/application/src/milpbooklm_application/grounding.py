@@ -20,11 +20,23 @@ class GroundingError(RuntimeError):
 
 
 @dataclass(frozen=True, slots=True)
+class NoteContext:
+    """One explicitly selected immutable note revision exposed to completion."""
+
+    id: str
+    note_id: uuid.UUID
+    revision_id: uuid.UUID
+    title: str
+    text: str
+
+
+@dataclass(frozen=True, slots=True)
 class FrozenManifest:
-    """The immutable retrieval scope captured before query execution."""
+    """The immutable source and explicit-note scope captured before generation."""
 
     id: uuid.UUID
     source_version_ids: frozenset[uuid.UUID]
+    note_contexts: tuple[NoteContext, ...] = ()
 
 
 @dataclass(frozen=True, slots=True)
@@ -61,7 +73,7 @@ class AnswerDraft:
 
 @dataclass(frozen=True, slots=True)
 class GroundingRequest:
-    """One source-only grounded answer request, before the T17 HTTP surface exists."""
+    """One grounded answer request with sources and optional explicit note revisions."""
 
     actor_user_id: uuid.UUID
     notebook_id: uuid.UUID
@@ -97,14 +109,22 @@ class PreparedGroundedAnswer:
 
 
 class CompletionProvider(Protocol):
-    """A completion boundary that receives only server-issued evidence identities."""
+    """A completion boundary that receives only server-issued context identities."""
 
-    def complete(self, question: str, evidence: tuple[Evidence, ...]) -> AnswerDraft:
-        """Return structured spans citing evidence IDs only."""
+    def complete(
+        self,
+        question: str,
+        evidence: tuple[Evidence, ...],
+        note_contexts: tuple[NoteContext, ...] = (),
+    ) -> AnswerDraft:
+        """Return structured spans citing supplied source or note context IDs only."""
         ...
 
     def stream(
-        self, question: str, evidence: tuple[Evidence, ...]
+        self,
+        question: str,
+        evidence: tuple[Evidence, ...],
+        note_contexts: tuple[NoteContext, ...] = (),
     ) -> Generator[str, None, AnswerDraft]:
         """Yield best-effort tokens and return the completed structured answer."""
         ...
@@ -145,7 +165,7 @@ class GroundingStore(Protocol):
 
 
 class GenerateGroundedAnswer:
-    """The six-step source-only pipeline built on T15 hybrid retrieval."""
+    """The six-step source retrieval plus explicit pinned-note pipeline."""
 
     def __init__(
         self,
@@ -168,7 +188,7 @@ class GenerateGroundedAnswer:
     def generate(self, request: GroundingRequest, manifest: FrozenManifest) -> GroundedAnswer:
         """Generate against an already-frozen manifest without creating a second snapshot."""
         prepared = self.prepare(request, manifest)
-        if not prepared.evidence:
+        if not prepared.evidence and not manifest.note_contexts:
             return self._store.abstain(manifest=manifest, retrieval_trace=prepared.retrieval_trace)
         return self._publish(prepared)
 
@@ -180,9 +200,11 @@ class GenerateGroundedAnswer:
     ) -> Generator[str, None, GroundedAnswer | None]:
         """Present provider tokens, then publish only the completed validated draft."""
         prepared = self.prepare(request, manifest)
-        if not prepared.evidence:
+        if not prepared.evidence and not manifest.note_contexts:
             return self._store.abstain(manifest=manifest, retrieval_trace=prepared.retrieval_trace)
-        generation = self._completion.stream(request.question, prepared.evidence)
+        generation = self._completion.stream(
+            request.question, prepared.evidence, manifest.note_contexts
+        )
         while True:
             try:
                 token = next(generation)
@@ -202,7 +224,8 @@ class GenerateGroundedAnswer:
         """Perform the grounded retrieval phase before token presentation begins."""
         normalized_question = self._normalize(request.question)
         if not manifest.source_version_ids:
-            return PreparedGroundedAnswer(request, manifest, (), "no-selected-sources")
+            trace = "note-context-only" if manifest.note_contexts else "no-selected-sources"
+            return PreparedGroundedAnswer(request, manifest, (), trace)
         outcome = self._retrieval(
             RetrievalCommand(
                 actor_user_id=request.actor_user_id,
@@ -224,7 +247,11 @@ class GenerateGroundedAnswer:
     ) -> GroundedAnswer:
         """Validate and atomically persist the completed structured answer."""
         completed_draft = (
-            self._completion.complete(prepared.request.question, prepared.evidence)
+            self._completion.complete(
+                prepared.request.question,
+                prepared.evidence,
+                prepared.manifest.note_contexts,
+            )
             if draft is None
             else draft
         )

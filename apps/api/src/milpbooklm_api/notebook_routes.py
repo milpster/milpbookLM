@@ -97,7 +97,7 @@ def _build_read_router(deps: ApiDeps, principal: PrincipalDependency) -> APIRout
 
 
 def _build_mutation_router(deps: ApiDeps, principal: PrincipalDependency) -> APIRouter:
-    """Write surface (create + the NOTE_MUTATE demonstration draft)."""
+    """Build notebook creation; note mutations live on the real note router."""
     router = APIRouter(prefix="/api/v1/notebooks", tags=["notebooks"])
 
     @router.post("", response_model=None, status_code=status.HTTP_201_CREATED)
@@ -131,20 +131,6 @@ def _build_mutation_router(deps: ApiDeps, principal: PrincipalDependency) -> API
                 view.membership.value if view.membership is not None else None,
             ),
         )
-
-    @router.post("/{notebook_id}/note-draft", response_model=None)
-    async def note_draft(
-        notebook_id: uuid.UUID, principal: Principal = Depends(principal)
-    ) -> JSONResponse | dict[str, object]:
-        """Create a no-op note draft demonstrating the handler-level NOTE_MUTATE check."""
-        view = deps.notebooks.notebook_with_membership(principal.user.id, notebook_id)
-        if view is None:
-            return _not_found()
-        access = NotebookAccess(notebook_id=view.notebook_id, role=view.membership)
-        decision = deps.engine.decide_notebook(principal.user, access, PolicyAction.NOTE_MUTATE)
-        if not decision.allowed:
-            return _denied(decision.reason.value)
-        return {"ok": True}
 
     return router
 

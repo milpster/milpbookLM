@@ -42,6 +42,12 @@ class AuditAction(StrEnum):
     ARTIFACT_EXPORT_DENIED = "artifact.export_denied"
     STUDY_SNAPSHOT_CREATED = "study.snapshot_created"
 
+    # Notes (STD-02a: immutable revisions, transforms, and source promotion).
+    NOTE_CREATED = "note.created"
+    NOTE_REVISION_CREATED = "note.revision_created"
+    NOTE_TRANSFORMED = "note.transformed"
+    NOTE_PROMOTED = "note.promoted"
+
     # Seams for later features (named, not yet emitted by any code path):
     # membership/shared-link changes, purge, and consequential tool actions.
     MEMBERSHIP_CHANGED = "membership.changed"

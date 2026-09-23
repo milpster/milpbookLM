@@ -30,6 +30,14 @@ from milpbooklm_application.chat import (
 from milpbooklm_application.grounding import GroundingStore
 from milpbooklm_application.indexing import IndexBuildConfig
 from milpbooklm_application.job_usecases import JobPorts
+from milpbooklm_application.note_core import NoteStore
+from milpbooklm_application.note_lifecycle import (
+    CreateNote,
+    EditNote,
+    PromoteNoteToSource,
+    SaveResponseToNote,
+    TransformNotes,
+)
 from milpbooklm_application.policy_engine import PolicyEngine
 from milpbooklm_application.ports import (
     AuditLog,
@@ -83,6 +91,18 @@ class ArtifactDeps:
 
 
 @dataclass(frozen=True, slots=True)
+class NoteDeps:
+    """The wired immutable-note workflow surface."""
+
+    store: NoteStore
+    create: CreateNote
+    edit: EditNote
+    save_response: SaveResponseToNote
+    transform: TransformNotes
+    promote: PromoteNoteToSource
+
+
+@dataclass(frozen=True, slots=True)
 class ApiDeps:
     """Everything the API routers need (wired once at the composition root)."""
 
@@ -113,6 +133,7 @@ class ApiDeps:
     notebook_overview: GenerateNotebookOverview | None = None
     research: ResearchRunDeps | None = None
     artifacts: ArtifactDeps | None = None
+    notes: NoteDeps | None = None
 
 
 PrincipalDependency = Callable[[Request], Awaitable[Principal]]

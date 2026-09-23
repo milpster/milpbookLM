@@ -10,6 +10,7 @@ from __future__ import annotations
 
 import os
 from datetime import timedelta
+from typing import assert_never
 
 import sqlalchemy as sa
 from fastapi import FastAPI, HTTPException, Request
@@ -27,6 +28,11 @@ from milpbooklm_adapters.grounding_completion import (
 from milpbooklm_adapters.indexing import PgRetrievalService
 from milpbooklm_adapters.jobs import PgJobRepository, PgOutboxDispatcher, PolicyAuthzRevalidator
 from milpbooklm_adapters.models.embedding_client import LlamaCppEmbeddingClient
+from milpbooklm_adapters.note_store import PgNoteStore
+from milpbooklm_adapters.note_transform import (
+    FakeNoteTransformProvider,
+    LlamaCppNoteTransformProvider,
+)
 from milpbooklm_adapters.notebook_repository import InMemoryNotebookRepository
 from milpbooklm_adapters.research_runs import PgResearchRunStore
 from milpbooklm_adapters.security.argon2 import Argon2PasswordHasher
@@ -70,6 +76,13 @@ from milpbooklm_application.job_usecases import (
     JobPorts,
     RecoverExpiredLeases,
 )
+from milpbooklm_application.note_lifecycle import (
+    CreateNote,
+    EditNote,
+    PromoteNoteToSource,
+    SaveResponseToNote,
+    TransformNotes,
+)
 from milpbooklm_application.policy_engine import PolicyEngine
 from milpbooklm_application.ports import (
     AuditLog,
@@ -105,10 +118,11 @@ from .capability_routes import build_capability_router
 from .config import ChatProvider, InstallationConfig
 from .config_loader import load_config
 from .conversation_routes import build_conversation_router
-from .deps import ApiDeps, ArtifactDeps, ResearchRunDeps
+from .deps import ApiDeps, ArtifactDeps, NoteDeps, ResearchRunDeps
 from .grounding_routes import build_grounding_router
 from .health_routes import DeploymentHealth, build_health_router
 from .job_routes import build_job_router
+from .note_routes import build_note_router
 from .notebook_overview_routes import build_notebook_overview_router
 from .notebook_routes import build_notebook_router
 from .observability import (
@@ -142,6 +156,20 @@ def _completion_provider(
             return LlamaCppCompletionProvider()
         case ChatProvider.FAKE:
             return FakeGroundingCompletionProvider()
+        case unreachable:
+            assert_never(unreachable)
+
+
+def _note_transform_provider(
+    provider: ChatProvider,
+) -> LlamaCppNoteTransformProvider | FakeNoteTransformProvider:
+    match provider:
+        case ChatProvider.LLAMA_CPP:
+            return LlamaCppNoteTransformProvider()
+        case ChatProvider.FAKE:
+            return FakeNoteTransformProvider()
+        case unreachable:
+            assert_never(unreachable)
 
 
 def _configured_provider_ids(installation: InstallationConfig) -> frozenset[DependencyId]:
@@ -189,6 +217,7 @@ def build_app(
     completion: LlamaCppCompletionProvider | FakeGroundingCompletionProvider | None = None,
     research: ResearchRunDeps | None = None,
     artifacts: ArtifactDeps | None = None,
+    notes: NoteDeps | None = None,
 ) -> FastAPI:
     """Build the API app from wired ports (the test/QA seam)."""
     app = FastAPI(title="MilpBook LM API")
@@ -249,6 +278,7 @@ def build_app(
         ),
         research=research,
         artifacts=artifacts,
+        notes=notes,
     )
     app.state.deps = deps
 
@@ -286,6 +316,8 @@ def build_app(
         app.include_router(build_research_router(deps, principal, research))
     if artifacts is not None:
         app.include_router(build_artifact_router(deps, principal, artifacts))
+    if notes is not None:
+        app.include_router(build_note_router(deps, principal, notes))
     if source_acquisition is not None and source_catalog is not None:
         app.include_router(
             build_source_router(
@@ -394,6 +426,7 @@ def create_app() -> FastAPI:
     conversations = PgConversationStore(engine)
     research_store = PgResearchRunStore(engine)
     artifact_store = PgArtifactStore(engine)
+    note_store = PgNoteStore(engine)
     artifact_registry = build_recipe_registry()
     artifacts = ArtifactDeps(
         store=artifact_store,
@@ -411,6 +444,17 @@ def create_app() -> FastAPI:
         get_state=GetStudyState(artifact_store),
         snapshot=SnapshotStudySession(artifact_store),
     )
+    notes = NoteDeps(
+        store=note_store,
+        create=CreateNote(note_store),
+        edit=EditNote(note_store),
+        save_response=SaveResponseToNote(note_store),
+        transform=TransformNotes(
+            note_store, _note_transform_provider(installation.chat_provider)
+        ),
+        promote=PromoteNoteToSource(note_store, source_acquisition),
+    )
+    completion_provider = _completion_provider(installation.chat_provider)
     app = build_app(
         users=users,
         hasher=Argon2PasswordHasher(),
@@ -426,7 +470,7 @@ def create_app() -> FastAPI:
         index_config=index_config,
         grounding=grounding,
         conversations=conversations,
-        completion=_completion_provider(installation.chat_provider),
+        completion=completion_provider,
         research=ResearchRunDeps(
             store=research_store,
             create=CreateResearchRun(research_store),
@@ -436,6 +480,7 @@ def create_app() -> FastAPI:
             cancel=CancelResearchRun(research_store, jobs),
         ),
         artifacts=artifacts,
+        notes=notes,
         health=DeploymentHealth(
             engine,
             installation.blob_root,

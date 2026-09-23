@@ -1,0 +1,67 @@
+{
+  "task": "32",
+  "title": "STD-02a Notes: revisions, transforms, promotion, note-to-source",
+  "status": "complete",
+  "commit_message": "feat(studio): STD-02a notes (studio notes subset)",
+  "closeout_session": "Implementation arrived complete-but-uncommitted from an interrupted worker; this session verified gates (all green, zero code changes needed), wrote this evidence, appended learnings, and made the single commit.",
+  "implemented": [
+    "application note_core.py: typed boundary - NoteView/NoteRevisionView/NoteSnapshot/SavedResponseView/NotePromotionView views, commands (CreateNote/EditNote/SaveResponseToNote/TransformNotes/PromoteNote), typed NoteError failures, NoteStore port, NoteTransformKind enum, note_content_text() renderer",
+    "application note_lifecycle.py: CreateNote, EditNote (logical-note ETag If-Match -> append-only new immutable revision, old intact), SaveResponseToNote (actor-owned assistant response -> non-editable note), TransformNotes (only the explicitly selected immutable revisions), PromoteNoteToSource (exact revision -> normal source acquisition pipeline)",
+    "adapters note_store.py: PgNoteStore - insert-only note_revisions, per-note revision numbering, ETag optimistic concurrency, provenance/content-dependency refs, revision-pinned reads",
+    "adapters note_transform.py: LlamaCppNoteTransformProvider + FakeNoteTransformProvider (deterministic per NoteTransformKind)",
+    "api note_http.py: validated request/response shapes (Create/Edit/SaveResponse/Transform/Promote) + note/revision/snapshot payloads",
+    "api note_routes.py + note_read_routes.py + note_mutation_routes.py: read surface (list notebook notes, get note, list revisions, get exact revision /api/v1/note-revisions/{id}) and mutation surface (create/edit/save-response/transform/promote) under /api/v1, principal + per-route policy authz + audit on every route",
+    "grounding chat-context pinning (micro-index 32.3): NoteContext in FrozenManifest; freeze() resolves ONLY explicitly selected, membership-authorized note revisions (duplicates rejected, unavailable rejected); abstain only when no evidence AND no note contexts; publication revalidates note authz fresh; citations emit note_revision locator + /api/v1/note-revisions/{id} url; FakeGroundingCompletionProvider + LlamaCppCompletionProvider accept note contexts; manifest config_snapshot records selected_note_revision_ids and source_only=false when notes present",
+    "conversation_routes.py: GroundingError from note-context validation -> 422 grounding_invalid (sync) and SSE event:error frame (stream); unavailable-store boundary uses a private typed error instead of bare RuntimeError",
+    "audit_actions.py: NOTE_CREATED / NOTE_REVISION_CREATED / NOTE_TRANSFORMED / NOTE_PROMOTED",
+    "notebook_routes.py: removed the pre-T32 /notebooks/{id}/note-draft demonstration stub (superseded by the real note mutation router); test_api_auth owner/viewer policy test ported to the real POST /api/v1/notebooks/{id}/notes (201 allowed / 403 deny:role preserved)",
+    "composition.py + deps.py: NoteDeps wiring (store + 5 use cases), note transform provider selected from ChatProvider via exhaustive match, note router included only when NoteDeps provided (test/QA seam preserved)"
+  ],
+  "commands": [
+    {"command": "uv run pytest tests/meta tests/architecture tests/unit -q", "exit": 0, "result": "380 passed, 3 warnings in 24.43s (baseline 364 + 16 new)"},
+    {"command": "uv run pytest tests/unit/db/test_note_routes.py tests/unit/db/test_note_store.py tests/unit/test_note_transform_completion.py tests/unit/test_api_auth.py -q", "exit": 0, "result": "28 passed, 3 warnings in 2.72s"},
+    {"command": "uv run ruff check .", "exit": 0, "result": "All checks passed!"},
+    {"command": "uv run mypy", "exit": 0, "result": "Success: no issues found in 226 source files (baseline 218 -> 226)"},
+    {"command": "uv run lint-imports", "exit": 0, "result": "Inward dependency layering (domain innermost) KEPT; domain imports no adapter, application, framework KEPT; application imports no adapter KEPT; api and workers are independent KEPT - Contracts: 4 kept, 0 broken."},
+    {"command": "bash migrations/rehearse.sh", "exit": null, "result": "SKIPPED - no new migration file under migrations/versions/ for T32 (head remains 0009_std_01 from T31). notes/note_revisions tables already ship in db/tables/studio.py metadata landed with T31 (commit b22ebac), so no schema change was needed."}
+  ],
+  "tests_new": [
+    "tests/unit/db/test_note_routes.py: 1 test - test_e2e_004_notes_journey_is_revision_pinned_and_policy_checked (create -> edit (old revision intact) -> transform -> promote -> chat cites the exact pinned revision; per-route policy authz)",
+    "tests/unit/db/test_note_store.py: 9 tests - edit creates new revision + preserves prior content (immutability), saved response actor-owned + non-editable, transform pins only explicit revisions, duplicate selection rejected, chat freeze resolves only explicit authorized revisions, chat uses selected revision WITHOUT searching notes (explicit-selection-only), duplicate chat selection rejected, chat revalidates note access before publication",
+    "tests/unit/test_note_transform_completion.py: 6 tests - transform returns validated content for each supported NoteTransformKind",
+    "tests/unit/test_api_auth.py: 12 tests (count unchanged; note-draft stub assertions replaced with real POST /api/v1/notebooks/{id}/notes 201/403 policy assertions)"
+  ],
+  "notes": [
+    "Capability registry posture: notes stays implementation_status=not_started, enabled=false in capabilities.yaml/conformance.json. The T31 flip precedent (implemented=true, enabled=false) was NOT applied because the registry/conformance files were outside this closeout's mandated staging list; the enablement/lockstep flip belongs to the gate task (35/36) per plan. Code surface exists and is tested; nothing is advertised.",
+    "notebook_routes.py -15 lines reviewed: intentional removal of the pre-T32 note-draft demonstration endpoint, superseded by the real note mutation routes - not scope creep.",
+    "grounding.py / grounding_completion.py diffs reviewed: they implement micro-index 32.3 explicit chat-context pinning (notes as version-pinned prompt context, explicit selection only, never auto-indexed into retrieval) - in-scope for T32, kept.",
+    "No new migration: notes/note_revisions tables landed with T31's 0009_std_01 (studio.py metadata); live DB stays at alembic head 0009_std_01.",
+    "Closeout-only session: zero product-code edits were needed; every gate passed on the working tree as received."
+  ],
+  "files": {
+    "new": [
+      "apps/api/src/milpbooklm_api/note_http.py",
+      "apps/api/src/milpbooklm_api/note_mutation_routes.py",
+      "apps/api/src/milpbooklm_api/note_read_routes.py",
+      "apps/api/src/milpbooklm_api/note_routes.py",
+      "packages/adapters/src/milpbooklm_adapters/note_store.py",
+      "packages/adapters/src/milpbooklm_adapters/note_transform.py",
+      "packages/application/src/milpbooklm_application/note_core.py",
+      "packages/application/src/milpbooklm_application/note_lifecycle.py",
+      "tests/unit/db/test_note_routes.py",
+      "tests/unit/db/test_note_store.py",
+      "tests/unit/test_note_transform_completion.py"
+    ],
+    "modified": [
+      "apps/api/src/milpbooklm_api/composition.py",
+      "apps/api/src/milpbooklm_api/conversation_routes.py",
+      "apps/api/src/milpbooklm_api/deps.py",
+      "apps/api/src/milpbooklm_api/notebook_routes.py",
+      "packages/adapters/src/milpbooklm_adapters/grounding.py",
+      "packages/adapters/src/milpbooklm_adapters/grounding_completion.py",
+      "packages/application/src/milpbooklm_application/audit_actions.py",
+      "packages/application/src/milpbooklm_application/grounding.py",
+      "tests/unit/test_api_auth.py"
+    ]
+  }
+}
