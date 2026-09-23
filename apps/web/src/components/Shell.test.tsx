@@ -1,6 +1,11 @@
-import { cleanup, render } from "@testing-library/react";
+import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
+import { cleanup, render, screen } from "@testing-library/react";
 import { afterEach, describe, expect, it, vi } from "vitest";
 import { Shell } from "./Shell";
+
+const { getInstanceStats } = vi.hoisted(() => ({ getInstanceStats: vi.fn() }));
+
+vi.mock("../api/client", () => ({ getInstanceStats }));
 
 vi.mock("../state/auth", () => ({
   useAuth: () => ({
@@ -29,11 +34,39 @@ afterEach(() => {
 });
 
 describe("Shell", () => {
-  it("renders the banner wordmark as milpbookLM with no space", () => {
+  it("renders aggregate counts and polls every twenty seconds", async () => {
+    getInstanceStats.mockResolvedValue({ registered_users: 4, logged_in_users: 2 });
+    const client = new QueryClient({ defaultOptions: { queries: { retry: false } } });
     render(
-      <Shell path="/notebooks" navigate={() => undefined}>
-        <p>Content</p>
-      </Shell>,
+      <QueryClientProvider client={client}>
+        <Shell path="/notebooks" navigate={() => undefined}><p>Content</p></Shell>
+      </QueryClientProvider>,
+    );
+    expect(await screen.findByText("4 registered · 2 signed in")).toBeTruthy();
+    expect(client.getQueryState(["actor", "instance-stats"])?.data).toEqual({ registered_users: 4, logged_in_users: 2 });
+  });
+
+  it("keeps navigation usable without a count when aggregate request fails", async () => {
+    getInstanceStats.mockRejectedValue(new Error("offline"));
+    const client = new QueryClient({ defaultOptions: { queries: { retry: false } } });
+    render(
+      <QueryClientProvider client={client}>
+        <Shell path="/notebooks" navigate={() => undefined}><p>Content</p></Shell>
+      </QueryClientProvider>,
+    );
+    await Promise.resolve();
+    expect(screen.queryByText(/registered/)).toBeNull();
+    expect(screen.getByRole("link", { name: "Notebooks" })).toBeTruthy();
+  });
+
+  it("renders the banner wordmark as milpbookLM with no space", () => {
+    const client = new QueryClient({ defaultOptions: { queries: { retry: false } } });
+    render(
+      <QueryClientProvider client={client}>
+        <Shell path="/notebooks" navigate={() => undefined}>
+          <p>Content</p>
+        </Shell>
+      </QueryClientProvider>,
     );
     // Accessible-name computation inserts a space between the text node and the
     // LM span, so assert on the rendered text content itself.

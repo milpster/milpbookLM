@@ -185,6 +185,28 @@ def test_me_with_session_and_without() -> None:
     assert me.json()["csrf_token"] == logged_in["csrf_token"]
 
 
+def test_instance_stats_counts_distinct_unrevoked_unexpired_users() -> None:
+    client = make_client()
+    anonymous = client.get("/api/v1/auth/instance-stats")
+    assert anonymous.status_code == status.HTTP_401_UNAUTHORIZED
+
+    first_id = uuid.UUID(register(client, "first@example.com"))
+    second_id = uuid.UUID(register(client, "second@example.com"))
+    third_id = uuid.UUID(register(client, "third@example.com"))
+    login(client, "first@example.com")
+    deps = client.app.state.deps
+    deps.sessions.issue(user_id=first_id, ttl=timedelta(hours=1))
+    expired = deps.sessions.issue(user_id=second_id, ttl=timedelta(seconds=1))
+    revoked = deps.sessions.issue(user_id=third_id, ttl=timedelta(hours=1))
+    deps.sessions.revoke(revoked.session_id)
+    deps.clock.advance(1)
+
+    response = client.get("/api/v1/auth/instance-stats")
+
+    assert response.status_code == status.HTTP_200_OK
+    assert response.json() == {"registered_users": 3, "logged_in_users": 1}
+
+
 def test_register_seeds_onboarding_for_the_new_user() -> None:
     # Given
     seed_onboarding = Mock()
