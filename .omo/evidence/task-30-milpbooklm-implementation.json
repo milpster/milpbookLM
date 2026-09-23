@@ -1,0 +1,40 @@
+{
+  "task": "30",
+  "title": "Phase-3 gate - research and execution evidence",
+  "status": "complete_with_recorded_deferrals",
+  "commit_message": "chore(release): Phase-3 gate evidence bundle",
+  "implemented": [
+    "execution.run registered conditionally in worker startup with runtime-image configuration",
+    "ExecutionStack retains and closes its broker; WorkerLoop runs teardown on stop and failure",
+    "durable JobRecord actor/notebook identities govern publication authorization",
+    "OutputCollector authorization precedes output blob writes and quarantine is discarded in finally without deleting finalized blobs",
+    "real bwrap integration test covers job-to-broker-to-sandbox-to-blob publication"
+  ],
+  "commands": [
+    {"command": "uv run pytest tests/unit/test_execution_handler.py tests/unit/test_execution_outputs.py tests/unit/test_worker_loop_lifecycle.py -q", "exit": 0, "result": "10 passed"},
+    {"command": "uv run pytest tests/security/sandbox/test_escape_suite.py tests/security/sandbox/test_execution_handler_integration.py -q", "exit": 0, "result": "8 passed"},
+    {"command": "uv run pytest tests/unit/test_hardened_fetch.py tests/unit/test_browser_worker.py tests/unit/test_research_domain.py tests/unit/test_research_executor.py -q", "exit": 0, "result": "58 passed (+3 F4 regression tests)"},
+    {"command": "uv run pytest tests/unit/test_research_executor.py::test_cancel_mid_run_publishes_terminal_state_with_trace_intact tests/security/sandbox/test_escape_suite.py::test_timeout_and_ignored_signals_leave_no_cgroup_survivors -q", "exit": 0, "result": "2 passed"},
+    {"command": "uv run ruff check .", "exit": 0, "result": "all checks passed"},
+    {"command": "uv run mypy", "exit": 0, "result": "no issues found"},
+    {"command": "uv run import-linter lint", "exit": 0, "result": "4 kept, 0 broken"},
+    {"command": "uv run pytest tests/meta tests/architecture tests/unit -q", "exit": 0, "result": "276 passed (re-verified after feedback batch)"},
+    {"command": "uv run pytest tests/fixtures/sources -q", "exit": 0, "result": "12 passed"},
+    {"command": "uv run python tools/spec/emit_conformance.py", "exit": 0, "result": "artifacts/conformance.json generated"},
+    {"command": "uv run python scratch/t27-rsr/e2e008_drive.py", "exit": 0, "result": "green after stack recovery: happy_run promoted, attack_run failed budget_steps_exceeded as designed"},
+    {"command": "Playwright full-story journey (retained notebook 01a0cb45-...)", "exit": 0, "result": "all features exercised; 12 screenshots + report in scratch/t-qa/full-story-20260922T223639Z/"},
+    {"command": "pnpm -C apps/web test && pnpm -C apps/web exec tsc --build", "exit": 0, "result": "20 vitest passed (4 files); tsc clean (feedback batch bcfb5c4)"},
+    {"command": "live research REST: limited-tools run + full-tools run", "exit": 0, "result": "limited succeeded in 5 steps (no more 62-loop); full succeeded search->fetch->import->finish, import promoted source version 488cf878-... (F4 verified, f3f67f6)"}
+  ],
+  "capability_decision": "code_data_analysis remains disabled in registry, seed, and dev environment because no dedicated safe execution API/input-blob authorization and admin deployment form exist, despite the worker path being real-bwrap usable",
+  "ui": "feedback batch (F2 chat persistence, F5 citation dedupe, brand logo + favicon) committed bcfb5c4 and verified live; the requested full Playwright all-features user story is COMPLETE with DB-backed proof (scratch/t-qa/full-story-20260922T223639Z/)",
+  "deferred": [
+    "real SearXNG deployment",
+    "container browser form",
+    "admin execution deployment and D11 GPU evidence",
+    "STT D16",
+    "bwrap 0.11/0.12 delta and curated seccomp",
+    "PHASE-GATE-001 has no concrete test files"
+  ],
+  "gate": "artifacts/verification/phase-3-gate.json"
+}

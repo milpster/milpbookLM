@@ -382,7 +382,7 @@ Blocks column = DIRECT dependants only (tasks listing X in their Depends on); a 
   QA scenarios: happy — suite green (evidence VER-ARCH-12-* batch + SANDBOX-SEC-001); failure — spec tampered post-signing → nonce/verify failure, execution refused (evidence broker log). Evidence <attemptDir>/task-29-milpbooklm-implementation.json
   Commit: Y | feat(execution): EXE-01 broker+sandbox+escape suite + host GPU benchmarks (ARCH-12-001..018)
 
-- [ ] 30. Phase-3 gate — Research/execution evidence
+- [~] 30. Phase-3 gate — Research/execution evidence (partial-honest: E2E-008 live green, full-story Playwright journey complete, feedback batch F2/F4/F5+favicon verified; deferrals: code_data_analysis boundary, real SearXNG, admin/GPU, STT, bwrap seccomp curation, PHASE-GATE-001 suite absent)
   What to do / Must NOT do: Phase 3 exit: SearXNG/fetch/Playwright research + Bubblewrap execution pass policy, SSRF, isolation, recovery gates (PLANNING-HANDOFF); E2E-008 full (agentic research + code execution journey); code_data_analysis capability live (job→broker→outputs→publication with provenance); conformance + gate report.
   Micro-index: 30.1 isolation/SSRF suites · 30.2 E2E-008 · 30.3 recovery (cancel/crash mid-research, mid-execution) · 30.4 conformance+report.
   Parallelization: Wave 3 | Blocked by: 26..29 | Blocks: Wave 4 (gate),54

@@ -3,15 +3,15 @@
   "task": "30. Phase-3 gate - Research and execution evidence bundle",
   "phase": 3,
   "generated_at": "2026-09-23",
-  "build_head": "d0281ac (plus this task's execution handler, tests, and gate bundle)",
-  "scope": "REST/worker Phase-3 gate; UI unchanged and the user-required all-features Playwright story remains Atlas-owned after T30",
+  "build_head": "b467003 (gate bundle) plus feedback batch commits f3f67f6 (research F4) and bcfb5c4 (web F2/F5/favicon)",
+  "scope": "REST/worker Phase-3 gate; after-gate live E2E-008 rerun, the user-required all-features Playwright story, and the QA feedback batch were completed and verified first-hand by Atlas",
   "exit_row_source": "PLANNING-HANDOFF Phase 3 + guide chapters 11/12/22",
   "exit_row_required": "research policy and injection resistance, SSRF refusal, browser and execution isolation, cancellation/timeout recovery, and honest capability publication",
   "deployment_form": {
     "execution": "user-space in-process broker prototype under the current account; dedicated systemd account/socket remains T8-class deferred",
     "database": "shared scratch PostgreSQL socket scratch/t13-smoke:29521 was not reset",
-    "api": "127.0.0.1:8000 was not listening during final E2E re-evidence; no shared service was restarted",
-    "ui": "unchanged; REST/worker-only task"
+    "api": "127.0.0.1:8000 was restarted (dev process, same script/env) only after the F4 feedback fix to pick up new code; user-managed :8009/:8010 and PG were never touched",
+    "ui": "feedback batch only: chat conversation persistence across SPA nav, citation dedupe, brand logo + favicon (commit bcfb5c4)"
   },
   "implementation": {
     "path": "execution.run job -> signed Unix broker -> real bubblewrap -> OutputCollector validation/quarantine -> authorization revalidation -> finalized blob publication",
@@ -32,7 +32,7 @@
     },
     "ssrf_browser_research": {
       "command": "uv run pytest tests/unit/test_hardened_fetch.py tests/unit/test_browser_worker.py tests/unit/test_research_domain.py tests/unit/test_research_executor.py -q",
-      "result": "55 passed; static-fetch SSRF, real Chromium sandbox, research authorization/injection and cancellation",
+      "result": "58 passed (55 + 3 F4 planner/executor regression tests); static-fetch SSRF, real Chromium sandbox, research authorization/injection and cancellation",
       "status": "green"
     },
     "recovery": {
@@ -42,7 +42,7 @@
     },
     "full_python": {
       "command": "uv run pytest tests/meta tests/architecture tests/unit -q",
-      "result": "273 passed",
+      "result": "276 passed (re-verified by Atlas after feedback batch)",
       "status": "green"
     },
     "fixtures_sources": {
@@ -57,10 +57,29 @@
     },
     "e2e_008_live_rerun": {
       "command": "uv run python scratch/t27-rsr/e2e008_drive.py",
-      "result": "not run to product behavior: connection refused because :8000 was not listening",
-      "status": "deferred_environment",
+      "result": "GREEN after stack recovery: happy_run promoted a source version through web.search/web.fetch; attack_run (injection corpus) failed budget_steps_exceeded as designed",
+      "status": "green",
       "prior_evidence": "T27 and T28 evidence bundles record green research, injection and Chromium browser legs"
     }
+  },
+  "full_story_browser_journey": {
+    "account": "qa.fullstory.20260922T223639z@example.test (retained artifact; user 01a0cb44-41ce-4378-ac64-3adc2b906297)",
+    "notebook": "01a0cb45-22ff-4a4c-a7e8-dc53f2ca310f 'Urban Heat Islands - Cool Roofs, Trees, and Local Temperature' (retained artifact)",
+    "method": "real Playwright browser through the app UI; in-page REST only where the prototype UI has no surface (recorded honestly)",
+    "features": "register/login/logout/login-back, notebook create, 9 heterogeneous real-data fixtures imported (7 active versions, 1 parse_failed by design), source activation, search (POST /notebooks/{id}/search, 10 ranked hits rrf-v1), grounded chat SSE with citations, citation->viewer authorization, research run lifecycle, jobs, settings/capabilities",
+    "db_proof": "8 source_versions, 2 conversations, 4 messages, 2 cited messages, 1 research run (32cd3e58-...)",
+    "evidence": "scratch/t-qa/full-story-20260922T223639Z/ (full-story-report.md, credentials.md, fixtures/, runtime/, screenshots/ incl. feedback-*.png)",
+    "status": "complete"
+  },
+  "feedback_batch": {
+    "F2_chat_state": "module-level route-external store seeds conversationId; enabled getConversation query restores server-authoritative messages after citation->viewer->back; verified live in browser (screenshot feedback-f2-conversation-restored.png)",
+    "F5_citations": "dedupe by source_version_id:node_id with stable composite React keys; verified live - 7 unique chips, zero duplicate-key console warnings",
+    "F4_research": "planner finishes honestly when source.import is not in the run tool set; executor fails fast with typed error_code action_denied_loop on 2 consecutive identical authz denials; verified live: limited-tools run succeeded in 5 steps (previously failed/budget_steps_exceeded at 64), full-tools run succeeded search->fetch->import->finish and the import promoted a new source version (488cf878-... in DB)",
+    "favicon_logo": "SVG brand mark (open evidence page + citation spark) as /favicon.svg (200 image/svg+xml) + header BrandMark; verified live and by screenshot analysis",
+    "commits": "f3f67f6 (research, Sisyphus Worker), bcfb5c4 (web, Sisyphus Worker)",
+    "web_gates": "vitest 20 passed (4 files), tsc --build clean, biome 1 pre-existing-level info",
+    "python_gates": "276 passed, ruff clean, mypy 209 files clean, import-linter 4 kept",
+    "status": "complete_and_verified_first_hand"
   },
   "conformance": {
     "command": "uv run python tools/spec/emit_conformance.py",
@@ -74,7 +93,7 @@
   },
   "test_group_resolution": {
     "PHASE-GATE-001": "no concrete test files exist; this report is the gate instrument and the absence is not represented as green",
-    "E2E-008": "current deterministic unit/integration legs are green; live API rerun deferred because :8000 was unavailable; prior T27/T28 live evidence retained",
+    "E2E-008": "deterministic unit/integration legs green AND live API rerun green after stack recovery (happy run promoted, injection attack run failed budget as designed); prior T27/T28 live evidence retained",
     "SANDBOX-SEC-001": "8 real-host tests green including the integrated handler path"
   },
   "deferrals": [
@@ -83,18 +102,16 @@
     "dedicated-account admin execution deployment and D11 GPU evidence",
     "STT deployment per D16",
     "bubblewrap 0.11/0.12 delta and curated per-image seccomp filter",
-    "PHASE-GATE-001 named suite because no concrete files exist",
-    "live E2E-008 rerun because API :8000 was unavailable",
-    "Atlas-owned full Playwright all-features user story after T30"
+    "PHASE-GATE-001 named suite because no concrete files exist"
   ],
   "must_not_checks": {
     "security_weakened": false,
     "published_outputs_deleted": false,
     "capability_advertised_without_end_to_end_boundary": false,
     "shared_model_embedding_web_restarted": false,
-    "ui_changed": false,
+    "ui_changed": "true - feedback batch only (F2/F5/favicon, commit bcfb5c4), verified live",
     "evidence_faked": false
   },
   "verdict": "partial_with_honest_deferrals",
-  "verdict_rationale": "The complete worker execution path and its security/recovery primitives are proven on the real host, all required static and deterministic suites are green, and publication ordering/authz cleanup are regression-tested. Phase 3 is not declared fully green because the live API E2E rerun could not start and code_data_analysis lacks a safe product API/deployment boundary, so the capability remains disabled."
+  "verdict_rationale": "The complete worker execution path and its security/recovery primitives are proven on the real host, all required static and deterministic suites are green, the live E2E-008 rerun is now green, the user-required full Playwright all-features story is complete with DB-backed proof, and the QA feedback batch (F2/F4/F5/favicon) is implemented and verified first-hand. Phase 3 is not declared fully green only because code_data_analysis lacks a safe product API/deployment boundary (capability remains disabled) and the external deployments (real SearXNG, admin/GPU, STT, bwrap seccomp curation) remain deferred."
 }
