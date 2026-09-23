@@ -18,6 +18,25 @@ import { mergeSources } from "../state/source-list";
 
 type Props = { readonly actorId: string; readonly notebookId: string };
 
+// Total map over both server enums; colors come from the matching
+// .status.<class> modifiers in styles.css (green/amber/red tokens).
+type StatusVisualClass = "ready" | "in-progress" | "failed";
+const STATUS_CLASS: Readonly<
+  Record<Source["pipeline_status"] | Source["availability"], StatusVisualClass>
+> = {
+  parsed: "ready",
+  active: "ready",
+  activating: "in-progress",
+  parsing: "in-progress",
+  parse_failed: "failed",
+  encrypted: "failed",
+  inactive: "failed",
+  tombstoned: "failed",
+  stale: "failed",
+  inaccessible_revoked: "failed",
+  deleted_tombstoned: "failed",
+};
+
 export function SourcePanel({ actorId, notebookId }: Props): ReactNode {
   const queryClient = useQueryClient();
   const { jobs, watch } = useJobs();
@@ -195,7 +214,13 @@ function SourceRow({
       <div className="row-main">
         <h3>{source.display_title}</h3>
         <p className="resource-meta">
-          {source.pipeline_status} | {source.availability}
+          <span className={`status ${STATUS_CLASS[source.pipeline_status]}`}>
+            {source.pipeline_status}
+          </span>
+          {" | "}
+          <span className={`status ${STATUS_CLASS[source.availability]}`}>
+            {source.availability}
+          </span>
         </p>
       </div>
       <div className="action-cluster">

@@ -22,7 +22,7 @@ export function rememberNotebookTab(notebookId: string, tab: NotebookTab): void 
   notebookTabs.set(notebookId, tab);
 }
 
-/** Return the last opened notebook view tab, defaulting to "sources". */
+/** Return the last opened notebook view tab, defaulting to "notes". */
 export function getNotebookTab(notebookId: string): NotebookTab {
-  return notebookTabs.get(notebookId) ?? "sources";
+  return notebookTabs.get(notebookId) ?? "notes";
 }

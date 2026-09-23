@@ -43,7 +43,8 @@ function BlockView({ block }: { readonly block: unknown }): ReactNode {
 
 function ContentView({ content }: { readonly content: Record<string, unknown> }): ReactNode {
   const blocks = content["blocks"];
-  if (!Array.isArray(blocks)) return <pre className="note-json">{JSON.stringify(content, null, 2)}</pre>;
+  if (!Array.isArray(blocks))
+    return <pre className="note-json">{JSON.stringify(content, null, 2)}</pre>;
   return (
     <div className="note-content">
       {blocks.map((block, index) => (
@@ -172,7 +173,10 @@ function NoteDetail({
   const noteKey = queryKeys.note(actorId, notebookId, noteId);
   const revisionsKey = queryKeys.noteRevisions(actorId, notebookId, noteId);
   const noteQuery = useQuery({ queryKey: noteKey, queryFn: () => getNote(noteId) });
-  const revisionsQuery = useQuery({ queryKey: revisionsKey, queryFn: () => listNoteRevisions(noteId) });
+  const revisionsQuery = useQuery({
+    queryKey: revisionsKey,
+    queryFn: () => listNoteRevisions(noteId),
+  });
   const note = noteQuery.data;
   const revisions = revisionsQuery.data?.revisions ?? [];
   const currentRevision =
@@ -184,7 +188,8 @@ function NoteDetail({
       : currentRevision;
   const viewingHistory =
     viewingId !== null && displayedRevision !== null && viewingId !== currentRevision?.revision_id;
-  const currentText = currentRevision === null ? "" : toParagraphText(currentRevision.content) ?? "";
+  const currentText =
+    currentRevision === null ? "" : (toParagraphText(currentRevision.content) ?? "");
   const refetchAll = (): void => {
     void queryClient.invalidateQueries({ queryKey: noteKey });
     void queryClient.invalidateQueries({ queryKey: revisionsKey });
@@ -237,11 +242,18 @@ function NoteDetail({
             </p>
           )}
           <div className="note-detail">
-            <p className="muted">
-              {viewingHistory && displayedRevision !== null
-                ? `Revision ${displayedRevision.revision_number} (read-only)`
-                : "Current revision"}
-            </p>
+            {viewingHistory && displayedRevision !== null ? (
+              <div className="revision-banner" role="status">
+                <p className="muted">
+                  Viewing revision {displayedRevision.revision_number} (read-only)
+                </p>
+                <button type="button" onClick={() => setViewingId(null)}>
+                  Return to current revision
+                </button>
+              </div>
+            ) : (
+              <p className="muted">Current revision</p>
+            )}
             {displayedRevision === null ? (
               <p className="muted">This note has no content yet.</p>
             ) : (
@@ -273,15 +285,21 @@ function NoteDetail({
                   <span>
                     Revision {revision.revision_number} | {revision.created_at}
                   </span>
-                  <button
-                    type="button"
-                    aria-pressed={revision.revision_id === viewingId}
-                    onClick={() =>
-                      setViewingId(revision.revision_id === viewingId ? null : revision.revision_id)
-                    }
-                  >
-                    {revision.revision_id === viewingId ? "Hide" : "View"}
-                  </button>
+                  {revision.revision_id === note.current_revision_id ? (
+                    <span className="muted">(current)</span>
+                  ) : (
+                    <button
+                      type="button"
+                      aria-pressed={revision.revision_id === viewingId}
+                      onClick={() =>
+                        setViewingId(
+                          revision.revision_id === viewingId ? null : revision.revision_id,
+                        )
+                      }
+                    >
+                      {revision.revision_id === viewingId ? "Hide" : "View"}
+                    </button>
+                  )}
                 </li>
               ))}
             </ol>

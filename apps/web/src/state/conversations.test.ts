@@ -20,10 +20,12 @@ describe("notebook conversation store", () => {
     expect(getActiveConversation("notebook-b")).toBe("conversation-2");
   });
 
-  it("tracks the last opened tab per notebook, defaulting to sources", () => {
-    expect(getNotebookTab("notebook-c")).toBe("sources");
+  it("tracks the last opened tab per notebook, defaulting to notes", () => {
+    expect(getNotebookTab("notebook-c")).toBe("notes");
     rememberNotebookTab("notebook-c", "chat");
     expect(getNotebookTab("notebook-c")).toBe("chat");
+    expect(getNotebookTab("notebook-d")).toBe("notes");
+    rememberNotebookTab("notebook-d", "sources");
     expect(getNotebookTab("notebook-d")).toBe("sources");
   });
 });

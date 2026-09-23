@@ -1,5 +1,5 @@
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
-import { cleanup, fireEvent, render, screen } from "@testing-library/react";
+import { cleanup, fireEvent, render, screen, waitFor } from "@testing-library/react";
 import type { ReactNode } from "react";
 import { afterEach, describe, expect, it, vi } from "vitest";
 import { JobProvider } from "../state/jobs";
@@ -47,6 +47,36 @@ const succeededJob = {
   started_at: "2026-01-01T00:00:01Z",
   finished_at: "2026-01-01T00:00:02Z",
 };
+
+const source = (
+  n: number,
+  pipeline_status: string,
+  availability: string,
+): Record<string, unknown> => ({
+  source_id: `cccccccc-0000-4000-8000-${n.toString(16).padStart(12, "0")}`,
+  source_version_id: `dddddddd-0000-4000-8000-${n.toString(16).padStart(12, "0")}`,
+  notebook_id: NOTEBOOK_ID,
+  source_type: "plain_text",
+  display_title: `Source ${n}`,
+  availability,
+  content_sha256: "abc123",
+  content_size_bytes: 42,
+  status: "quarantined_identified",
+  pipeline_status,
+  etag: `etag-${n}`,
+});
+
+// Every enum value of pipeline_status and availability appears once.
+const ALL_STATE_SOURCES: ReadonlyArray<readonly [number, string, string]> = [
+  [1, "activating", "active"],
+  [2, "parsing", "active"],
+  [3, "parsed", "active"],
+  [4, "active", "active"],
+  [5, "parse_failed", "stale"],
+  [6, "encrypted", "inaccessible_revoked"],
+  [7, "inactive", "deleted_tombstoned"],
+  [8, "tombstoned", "deleted_tombstoned"],
+];
 
 class FakeEventSource {
   static instances: FakeEventSource[] = [];
@@ -116,7 +146,48 @@ describe("SourcePanel live status", () => {
     fireEvent.change(screen.getByLabelText(/title/i), { target: { value: "My source" } });
     fireEvent.change(screen.getByLabelText(/text/i), { target: { value: "Some content" } });
     fireEvent.click(screen.getByRole("button", { name: /paste text/i }));
-    expect(await screen.findByText("activating | active")).toBeDefined();
-    expect(await screen.findByText("active | active")).toBeDefined();
+    expect((await screen.findByText("activating")).className).toBe("status in-progress");
+    expect(screen.getByText("active").className).toBe("status ready");
+    await waitFor(() => expect(screen.getAllByText("active")).toHaveLength(2));
+    for (const badge of screen.getAllByText("active")) {
+      expect(badge.className).toBe("status ready");
+    }
+    expect(screen.queryByText("activating")).toBeNull();
+  });
+
+  it("colors every pipeline status and availability value with its state class", async () => {
+    vi.stubGlobal("EventSource", FakeEventSource);
+    vi.stubGlobal(
+      "fetch",
+      vi.fn(async (input: RequestInfo | URL): Promise<Response> => {
+        const url = requestUrl(input);
+        if (url.includes("/sources") && url.includes("notebook_id"))
+          return jsonResponse(
+            200,
+            ALL_STATE_SOURCES.map(([n, pipeline, availability]) =>
+              source(n, pipeline, availability),
+            ),
+          );
+        return jsonResponse(404, { detail: "not found" });
+      }),
+    );
+    renderWithProviders(<SourcePanel actorId={ACTOR_ID} notebookId={NOTEBOOK_ID} />);
+    const expectBadges = (label: string, visualClass: string): void => {
+      const badges = screen.getAllByText(label);
+      expect(badges.length).toBeGreaterThan(0);
+      for (const badge of badges) expect(badge.className).toBe(`status ${visualClass}`);
+    };
+    await screen.findByText("parsed");
+    expectBadges("activating", "in-progress");
+    expectBadges("parsing", "in-progress");
+    expectBadges("parsed", "ready");
+    expectBadges("active", "ready");
+    expectBadges("parse_failed", "failed");
+    expectBadges("stale", "failed");
+    expectBadges("encrypted", "failed");
+    expectBadges("inaccessible_revoked", "failed");
+    expectBadges("inactive", "failed");
+    expectBadges("tombstoned", "failed");
+    expectBadges("deleted_tombstoned", "failed");
   });
 });
