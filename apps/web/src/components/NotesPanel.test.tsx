@@ -284,4 +284,59 @@ describe("NotesPanel", () => {
       expect(screen.getByDisplayValue("Third body")).toBeDefined();
     });
   });
+
+  it("renders typed blocks and preserves them while editing the paragraph", async () => {
+    const note = notes[0];
+    if (note === undefined) throw new Error("expected note");
+    const revision = {
+      ...revisionsFor(note)[0],
+      content: {
+        blocks: [
+          { type: "heading", level: 2, text: "Heading" },
+          { type: "paragraph", text: "Editable" },
+          { type: "ordered_list", items: ["One", "Two"] },
+          { type: "unordered_list", items: ["Alpha", "Beta"] },
+          { type: "unknown", payload: "fallback" },
+        ],
+      },
+    };
+    let submitted: unknown;
+    vi.stubGlobal(
+      "fetch",
+      vi.fn(async (input: RequestInfo | URL, init?: RequestInit): Promise<Response> => {
+        const url = requestUrl(input);
+        const method =
+          init?.method ??
+          (typeof input === "string" || input instanceof URL ? "GET" : input.method);
+        if (method === "POST" && url.includes(`/notes/${note.note_id}/revisions`)) {
+          if (!(input instanceof Request)) throw new Error("expected ky request");
+          submitted = JSON.parse(await input.clone().text());
+          return jsonResponse(201, { note, revision });
+        }
+        if (url.includes(`/notebooks/${NOTEBOOK_ID}/notes`)) return jsonResponse(200, { notes: [note] });
+        if (url.includes(`/notes/${note.note_id}/revisions`)) return jsonResponse(200, { revisions: [revision] });
+        if (url.includes(`/notes/${note.note_id}`)) return jsonResponse(200, note);
+        return jsonResponse(404, { detail: "not found" });
+      }),
+    );
+    renderWithClient(<NotesPanel actorId={ACTOR_ID} notebookId={NOTEBOOK_ID} />);
+    expect(await screen.findByRole("heading", { name: "Heading" })).toBeDefined();
+    expect(screen.getAllByRole("list")).toHaveLength(3);
+    expect(screen.getByText(/fallback/)).toBeDefined();
+    const textarea = screen.getByDisplayValue("Editable");
+    fireEvent.change(textarea, { target: { value: "Edited" } });
+    fireEvent.click(screen.getByRole("button", { name: /save new revision/i }));
+    await vi.waitFor(() => expect(submitted).not.toBeUndefined());
+    expect(submitted).toEqual({
+      content: {
+        blocks: [
+          { type: "heading", level: 2, text: "Heading" },
+          { type: "paragraph", text: "Edited" },
+          { type: "ordered_list", items: ["One", "Two"] },
+          { type: "unordered_list", items: ["Alpha", "Beta"] },
+          { type: "unknown", payload: "fallback" },
+        ],
+      },
+    });
+  });
 });
