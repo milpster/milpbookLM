@@ -148,18 +148,17 @@ export function ChatPanel({ actorId, notebookId, navigate }: Props): ReactNode {
   const state = conversation.data;
   return (
     <div className="chat-layout">
-      <aside className="chat-settings" aria-labelledby="chat-settings-title">
-        <h2 id="chat-settings-title">Response settings</h2>
-        {state === undefined ? null : (
-          <ConfigForm
-            state={state}
-            pending={updateConfig.isPending}
-            onChange={(config) => updateConfig.mutate({ id: state.id, config })}
-          />
-        )}
-      </aside>
       <section className="conversation" aria-labelledby="conversation-title">
-        <h2 id="conversation-title">Conversation</h2>
+        <div className="chat-toolbar">
+          <h2 id="conversation-title">Conversation</h2>
+          {state === undefined ? null : (
+            <ConfigForm
+              state={state}
+              pending={updateConfig.isPending}
+              onChange={(config) => updateConfig.mutate({ id: state.id, config })}
+            />
+          )}
+        </div>
         <ol className="message-log">
           {state?.messages.map((message) => {
             const citations = dedupeCitations(message.citations);
@@ -248,7 +247,7 @@ function ConfigForm({
     );
   };
   return (
-    <form className="form-stack compact" onSubmit={submit}>
+    <form className="chat-config" onSubmit={submit}>
       <label>
         Style
         <select name="style" defaultValue={state.config.style}>

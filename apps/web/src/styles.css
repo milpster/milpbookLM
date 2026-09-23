@@ -136,9 +136,7 @@ code {
   transform: translateY(0);
 }
 .app-shell {
-  display: grid;
-  grid-template-rows: auto minmax(0, 1fr);
-  block-size: 100dvh;
+  min-block-size: 100dvh;
 }
 .topbar {
   display: flex;
@@ -173,8 +171,8 @@ code {
 }
 .shell-body {
   display: grid;
-  grid-template-columns: 12rem minmax(0, 1fr);
-  min-block-size: 0;
+  grid-template-columns: 11rem minmax(0, 1fr);
+  align-items: start;
 }
 .sidenav {
   display: flex;
@@ -206,9 +204,8 @@ code {
   border-color: transparent;
 }
 .main-content {
-  min-block-size: 0;
-  overflow: auto;
-  padding: clamp(var(--space-4), 4vw, var(--space-10));
+  min-inline-size: 0;
+  padding: clamp(var(--space-4), 3vw, var(--space-8));
 }
 .page-stack,
 .panel-stack {
@@ -329,8 +326,18 @@ code {
   display: grid;
   gap: var(--space-3);
 }
-.note-content p {
+.note-content p,
+.note-content h1,
+.note-content h2,
+.note-content h3,
+.note-list {
   margin: 0;
+}
+.note-list {
+  display: grid;
+  gap: var(--space-1);
+  padding-inline-start: var(--space-5);
+  color: var(--text-secondary);
 }
 .note-json {
   margin: 0;
@@ -467,18 +474,42 @@ textarea {
   margin-inline: auto;
 }
 .chat-layout {
-  display: grid;
-  grid-template-columns: minmax(14rem, 18rem) minmax(0, 1fr);
-  gap: var(--space-6);
   min-block-size: 0;
 }
-.chat-settings,
 .conversation {
   min-inline-size: 0;
   padding: var(--space-5);
   border: 1px solid var(--border-default);
   border-radius: 0.5rem;
   background: var(--surface-panel);
+}
+.chat-toolbar {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: end;
+  justify-content: space-between;
+  gap: var(--space-3);
+  margin-block-end: var(--space-4);
+  padding-block-end: var(--space-3);
+  border-block-end: 1px solid var(--border-default);
+}
+.chat-toolbar h2 {
+  margin: 0;
+}
+.chat-config {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: end;
+  gap: var(--space-2);
+}
+.chat-config label {
+  min-inline-size: 7rem;
+  font-size: 0.75rem;
+}
+.chat-config select,
+.chat-config button {
+  min-block-size: 2.25rem;
+  padding: var(--space-1) var(--space-2);
 }
 .message-log {
   display: flex;
