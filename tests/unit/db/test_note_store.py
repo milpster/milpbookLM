@@ -14,6 +14,8 @@ from milpbooklm_adapters.db.connections import make_engine
 from milpbooklm_adapters.grounding import PgGroundingStore
 from milpbooklm_adapters.grounding_completion import FakeGroundingCompletionProvider
 from milpbooklm_adapters.note_store import PgNoteStore
+from milpbooklm_adapters.security.notebook_reader import PgNotebookReader
+from milpbooklm_adapters.security.notebook_store import PgNotebookStore
 from milpbooklm_application.grounding import (
     GenerateGroundedAnswer,
     GroundingError,
@@ -105,6 +107,34 @@ class RecordingIngestion:
         self.payload = bytes(collected)
         self.origin_kind = command.origin_kind
         return self.source, True, uuid.uuid4()
+
+
+def test_create_notebook_assigns_creator_owner_membership_and_hides_it_from_others(pg: Db) -> None:
+    # Given
+    creator = pg.user()
+    unrelated_actor = pg.user()
+    dsn = _scratch_dsn()
+    assert dsn is not None
+    engine = make_engine(dsn.replace("postgresql://", "postgresql+psycopg://"))
+    store = PgNotebookStore(engine)
+    reader = PgNotebookReader(engine)
+
+    # When
+    created = store.create(title="Creator notebook", actor_id=creator)
+    pg.track("DELETE FROM notebooks WHERE id = %s", (created.notebook_id,))
+
+    # Then
+    creator_view = reader.notebook_with_membership(creator, created.notebook_id)
+    assert creator_view is not None
+    assert creator_view.membership is not None
+    assert creator_view.membership.value == "owner"
+    assert created.notebook_id in {
+        view.notebook_id for view in reader.visible_notebooks(creator)
+    }
+    assert reader.notebook_with_membership(unrelated_actor, created.notebook_id) is None
+    assert created.notebook_id not in {
+        view.notebook_id for view in reader.visible_notebooks(unrelated_actor)
+    }
 
 
 def test_edit_creates_new_revision_and_preserves_prior_content(pg: Db) -> None:
