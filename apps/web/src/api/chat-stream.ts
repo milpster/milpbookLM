@@ -14,6 +14,7 @@ const tokenSchema = z.object({ token: z.string() });
 export async function streamChat(
   conversationId: string,
   content: string,
+  selectedNoteRevisionIds: readonly string[],
   signal: AbortSignal,
   handlers: StreamHandlers,
 ): Promise<void> {
@@ -21,7 +22,7 @@ export async function streamChat(
     method: "POST",
     credentials: "include",
     headers: { "content-type": "application/json", ...authHeaders() },
-    body: JSON.stringify({ content, selected_note_revision_ids: [] }),
+    body: JSON.stringify({ content, selected_note_revision_ids: selectedNoteRevisionIds }),
     signal,
   });
   if (!response.ok || response.body === null) {

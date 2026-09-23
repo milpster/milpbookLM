@@ -7,6 +7,8 @@ import {
   createConversation,
   getCapabilities,
   getConversation,
+  listNoteRevisions,
+  listNotes,
   isApiError,
   updateConversationConfig,
 } from "../api/client";
@@ -43,6 +45,19 @@ export function ChatPanel({ actorId, notebookId, navigate }: Props): ReactNode {
     queryFn: () => getConversation(conversationId ?? ""),
     enabled: conversationId !== null,
   });
+  const noteRevisions = useQuery({
+    queryKey: queryKeys.chatNoteRevisions(actorId, notebookId),
+    queryFn: async () => {
+      const notes = await listNotes(notebookId);
+      const revisions = await Promise.all(notes.notes.map((note) => listNoteRevisions(note.note_id)));
+      return revisions.flatMap((result) => result.revisions);
+    },
+  });
+  const selectionKey = `milpbookLM:chat-notes:${actorId}:${notebookId}`;
+  const [selectedNoteRevisionIds, setSelectedNoteRevisionIds] = useState<readonly string[]>(() => {
+    const saved = sessionStorage.getItem(selectionKey);
+    return saved === null ? [] : JSON.parse(saved) as string[];
+  });
   const create = useMutation({
     mutationFn: () => createConversation(notebookId, defaultConfig),
     onMutate: () => setCreateError(""),
@@ -76,7 +91,7 @@ export function ChatPanel({ actorId, notebookId, navigate }: Props): ReactNode {
     setStatus("Generating answer");
     controller.current = new AbortController();
     try {
-      await streamChat(conversationId, content, controller.current.signal, {
+      await streamChat(conversationId, content, selectedNoteRevisionIds, controller.current.signal, {
         onToken: (token) => setStreamed((current) => current + token),
         onTerminal: (terminal) => {
           if (terminal.state !== null)
@@ -195,8 +210,31 @@ export function ChatPanel({ actorId, notebookId, navigate }: Props): ReactNode {
         <p className="muted" role="status" aria-live="polite">
           {status}
         </p>
+        <fieldset className="note-selection">
+          <legend>Selected notes for grounding</legend>
+          <p className="muted">Only checked immutable revisions are sent with this chat request.</p>
+          {noteRevisions.data?.map((revision) => {
+            const selected = selectedNoteRevisionIds.includes(revision.revision_id);
+            return (
+              <label key={revision.revision_id}>
+                <input
+                  type="checkbox"
+                  checked={selected}
+                  onChange={() => {
+                    const next = selected
+                      ? selectedNoteRevisionIds.filter((id) => id !== revision.revision_id)
+                      : [...selectedNoteRevisionIds, revision.revision_id];
+                    sessionStorage.setItem(selectionKey, JSON.stringify(next));
+                    setSelectedNoteRevisionIds(next);
+                  }}
+                />
+                Note revision {revision.revision_number}
+              </label>
+            );
+          })}
+        </fieldset>
         <form className="composer" onSubmit={(event) => void send(event)}>
-          <label htmlFor="chat-message">Ask about selected sources</label>
+          <label htmlFor="chat-message">Ask about selected notes and sources</label>
           <textarea
             id="chat-message"
             name="message"

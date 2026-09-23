@@ -59,6 +59,40 @@ function stubApiFetch() {
       if (url.includes("/capabilities")) return jsonResponse(200, capabilitiesBody);
       if (url.includes(`/conversations/${CONVERSATION_ID}`))
         return jsonResponse(200, conversationBody);
+      if (url.includes(`/notebooks/${NOTEBOOK_ID}/notes`))
+        return jsonResponse(200, {
+          notes: [
+            {
+              note_id: "aaaaaaaa-0000-4000-8000-000000000001",
+              notebook_id: NOTEBOOK_ID,
+              kind: "user",
+              editable: true,
+              title: "Selected note",
+              current_revision_id: "cccccccc-0000-4000-8000-000000000001",
+              revision: 1,
+              etag: "1",
+              created_by_user_id: ACTOR_ID,
+              created_at: "2026-01-01T00:00:00Z",
+              updated_at: "2026-01-01T00:00:00Z",
+            },
+          ],
+        });
+      if (url.includes("/notes/aaaaaaaa-0000-4000-8000-000000000001/revisions"))
+        return jsonResponse(200, {
+          revisions: [
+            {
+              revision_id: "cccccccc-0000-4000-8000-000000000001",
+              note_id: "aaaaaaaa-0000-4000-8000-000000000001",
+              revision_number: 1,
+              content: { blocks: [{ type: "paragraph", text: "Pinned" }] },
+              content_sha256: "hash",
+              author_user_id: ACTOR_ID,
+              provenance_refs: [],
+              content_dependencies: [],
+              created_at: "2026-01-01T00:00:00Z",
+            },
+          ],
+        });
       return jsonResponse(404, { detail: "not found" });
     }),
   );
@@ -83,6 +117,23 @@ describe("ChatPanel composer", () => {
     await vi.waitFor(() => expect(vi.mocked(streamChat)).toHaveBeenCalledTimes(1));
     expect(vi.mocked(streamChat).mock.calls[0]?.[0]).toBe(CONVERSATION_ID);
     expect(vi.mocked(streamChat).mock.calls[0]?.[1]).toBe("What is a notebook?");
+  });
+
+  it("submits only explicitly selected immutable note revisions", async () => {
+    rememberActiveConversation(NOTEBOOK_ID, CONVERSATION_ID);
+    stubApiFetch();
+    renderWithClient(
+      <ChatPanel actorId={ACTOR_ID} notebookId={NOTEBOOK_ID} navigate={() => undefined} />,
+    );
+    const checkbox = await screen.findByRole("checkbox");
+    fireEvent.click(checkbox);
+    const textarea = screen.getByRole("textbox");
+    fireEvent.change(textarea, { target: { value: "Use my note" } });
+    fireEvent.keyDown(textarea, { key: "Enter" });
+    await vi.waitFor(() => expect(vi.mocked(streamChat)).toHaveBeenCalledTimes(1));
+    expect(vi.mocked(streamChat).mock.calls[0]?.[2]).toEqual([
+      "cccccccc-0000-4000-8000-000000000001",
+    ]);
   });
 
   it("keeps the draft and does not submit on Shift+Enter", async () => {

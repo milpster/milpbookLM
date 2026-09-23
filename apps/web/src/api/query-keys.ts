@@ -16,5 +16,7 @@ export const queryKeys = {
     ["actor", actorId, "notebook", notebookId, "source", sourceId, versionId] as const,
   privateConversation: (actorId: string, conversationId: string) =>
     ["actor", actorId, "private", "conversation", conversationId] as const,
+  chatNoteRevisions: (actorId: string, notebookId: string) =>
+    ["actor", actorId, "notebook", notebookId, "chat-note-revisions"] as const,
   job: (actorId: string, jobId: string) => ["actor", actorId, "private", "job", jobId] as const,
 } as const;
