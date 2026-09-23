@@ -77,12 +77,12 @@ export function SourcePanel({ actorId, notebookId }: Props): ReactNode {
   const paste = useMutation({
     mutationFn: pasteSource,
     onSuccess: addSource,
-    onError: () => setError("Paste import failed."),
+    onError: () => setError("Adding the pasted text failed. Please try again."),
   });
   const upload = useMutation({
     mutationFn: ({ file }: { readonly file: File }) => uploadSource(notebookId, file),
     onSuccess: addSource,
-    onError: () => setError("Upload failed."),
+    onError: () => setError("Upload failed. Please try again."),
   });
   const lifecycle = useMutation({
     mutationFn: ({
@@ -164,18 +164,16 @@ export function SourcePanel({ actorId, notebookId }: Props): ReactNode {
       <section className="panel-stack" aria-labelledby="source-list-title">
         <div>
           <h2 id="source-list-title">Sources</h2>
-          <p className="muted">
-            Persisted source versions remain available after reload and login.
-          </p>
+          <p className="muted">Saved sources stay available after you reload or sign in again.</p>
         </div>
         {persistedSources.isPending ? (
           <p className="muted" role="status">
-            Loading persisted sources...
+            Loading sources...
           </p>
         ) : null}
         {persistedSources.isError ? (
           <p className="notice error" role="alert">
-            Persisted sources could not be loaded. Try again without leaving this notebook.
+            Sources could not be loaded. Please try again.
           </p>
         ) : null}
         {!persistedSources.isPending && !persistedSources.isError && sources.length === 0 ? (

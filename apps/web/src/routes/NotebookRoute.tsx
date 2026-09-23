@@ -25,7 +25,7 @@ export function NotebookRoute({ navigate, params }: RouteProps): ReactNode {
     enabled: actor !== null && notebookId !== undefined,
   });
   if (actor === null || notebookId === undefined)
-    return <p className="notice error">Notebook route is invalid.</p>;
+    return <p className="notice error">This notebook link is not valid.</p>;
   return (
     <section className="notebook-view" aria-labelledby="notebook-title">
       <header className="page-heading">
@@ -47,7 +47,7 @@ export function NotebookRoute({ navigate, params }: RouteProps): ReactNode {
       </header>
       {notebook.isError ? (
         <p className="notice error" role="alert">
-          Notebook unavailable.
+          Notebook could not be loaded. Please try again.
         </p>
       ) : null}
       {tab === "sources" ? (

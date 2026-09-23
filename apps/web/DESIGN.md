@@ -1,4 +1,4 @@
-# MilpBook LM Design System
+# milpbookLM Design System
 
 ## 0. Research Log
 

@@ -70,7 +70,7 @@ export function App(): ReactNode {
       <Shell path={path} navigate={navigate}>
         {capabilities.isError ? (
           <p className="notice error">
-            Capabilities could not be loaded. Feature availability is unknown.
+            Feature availability could not be loaded. Please refresh the page.
           </p>
         ) : null}
         <Suspense fallback={<RouteLoading />}>

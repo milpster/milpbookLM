@@ -35,7 +35,9 @@ export function Shell({ path, navigate, children }: ShellProps): ReactNode {
           }}
         >
           <BrandMark className="brand-mark" />
-          MilpBook <span>LM</span>
+          <span>
+            milpbook<span className="wordmark-lm">LM</span>
+          </span>
         </a>
         {actor === null ? null : <p className="actor-label">{actor.display_name}</p>}
       </header>
@@ -66,8 +68,8 @@ export function Shell({ path, navigate, children }: ShellProps): ReactNode {
       </div>
       <div className="sr-only" aria-live="polite" aria-atomic="true">
         {activeJobs.length === 0
-          ? "No active jobs"
-          : `${activeJobs.length} jobs active. ${activeJobs.map((job) => `${job.kind}: ${job.state}`).join(". ")}`}
+          ? "No background tasks"
+          : `${activeJobs.length} background tasks: ${activeJobs.map((job) => `${job.kind}: ${job.state}`).join(". ")}`}
       </div>
     </div>
   );

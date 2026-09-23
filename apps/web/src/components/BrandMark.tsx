@@ -1,6 +1,6 @@
 import type { ReactNode } from "react";
 
-/** MilpBook LM mark: an open evidence page with a citation spark. */
+/** milpbookLM mark: an open evidence page with a citation spark. */
 export function BrandMark({ className }: { readonly className?: string }): ReactNode {
   return (
     <svg className={className} viewBox="0 0 32 32" aria-hidden="true" focusable="false">

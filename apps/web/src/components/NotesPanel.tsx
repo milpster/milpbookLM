@@ -74,7 +74,7 @@ export function NotesPanel({ actorId, notebookId }: Props): ReactNode {
       setSelectedId(snapshot.note.note_id);
       void queryClient.invalidateQueries({ queryKey: notesKey });
     },
-    onError: () => setCreateError("Note creation failed. Try again."),
+    onError: () => setCreateError("Creating the note failed. Please try again."),
   });
   const submitCreate = (event: FormEvent<HTMLFormElement>): void => {
     event.preventDefault();
@@ -91,7 +91,7 @@ export function NotesPanel({ actorId, notebookId }: Props): ReactNode {
         <div>
           <h2 id="notes-list-title">Notes</h2>
           <p className="muted">
-            Notes are stored as immutable revisions; edits append a new revision.
+            Every edit is saved as a new revision, so earlier versions stay intact.
           </p>
         </div>
         <form className="form-stack compact" onSubmit={submitCreate}>
@@ -104,7 +104,7 @@ export function NotesPanel({ actorId, notebookId }: Props): ReactNode {
             <textarea name="text" required rows={4} />
           </label>
           <button className="primary" disabled={create.isPending} type="submit">
-            {create.isPending ? "Creating..." : "New note"}
+            {create.isPending ? "Creating..." : "Create note"}
           </button>
         </form>
         {createError === "" ? null : (
@@ -119,7 +119,7 @@ export function NotesPanel({ actorId, notebookId }: Props): ReactNode {
         ) : null}
         {notesQuery.isError ? (
           <p className="notice error" role="alert">
-            Notes could not be loaded. Try again without leaving this notebook.
+            Notes could not be loaded. Please try again.
           </p>
         ) : null}
         {!notesQuery.isPending && !notesQuery.isError && noteList.length === 0 ? (
@@ -190,6 +190,13 @@ function NoteDetail({
     viewingId !== null && displayedRevision !== null && viewingId !== currentRevision?.revision_id;
   const currentText =
     currentRevision === null ? "" : (toParagraphText(currentRevision.content) ?? "");
+  // The draft resets whenever the server's current revision text changes (initial
+  // load, refetch after save, conflict reload) — the baseline detects that shift.
+  const [draft, setDraft] = useState(() => ({ baseline: currentText, text: currentText }));
+  if (draft.baseline !== currentText) {
+    setDraft({ baseline: currentText, text: currentText });
+  }
+  const hasDraftChanges = draft.text.trim() !== currentText.trim();
   const refetchAll = (): void => {
     void queryClient.invalidateQueries({ queryKey: noteKey });
     void queryClient.invalidateQueries({ queryKey: revisionsKey });
@@ -209,12 +216,11 @@ function NoteDetail({
     edit.isError && isApiError(edit.error) && edit.error.response.status === 409
       ? "This note was changed since you started editing. The latest revision was reloaded — try your edit again."
       : edit.isError
-        ? "Saving the new revision failed. Try again."
+        ? "Saving the new revision failed. Please try again."
         : "";
   const submitEdit = (event: FormEvent<HTMLFormElement>): void => {
     event.preventDefault();
-    const data = new FormData(event.currentTarget);
-    edit.mutate(String(data.get("text") ?? ""));
+    edit.mutate(draft.text);
   };
   if (noteQuery.isPending && note === undefined)
     return (
@@ -226,7 +232,7 @@ function NoteDetail({
     <div className="form-stack compact">
       {note === undefined ? (
         <p className="notice error" role="alert">
-          Note could not be loaded. Try again.
+          Note could not be loaded. Please try again.
         </p>
       ) : (
         <>
@@ -265,16 +271,23 @@ function NoteDetail({
               <label>
                 Text
                 <textarea
-                  key={note.etag}
                   name="text"
-                  defaultValue={currentText}
+                  value={draft.text}
+                  onChange={(event) =>
+                    setDraft({ baseline: draft.baseline, text: event.target.value })
+                  }
                   rows={6}
                   required
                 />
               </label>
-              <button className="primary" disabled={edit.isPending} type="submit">
+              <button
+                className="primary"
+                disabled={edit.isPending || !hasDraftChanges}
+                type="submit"
+              >
                 {edit.isPending ? "Saving..." : "Save new revision"}
               </button>
+              {hasDraftChanges ? null : <p className="muted">No changes yet.</p>}
             </form>
           ) : null}
           <div className="form-stack compact">

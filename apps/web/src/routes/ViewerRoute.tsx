@@ -15,7 +15,7 @@ export function ViewerRoute({ navigate, params }: RouteProps): ReactNode {
     <section className="page-stack viewer-page" aria-labelledby="viewer-title">
       <header className="page-heading">
         <div>
-          <p className="kicker">Authorized citation</p>
+          <p className="kicker">Citation</p>
           <h1 id="viewer-title">Source viewer</h1>
         </div>
         <button
@@ -48,10 +48,7 @@ function Viewer({
     return (
       <div className="empty-state">
         <h2>Source unavailable</h2>
-        <p>
-          This pinned source version was purged. The citation remains explicit instead of becoming a
-          dead link.
-        </p>
+        <p>This source version was removed and is no longer available.</p>
       </div>
     );
   const summary = `Version ${locator.source_version_id}, node ${locator.node_id}${locator.page === undefined ? "" : `, page ${locator.page}`}${locator.time_seconds === undefined ? "" : `, ${locator.time_seconds} seconds`}`;
@@ -59,7 +56,7 @@ function Viewer({
     return (
       <div className="viewer-frame">
         <p className="muted">{summary}</p>
-        <iframe title="Untrusted source HTML" sandbox="" srcDoc={locator.html} />
+        <iframe title="Source HTML" sandbox="" srcDoc={locator.html} />
       </div>
     );
   if (locator.media_type === "application/pdf" && locator.content_url !== undefined)
@@ -88,12 +85,9 @@ function Viewer({
     );
   return (
     <div className="empty-state">
-      <h2>Citation authorized</h2>
+      <h2>Source not viewable here</h2>
       <p>{summary}</p>
-      <p>
-        The current prototype locator confirms authorization but does not expose source bytes. No
-        client-derived path is used.
-      </p>
+      <p>This citation was verified, but the source content cannot be displayed in the app.</p>
     </div>
   );
 }

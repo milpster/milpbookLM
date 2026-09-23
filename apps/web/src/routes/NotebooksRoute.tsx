@@ -28,8 +28,9 @@ export function NotebooksRoute({ navigate }: RouteProps): ReactNode {
         );
       }
       setTitle("");
+      navigate(`/notebooks/${notebook.notebook_id}`);
     },
-    onError: () => setCreateError("Notebook creation failed. Try again."),
+    onError: () => setCreateError("Notebook creation failed. Please try again."),
   });
   if (actor === null) return null;
   const management = capabilities.data?.capabilities.find(
@@ -74,7 +75,7 @@ export function NotebooksRoute({ navigate }: RouteProps): ReactNode {
       <p id="create-status" className="muted">
         {createReady
           ? "New notebooks are private and owned by you."
-          : `Creation is not exposed by this prototype API${management?.reason ? `: ${management.reason}` : "."}`}
+          : `Creating notebooks is not available on this installation${management?.reason ? `: ${management.reason}` : "."}`}
       </p>
       {createError !== "" ? (
         <p className="notice error" role="alert">
@@ -84,13 +85,13 @@ export function NotebooksRoute({ navigate }: RouteProps): ReactNode {
       {notebooks.isPending ? <p role="status">Loading notebooks...</p> : null}
       {notebooks.isError ? (
         <p className="notice error" role="alert">
-          Notebooks could not be loaded.
+          Notebooks could not be loaded. Please try again.
         </p>
       ) : null}
       {notebooks.data?.length === 0 ? (
         <div className="empty-state">
           <h2>No notebooks yet</h2>
-          <p>Create a notebook above to begin, or run the deterministic development seed.</p>
+          <p>Create your first notebook above to get started.</p>
         </div>
       ) : null}
       <div className="resource-grid">

@@ -54,8 +54,8 @@ export function ChatPanel({ actorId, notebookId, navigate }: Props): ReactNode {
     onError: (error: unknown) =>
       setCreateError(
         isApiError(error) && error.response.status === 403
-          ? "Security check rejected the request. Reload once; if it persists, open MilBook LM at its configured web address."
-          : "Could not start the private conversation. Your session is still available; try again.",
+          ? "The request was blocked by a security check. Reload the page and try again. If it keeps happening, open milpbookLM at its configured web address."
+          : "Could not start the conversation. Your session is still active; please try again.",
       ),
   });
   const updateConfig = useMutation({
@@ -98,7 +98,7 @@ export function ChatPanel({ actorId, notebookId, navigate }: Props): ReactNode {
       });
     } catch (caught) {
       if (!(caught instanceof DOMException && caught.name === "AbortError"))
-        setStatus("Stream disconnected. Restored authoritative conversation state.");
+        setStatus("The connection was lost. The conversation was reloaded.");
       await queryClient.fetchQuery({
         queryKey: queryKeys.privateConversation(actorId, conversationId),
         queryFn: () => getConversation(conversationId),
@@ -121,8 +121,7 @@ export function ChatPanel({ actorId, notebookId, navigate }: Props): ReactNode {
       <div className="empty-state">
         <h2>Chat unavailable</h2>
         <p>
-          {chatCapability?.reason ??
-            "The capabilities endpoint does not advertise grounded chat as available."}
+          {chatCapability?.reason ?? "Chat is not available on this installation."}
         </p>
       </div>
     );
@@ -130,10 +129,7 @@ export function ChatPanel({ actorId, notebookId, navigate }: Props): ReactNode {
     return (
       <div className="empty-state">
         <h2>Start a private conversation</h2>
-        <p>
-          Responses remain under actor-private cache keys and are never stored as notebook-shared
-          data.
-        </p>
+        <p>Your conversation stays private to you and is never shared with the notebook.</p>
         <button
           className="primary"
           type="button"

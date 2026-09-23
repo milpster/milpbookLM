@@ -39,7 +39,7 @@ export function SettingsRoute(_props: RouteProps): ReactNode {
         <section className="panel-stack">
           <h2>Job activity</h2>
           {jobs.length === 0 ? (
-            <p className="muted">No jobs watched in this session.</p>
+            <p className="muted">No background tasks in this session.</p>
           ) : (
             <ul className="plain-list">
               {jobs.map((job) => (
@@ -54,9 +54,7 @@ export function SettingsRoute(_props: RouteProps): ReactNode {
       </div>
       <section className="panel-stack" aria-labelledby="capabilities-title">
         <h2 id="capabilities-title">Capabilities</h2>
-        <p className="muted">
-          Availability comes only from <code>/api/v1/capabilities</code>.
-        </p>
+        <p className="muted">Each feature reports whether it is available on this installation.</p>
         {capabilities.isPending ? (
           <p role="status">Loading capabilities...</p>
         ) : (
