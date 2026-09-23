@@ -19,25 +19,72 @@ function paragraphContent(text: string): Record<string, unknown> {
 
 function toParagraphText(content: Record<string, unknown>): string | null {
   const blocks = content["blocks"];
-  if (!Array.isArray(blocks) || blocks.length !== 1) return null;
-  const block = blocks[0];
-  if (typeof block !== "object" || block === null) return null;
-  const record = block as { readonly type?: unknown; readonly text?: unknown };
-  if (record.type !== "paragraph" || typeof record.text !== "string") return null;
-  return record.text;
+  if (!Array.isArray(blocks)) return null;
+  for (const block of blocks) {
+    if (
+      typeof block === "object" &&
+      block !== null &&
+      (block as { readonly type?: unknown }).type === "paragraph" &&
+      typeof (block as { readonly text?: unknown }).text === "string"
+    )
+      return (block as { readonly text: string }).text;
+  }
+  return null;
+}
+
+function replaceParagraphText(content: Record<string, unknown>, text: string): Record<string, unknown> {
+  const blocks = content["blocks"];
+  if (!Array.isArray(blocks)) return paragraphContent(text);
+  let replaced = false;
+  return {
+    ...content,
+    blocks: blocks.map((block) => {
+      if (
+        !replaced &&
+        typeof block === "object" &&
+        block !== null &&
+        (block as { readonly type?: unknown }).type === "paragraph" &&
+        typeof (block as { readonly text?: unknown }).text === "string"
+      ) {
+        replaced = true;
+        return { ...(block as Record<string, unknown>), text };
+      }
+      return block;
+    }),
+  };
+}
+
+function stringItems(block: Record<string, unknown>): readonly string[] | null {
+  const items = block["items"];
+  return Array.isArray(items) && items.every((item) => typeof item === "string")
+    ? (items as readonly string[])
+    : null;
 }
 
 // Only known, text-safe block types render as text; anything else renders as
 // deterministic JSON so untrusted content can never be injected as markup.
 function BlockView({ block }: { readonly block: unknown }): ReactNode {
+  if (typeof block !== "object" || block === null)
+    return <pre className="note-json">{JSON.stringify(block, null, 2)}</pre>;
+  const record = block as Record<string, unknown>;
+  const text = record["text"];
+  if (record["type"] === "paragraph" && typeof text === "string") return <p>{text}</p>;
   if (
-    typeof block === "object" &&
-    block !== null &&
-    (block as { readonly type?: unknown }).type === "paragraph" &&
-    typeof (block as { readonly text?: unknown }).text === "string"
+    record["type"] === "heading" &&
+    typeof text === "string" &&
+    typeof record["level"] === "number" &&
+    Number.isInteger(record["level"]) &&
+    record["level"] >= 1 &&
+    record["level"] <= 3
   ) {
-    return <p>{(block as { readonly text: string }).text}</p>;
+    const Heading = `h${record["level"]}` as "h1" | "h2" | "h3";
+    return <Heading>{text}</Heading>;
   }
+  const items = stringItems(record);
+  if (record["type"] === "ordered_list" && items !== null)
+    return <ol className="note-list">{items.map((item) => <li key={item}>{item}</li>)}</ol>;
+  if (record["type"] === "unordered_list" && items !== null)
+    return <ul className="note-list">{items.map((item) => <li key={item}>{item}</li>)}</ul>;
   return <pre className="note-json">{JSON.stringify(block, null, 2)}</pre>;
 }
 
@@ -203,7 +250,14 @@ function NoteDetail({
     void queryClient.invalidateQueries({ queryKey: queryKeys.notes(actorId, notebookId) });
   };
   const edit = useMutation({
-    mutationFn: (text: string) => editNote(noteId, note?.etag ?? "", paragraphContent(text)),
+    mutationFn: (text: string) =>
+      editNote(
+        noteId,
+        note?.etag ?? "",
+        currentRevision === null
+          ? paragraphContent(text)
+          : replaceParagraphText(currentRevision.content, text),
+      ),
     onSuccess: () => {
       setViewingId(null);
       refetchAll();

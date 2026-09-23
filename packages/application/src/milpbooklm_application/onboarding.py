@@ -10,66 +10,90 @@ from .note_core import CreateNoteCommand
 from .note_lifecycle import CreateNote
 from .ports import NotebookStore
 
-FEATURE_GUIDE_TITLE: Final = "Welcome to MilBook LM — Feature Guide"
+FEATURE_GUIDE_TITLE: Final = "Welcome to milpbookLM"
 
 
 @dataclass(frozen=True, slots=True)
 class FeatureGuideNote:
-    """One revision-one note in the onboarding feature guide."""
+    """One structured first revision in the onboarding feature guide."""
 
     title: str
-    text: str
+    content: dict[str, object]
+
+
+def _guide_note(
+    title: str, heading: str, paragraph: str, items: tuple[str, ...]
+) -> FeatureGuideNote:
+    """Build one renderer-supported onboarding note."""
+    return FeatureGuideNote(
+        title=title,
+        content={
+            "blocks": [
+                {"type": "heading", "level": 2, "text": heading},
+                {"type": "paragraph", "text": paragraph},
+                {"type": "unordered_list", "items": list(items)},
+            ]
+        },
+    )
 
 
 FEATURE_GUIDE_NOTES: Final = (
-    FeatureGuideNote(
-        "Start here — your private research workspace",
-        "MilBook LM is local-first and private by default. Log out and back in without losing "
-        + "your workspace: each notebook is privately owned by your account.",
+    _guide_note(
+        "Start here",
+        "Your private research desk",
+        "milpbookLM keeps each notebook private to its members and opens it where you can work.",
+        (
+            "Create a notebook for one research thread.",
+            "Use Notes, Sources, and Chat from its header.",
+        ),
     ),
-    FeatureGuideNote(
-        "Collecting sources",
-        "Use the Sources tab to paste text or upload a file. Each ingestion creates an immutable "
-        + "source version. Selected, successfully promoted sources feed notebook search "
-        + "and grounded "
-        + "chat, and persisted sources remain listed after reload or login.",
+    _guide_note(
+        "Sources",
+        "Bring in evidence",
+        "Paste text or upload supported files. Each import retains an immutable source version.",
+        (
+            "Select sources deliberately before asking grounded questions.",
+            "Wait for terminal status.",
+        ),
     ),
-    FeatureGuideNote(
-        "Grounded chat with citations",
-        "Start an actor-private chat from a notebook. Answers use selected notebook sources only, "
-        + "show citation chips that open the source viewer, and report when the available "
-        + "evidence is "
-        + "insufficient instead of inventing support.",
+    _guide_note(
+        "Grounded chat",
+        "Ask from selected evidence",
+        "Chat answers use selected source evidence and report when the material is insufficient.",
+        (
+            "Press Enter to send and Shift+Enter for a new line.",
+            "Open available source citations.",
+        ),
     ),
-    FeatureGuideNote(
+    _guide_note(
+        "Notes",
+        "Keep versioned private notes",
+        "Notes are editable, immutable by revision, and visible in the Notes tab.",
+        (
+            "Select an exact revision before chat grounding.",
+            "Unselected notes never enter a prompt.",
+        ),
+    ),
+    _guide_note(
         "Research runs",
-        "The research-run API supports visible plan, search, fetch, and import step history. Runs "
-        + "with a limited tool set remain read-only and finish without importing. This "
-        + "prototype does "
-        + "not yet expose research runs in the web UI; use the authenticated /api/v1/research-runs "
-        + "routes today.",
+        "API-only preview",
+        "Authenticated research-run routes expose plan, search, fetch, and import history.",
+        (
+            "Use the authenticated API for this provisional feature.",
+            "Read-only runs do not import.",
+        ),
     ),
-    FeatureGuideNote(
-        "Notes — capture and transform your thinking",
-        "The notes API creates editable notes as immutable revisions, supports explicit "
-        + "transforms, saving a private chat response, promotion to a source, and explicit "
-        + "note-revision pinning for chat. The notebook web UI does not expose notes yet; "
-        + "use the authenticated notes API.",
+    _guide_note(
+        "Artifacts and study",
+        "API-only preview",
+        "Versioned artifact and private study-state APIs are implemented; their web UI is pending.",
+        ("Artifact export rechecks authorization.", "More artifact families remain provisional."),
     ),
-    FeatureGuideNote(
-        "Artifacts & study progress (API preview)",
-        "The versioned artifact API currently supports the composite recipe, optimistic "
-        + "ETag edits, "
-        + "two-stage export authorization with a download recheck, and private study state. More "
-        + "artifact families and their web UI are still in progress.",
-    ),
-    FeatureGuideNote(
-        "Privacy, custody & what stays local",
-        "Models and the database run locally in the documented deployment. Conversations and notes "
-        + "remain private, provenance links retained material to its origins, and exports recheck "
-        + "authorization at download time. Settings reports each capability as available, "
-        + "degraded, "
-        + "disabled, or provisional rather than presenting unfinished work as live.",
+    _guide_note(
+        "Privacy and capability status",
+        "Know what is live",
+        "Settings reports available, degraded, disabled, and provisional capabilities honestly.",
+        ("Conversations are actor-private.", "Deployment health determines availability."),
     ),
 )
 
@@ -91,6 +115,6 @@ class SeedFeatureGuide:
                     actor_id=actor_id,
                     notebook_id=notebook.notebook_id,
                     title=note.title,
-                    content={"blocks": [{"type": "paragraph", "text": note.text}]},
+                    content=note.content,
                 )
             )

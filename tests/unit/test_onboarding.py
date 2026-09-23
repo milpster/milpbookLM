@@ -41,3 +41,18 @@ def test_seed_feature_guide_creates_owned_notebook_and_seven_revision_one_notes(
     assert all(snapshot.note.editable for snapshot in created)
     assert all(snapshot.revision.revision_number == 1 for snapshot in created)
     assert all(snapshot.note.notebook_id == notebook_id for snapshot in created)
+
+
+def test_feature_guide_uses_only_renderer_supported_structured_blocks() -> None:
+    # Given / When
+    blocks = [block for note in FEATURE_GUIDE_NOTES for block in note.content["blocks"]]
+
+    # Then
+    assert FEATURE_GUIDE_TITLE == "Welcome to milpbookLM"
+    assert {block["type"] for block in blocks} == {"heading", "paragraph", "unordered_list"}
+    assert all(block.get("level") in (None, 2) for block in blocks)
+    assert all(
+        all(isinstance(item, str) for item in block["items"])
+        for block in blocks
+        if block["type"] == "unordered_list"
+    )
