@@ -65,6 +65,7 @@ export function SettingsRoute(_props: RouteProps): ReactNode {
                   <h3>{capability.name}</h3>
                   <code>{capability.id}</code>
                 </div>
+                <p>{capability.description}</p>
                 <p className={`status ${capability.state}`}>{capability.state}</p>
                 {capability.reason === null ? null : <p className="muted">{capability.reason}</p>}
               </article>

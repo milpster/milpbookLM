@@ -5,6 +5,7 @@
     {
       "id": "notebook_management",
       "name": "Notebook management",
+      "description": "Create, organize, duplicate, share, and manage notebook metadata.",
       "classification": "stable/core",
       "reference_maturity": "documented",
       "phase": 1,
@@ -36,6 +37,7 @@
     {
       "id": "notebook_instructions",
       "name": "Notebook instructions",
+      "description": "Set notebook-wide instructions that guide grounded chat and generation.",
       "classification": "stable/core",
       "reference_maturity": "documented",
       "phase": 1,
@@ -67,6 +69,7 @@
     {
       "id": "notebook_overview",
       "name": "Notebook overview",
+      "description": "Generate a source-based notebook summary with suggested starting questions.",
       "classification": "stable/core",
       "reference_maturity": "documented",
       "phase": 1,
@@ -100,6 +103,7 @@
     {
       "id": "sources",
       "name": "Sources",
+      "description": "Import, inspect, select, remove, and label source material without changing retained bytes.",
       "classification": "stable/core",
       "reference_maturity": "documented",
       "phase": 1,
@@ -133,6 +137,7 @@
     {
       "id": "source_guide",
       "name": "Source Guide",
+      "description": "Produce a focused summary and guide for an individual source.",
       "classification": "stable/core",
       "reference_maturity": "documented",
       "phase": 1,
@@ -166,6 +171,7 @@
     {
       "id": "source_organization",
       "name": "Source organization",
+      "description": "Classify sources with labels, categories, and selection controls.",
       "classification": "stable/core",
       "reference_maturity": "documented",
       "phase": 2,
@@ -197,6 +203,7 @@
     {
       "id": "grounded_chat",
       "name": "Grounded chat",
+      "description": "Answer questions from selected notebook sources with pinned note revisions when chosen.",
       "classification": "stable/core",
       "reference_maturity": "documented",
       "phase": 1,
@@ -232,6 +239,7 @@
     {
       "id": "chat_configuration",
       "name": "Chat configuration",
+      "description": "Choose conversation style, custom instructions, and response length preferences.",
       "classification": "stable/core",
       "reference_maturity": "documented",
       "phase": 1,
@@ -265,6 +273,7 @@
     {
       "id": "agentic_chat",
       "name": "Agentic chat",
+      "description": "Use an explicit tool-capable chat mode for research, analysis, and iterative artifacts.",
       "classification": "stable/core",
       "reference_maturity": "experimental/documented",
       "phase": 3,
@@ -300,6 +309,7 @@
     {
       "id": "chat_lifecycle",
       "name": "Chat lifecycle",
+      "description": "Maintain private notebook conversations with reset, cancellation, continuation, and metadata.",
       "classification": "stable/core",
       "reference_maturity": "documented",
       "phase": 1,
@@ -331,6 +341,7 @@
     {
       "id": "citations",
       "name": "Citations",
+      "description": "Link answers to exact source text, image, or document locations with jump context.",
       "classification": "stable/core",
       "reference_maturity": "documented",
       "phase": 1,
@@ -364,6 +375,7 @@
     {
       "id": "notes",
       "name": "Notes",
+      "description": "Create structured notes from user content or chat responses and transform or export them.",
       "classification": "stable/core",
       "reference_maturity": "documented",
       "phase": 4,
@@ -397,6 +409,7 @@
     {
       "id": "evolving_note_integration",
       "name": "Evolving note integration",
+      "description": "Announced integration for editable notes alongside sources that can be selected for chat.",
       "classification": "provisional/announced",
       "reference_maturity": "announcement/rollout",
       "phase": 7,
@@ -426,6 +439,7 @@
     {
       "id": "reports",
       "name": "Reports",
+      "description": "Generate source-based reports such as FAQs, study guides, briefings, and custom formats.",
       "classification": "stable/core",
       "reference_maturity": "documented",
       "phase": 4,
@@ -459,6 +473,7 @@
     {
       "id": "interactive_learning_overview",
       "name": "Interactive Learning Overview",
+      "description": "Combine a learning overview with embedded or suggested quizzes, flashcards, and infographics.",
       "classification": "stable/core",
       "reference_maturity": "documented",
       "phase": 4,
@@ -490,6 +505,7 @@
     {
       "id": "data_tables",
       "name": "Data tables",
+      "description": "Extract and analyze structured rows and columns with provenance and spreadsheet export.",
       "classification": "stable/core",
       "reference_maturity": "documented",
       "phase": 4,
@@ -521,6 +537,7 @@
     {
       "id": "mind_maps",
       "name": "Mind maps",
+      "description": "Explore source-grounded concepts and relationships through an interactive navigable map.",
       "classification": "stable/core",
       "reference_maturity": "documented",
       "phase": 4,
@@ -552,6 +569,7 @@
     {
       "id": "flashcards",
       "name": "Flashcards",
+      "description": "Study generated cards with explanations, progress tracking, retries, and export controls.",
       "classification": "stable/core",
       "reference_maturity": "documented",
       "phase": 4,
@@ -583,6 +601,7 @@
     {
       "id": "quizzes",
       "name": "Quizzes",
+      "description": "Take generated quizzes with hints, explanations, progress results, and review flows.",
       "classification": "stable/core",
       "reference_maturity": "documented",
       "phase": 4,
@@ -614,6 +633,7 @@
     {
       "id": "editable_study_aids_and_performance_follow_up",
       "name": "Editable study aids and performance follow-up",
+      "description": "Announced editable study aids and chat follow-up about completed quiz or flashcard performance.",
       "classification": "provisional/announced",
       "reference_maturity": "announcement/rollout",
       "phase": 7,
@@ -643,6 +663,7 @@
     {
       "id": "audio_overview",
       "name": "Audio Overview",
+      "description": "Generate source-based Deep Dive, Brief, Critique, or Debate audio discussions.",
       "classification": "stable/core",
       "reference_maturity": "documented",
       "phase": 6,
@@ -680,6 +701,7 @@
     {
       "id": "interactive_audio_overview",
       "name": "Interactive Audio Overview",
+      "description": "Join an audio overview to interrupt hosts or ask source-grounded questions.",
       "classification": "advanced/provider-dependent",
       "reference_maturity": "documented/provider-limited",
       "phase": 6,
@@ -713,6 +735,7 @@
     {
       "id": "realtime_notebook_voice_chat",
       "name": "Realtime notebook voice chat",
+      "description": "Announced source-grounded live voice conversation with interruption and follow-up.",
       "classification": "provisional/announced",
       "reference_maturity": "announcement/rollout",
       "phase": 7,
@@ -746,6 +769,7 @@
     {
       "id": "recorded_audio_capture",
       "name": "Recorded-audio capture",
+      "description": "Record lectures or thoughts in the browser and import them through the audio source path.",
       "classification": "provisional/announced",
       "reference_maturity": "announcement/rollout",
       "phase": 7,
@@ -777,6 +801,7 @@
     {
       "id": "video_overview",
       "name": "Video Overview",
+      "description": "Generate narrated explainer or short visual overviews from notebook sources.",
       "classification": "stable/core",
       "reference_maturity": "documented",
       "phase": 6,
@@ -815,6 +840,7 @@
     {
       "id": "cinematic_video",
       "name": "Cinematic video",
+      "description": "Generate higher-production cinematic visual overviews when a media provider is available.",
       "classification": "advanced/provider-dependent",
       "reference_maturity": "documented/provider-limited",
       "phase": 6,
@@ -851,6 +877,7 @@
     {
       "id": "slide_decks",
       "name": "Slide decks",
+      "description": "Generate and revise presentation decks with slideshow viewing and downloadable exports.",
       "classification": "stable/core",
       "reference_maturity": "documented",
       "phase": 5,
@@ -885,6 +912,7 @@
     {
       "id": "infographics",
       "name": "Infographics",
+      "description": "Generate visual summaries with language, detail, orientation, style, and download controls.",
       "classification": "stable/core",
       "reference_maturity": "documented",
       "phase": 5,
@@ -919,6 +947,7 @@
     {
       "id": "artifact_lifecycle",
       "name": "Artifact lifecycle",
+      "description": "Schedule, revise, share, and export generated artifacts as detached snapshots.",
       "classification": "stable/core",
       "reference_maturity": "documented",
       "phase": 4,
@@ -952,6 +981,7 @@
     {
       "id": "starter_artifacts",
       "name": "Starter artifacts",
+      "description": "Optionally generate selected starter artifacts when a notebook first receives sources.",
       "classification": "late/optional",
       "reference_maturity": "documented/optional",
       "phase": 7,
@@ -981,6 +1011,7 @@
     {
       "id": "source_discovery",
       "name": "Source discovery",
+      "description": "Find candidate notebook sources through web or connector research.",
       "classification": "stable/core",
       "reference_maturity": "documented",
       "phase": 3,
@@ -1016,6 +1047,7 @@
     {
       "id": "deep_research",
       "name": "Deep Research",
+      "description": "Run iterative agent research that creates reports and imports discovered sources.",
       "classification": "stable/core",
       "reference_maturity": "documented",
       "phase": 3,
@@ -1051,6 +1083,7 @@
     {
       "id": "code_data_analysis",
       "name": "Code/data analysis",
+      "description": "Perform source-grounded computation in the hardened execution environment.",
       "classification": "stable/core",
       "reference_maturity": "documented",
       "phase": 3,
@@ -1085,6 +1118,7 @@
     {
       "id": "private_sharing",
       "name": "Private sharing",
+      "description": "Share notebooks privately with viewer or editor roles and focused chat-view links.",
       "classification": "stable/core",
       "reference_maturity": "documented",
       "phase": 7,
@@ -1118,6 +1152,7 @@
     {
       "id": "public_notebooks",
       "name": "Public notebooks",
+      "description": "Optionally expose public or link-shared notebooks and artifacts through share-link policy.",
       "classification": "late/optional",
       "reference_maturity": "documented/optional",
       "phase": 7,
@@ -1147,6 +1182,7 @@
     {
       "id": "notebook_copying",
       "name": "Notebook copying",
+      "description": "Create owner-controlled notebook copies while re-evaluating source access restrictions.",
       "classification": "stable/core",
       "reference_maturity": "documented",
       "phase": 7,
@@ -1180,6 +1216,7 @@
     {
       "id": "featured_published_notebooks",
       "name": "Featured/published notebooks",
+      "description": "Curate discoverable published notebooks when public sharing is enabled.",
       "classification": "late/optional",
       "reference_maturity": "documented/optional",
       "phase": 7,
@@ -1209,6 +1246,7 @@
     {
       "id": "usage_analytics",
       "name": "Usage analytics",
+      "description": "Summarize lightweight notebook usage and query activity for product users.",
       "classification": "late/optional",
       "reference_maturity": "documented/optional",
       "phase": 7,
@@ -1238,6 +1276,7 @@
     {
       "id": "restricted_connector_sources",
       "name": "Restricted connector sources",
+      "description": "Apply source access or export restrictions when an optional connector requires them.",
       "classification": "late/optional",
       "reference_maturity": "documented/optional",
       "phase": 7,
@@ -1267,6 +1306,7 @@
     {
       "id": "output_language",
       "name": "Output language",
+      "description": "Set a default output language with per-artifact overrides where supported.",
       "classification": "stable/core",
       "reference_maturity": "documented",
       "phase": 1,
@@ -1298,6 +1338,7 @@
     {
       "id": "appearance",
       "name": "Appearance",
+      "description": "Choose a light, dark, or system-following interface appearance.",
       "classification": "stable/core",
       "reference_maturity": "documented",
       "phase": 1,
@@ -1329,6 +1370,7 @@
     {
       "id": "responsive_web_access",
       "name": "Responsive web access",
+      "description": "Use the asynchronous web app on desktop, tablet, and phone browsers without a native client.",
       "classification": "stable/core",
       "reference_maturity": "documented",
       "phase": 1,
@@ -1363,6 +1405,7 @@
     {
       "id": "custom_providers",
       "name": "Custom providers",
+      "description": "Configure local or remote models through provider-neutral adapters.",
       "classification": "stable/core",
       "reference_maturity": "documented",
       "phase": 1,
@@ -1394,6 +1437,7 @@
     {
       "id": "source_pdf",
       "name": "PDF",
+      "description": "Import PDF documents as notebook sources.",
       "classification": "stable/core",
       "reference_maturity": "documented",
       "phase": 1,
@@ -1426,6 +1470,7 @@
     {
       "id": "source_plain_text_and_pasted_text",
       "name": "plain text and pasted text",
+      "description": "Import plain-text files or directly pasted text as notebook sources.",
       "classification": "stable/core",
       "reference_maturity": "documented",
       "phase": 1,
@@ -1458,6 +1503,7 @@
     {
       "id": "source_markdown",
       "name": "Markdown",
+      "description": "Import Markdown documents while preserving their source text structure.",
       "classification": "stable/core",
       "reference_maturity": "documented",
       "phase": 2,
@@ -1490,6 +1536,7 @@
     {
       "id": "source_docx",
       "name": "DOCX",
+      "description": "Import Microsoft Word DOCX documents as notebook sources.",
       "classification": "stable/core",
       "reference_maturity": "documented",
       "phase": 2,
@@ -1522,6 +1569,7 @@
     {
       "id": "source_pptx",
       "name": "PPTX",
+      "description": "Import PowerPoint presentations as notebook sources.",
       "classification": "stable/core",
       "reference_maturity": "documented",
       "phase": 2,
@@ -1554,6 +1602,7 @@
     {
       "id": "source_csv",
       "name": "CSV",
+      "description": "Import comma-separated tabular data as notebook sources.",
       "classification": "stable/core",
       "reference_maturity": "documented",
       "phase": 2,
@@ -1586,6 +1635,7 @@
     {
       "id": "source_spreadsheet_files_formats",
       "name": "spreadsheet files/formats",
+      "description": "Import supported spreadsheet files and tabular workbook formats.",
       "classification": "stable/core",
       "reference_maturity": "documented",
       "phase": 2,
@@ -1618,6 +1668,7 @@
     {
       "id": "source_images",
       "name": "images",
+      "description": "Import image files as notebook sources for supported extraction workflows.",
       "classification": "stable/core",
       "reference_maturity": "documented",
       "phase": 2,
@@ -1650,6 +1701,7 @@
     {
       "id": "source_audio",
       "name": "audio",
+      "description": "Import audio recordings as notebook sources for supported transcription workflows.",
       "classification": "stable/core",
       "reference_maturity": "documented",
       "phase": 2,
@@ -1682,6 +1734,7 @@
     {
       "id": "source_epub_files",
       "name": "EPUB files",
+      "description": "Import EPUB ebooks as notebook sources.",
       "classification": "stable/core",
       "reference_maturity": "documented",
       "phase": 2,
@@ -1714,6 +1767,7 @@
     {
       "id": "source_optional_authenticated_restricted_repositories_through_generic_connectors",
       "name": "optional authenticated/restricted repositories through generic connectors",
+      "description": "Import access-controlled repository content through optional generic connectors.",
       "classification": "late/optional",
       "reference_maturity": "documented/optional",
       "phase": 2,
@@ -1744,6 +1798,7 @@
     {
       "id": "source_web_urls",
       "name": "web URLs",
+      "description": "Import web pages from supplied URLs as notebook sources.",
       "classification": "stable/core",
       "reference_maturity": "documented",
       "phase": 2,
@@ -1776,6 +1831,7 @@
     {
       "id": "source_public_youtube_urls_transcript_backed_video_sources",
       "name": "public YouTube URLs/transcript-backed video sources",
+      "description": "Import public YouTube videos through their available transcripts.",
       "classification": "stable/core",
       "reference_maturity": "documented",
       "phase": 2,
@@ -1808,6 +1864,7 @@
     {
       "id": "source_optional_cloud_document_storage_connectors_implemented_through_generic_adapters",
       "name": "optional cloud document/storage connectors implemented through generic adapters",
+      "description": "Import cloud documents or storage content through optional generic adapters.",
       "classification": "late/optional",
       "reference_maturity": "documented/optional",
       "phase": 2,
@@ -1838,6 +1895,7 @@
     {
       "id": "native_mobile_client",
       "name": "Native mobile client",
+      "description": "Native iOS and Android clients are intentionally outside this web-first architecture.",
       "classification": "deliberate-non-target",
       "reference_maturity": "not-applicable",
       "phase": null,
@@ -1862,6 +1920,7 @@
     {
       "id": "pwa_offline_client",
       "name": "PWA/offline client",
+      "description": "Offline progressive-web-app behavior is intentionally outside this architecture.",
       "classification": "deliberate-non-target",
       "reference_maturity": "not-applicable",
       "phase": null,
@@ -1886,6 +1945,7 @@
     {
       "id": "google_account_coupling",
       "name": "Google account/service coupling",
+      "description": "Google identity and service integration are intentionally not required by this deployment.",
       "classification": "deliberate-non-target",
       "reference_maturity": "not-applicable",
       "phase": null,
@@ -1910,6 +1970,7 @@
     {
       "id": "third_party_plugin_marketplace",
       "name": "Third-party plugin marketplace",
+      "description": "A marketplace for third-party plugins is intentionally outside the product scope.",
       "classification": "deliberate-non-target",
       "reference_maturity": "not-applicable",
       "phase": null,

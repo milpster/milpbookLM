@@ -26,6 +26,7 @@ const capabilitiesBody = {
     {
       id: "notebook_management",
       name: "Notebook management",
+      description: "Create, organize, duplicate, share, and manage notebook metadata.",
       classification: "stable/core",
       state: "available",
       reason: null,

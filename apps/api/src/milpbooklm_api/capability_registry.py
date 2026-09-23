@@ -12,7 +12,7 @@ from milpbooklm_domain.capabilities import (
     DependencyId,
     FeatureFlag,
 )
-from pydantic import BaseModel, ConfigDict
+from pydantic import BaseModel, ConfigDict, Field
 
 
 class RegistryEntry(BaseModel):
@@ -22,6 +22,7 @@ class RegistryEntry(BaseModel):
 
     id: str
     name: str
+    description: str = Field(min_length=1, pattern=r".*\S.*")
     classification: CapabilityClassification
     implemented: bool
     enabled: bool
@@ -45,6 +46,7 @@ def load_capability_registry() -> tuple[CapabilityDefinition, ...]:
         CapabilityDefinition(
             id=CapabilityId(entry.id),
             name=entry.name,
+            description=entry.description,
             classification=entry.classification,
             implemented=entry.implemented,
             enabled=entry.enabled,

@@ -46,6 +46,7 @@ class CapabilityDefinition:
 
     id: CapabilityId
     name: str
+    description: str
     classification: CapabilityClassification
     implemented: bool
     enabled: bool
@@ -59,6 +60,7 @@ class EffectiveCapability:
 
     id: CapabilityId
     name: str
+    description: str
     classification: CapabilityClassification
     state: CapabilityState
     reason: CapabilityReason | None

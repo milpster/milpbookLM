@@ -13,7 +13,7 @@ from milpbooklm_domain.capabilities import (
     CapabilityState,
     DependencyId,
 )
-from pydantic import BaseModel, ConfigDict
+from pydantic import BaseModel, ConfigDict, Field
 
 from .health_routes import ComponentHealth, ComponentState, DeploymentHealth
 
@@ -25,6 +25,7 @@ class CapabilityResponse(BaseModel):
 
     id: str
     name: str
+    description: str = Field(min_length=1)
     classification: CapabilityClassification
     state: CapabilityState
     reason: CapabilityReason | None
@@ -54,6 +55,7 @@ def build_capability_router(
                 CapabilityResponse(
                     id=capability.id,
                     name=capability.name,
+                    description=capability.description,
                     classification=capability.classification,
                     state=capability.state,
                     reason=capability.reason,

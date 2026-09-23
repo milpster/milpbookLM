@@ -100,6 +100,7 @@ export const terminalSchema = z.object({
 export const capabilitySchema = z.object({
   id: z.string(),
   name: z.string(),
+  description: z.string().trim().min(1),
   classification: z.string(),
   state: z.enum(["available", "disabled", "degraded", "provisional"]),
   reason: z.string().nullable(),

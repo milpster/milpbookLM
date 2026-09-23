@@ -7,6 +7,17 @@ info:
     API capability tasks; generation into the TypeScript client runs in CI
     (REFERENCE-DEPENDENCIES: OpenAPI 3.1 + generated client, TAD-009).
 paths:
+  /api/v1/capabilities:
+    get:
+      summary: Return installation-effective capability descriptions and states
+      operationId: getCapabilities
+      responses:
+        "200":
+          description: Capability profile
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/CapabilitiesResponse"
   /health:
     get:
       summary: Liveness probe (placeholder)
@@ -20,6 +31,33 @@ paths:
                 $ref: "#/components/schemas/Health"
 components:
   schemas:
+    CapabilitiesResponse:
+      type: object
+      required: [capabilities]
+      properties:
+        capabilities:
+          type: array
+          items:
+            $ref: "#/components/schemas/CapabilityResponse"
+    CapabilityResponse:
+      type: object
+      required: [id, name, description, classification, state, reason]
+      properties:
+        id:
+          type: string
+        name:
+          type: string
+        description:
+          type: string
+          minLength: 1
+          description: Specific human-readable explanation of the capability.
+        classification:
+          type: string
+        state:
+          type: string
+          enum: [available, disabled, degraded, provisional]
+        reason:
+          type: [string, "null"]
     Health:
       type: object
       required: [status]

@@ -19,6 +19,7 @@ const capabilitiesBody = {
     {
       id: "grounded_chat",
       name: "Grounded chat",
+      description: "Answer questions from selected notebook sources with pinned note revisions when chosen.",
       classification: "stable/core",
       state: "available",
       reason: null,

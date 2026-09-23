@@ -228,6 +228,10 @@ ALL agent scratch (drivers, fixtures, DB clusters, logs, screenshots) lives unde
 1. **A full page reload drops the web client's in-memory CSRF token** (`client.ts` module-level `csrfToken` is set only by `login()`): after F5 or a deep-link load, the next unsafe action fails `403 csrf_rejected` until the next login. The app's own links navigate client-side (App.tsx pushState + popstate routing), so real citation→viewer journeys never hit it — but browser drivers MUST navigate SPA-style (`history.pushState` + `PopStateEvent("popstate")`), never `page.goto()`, once logged in. App-side recovery (re-issue CSRF on `/auth/me` boot) is a recorded wave-2 finding, not fixed (T20-F1).
 2. **Vite dev + Playwright `waitUntil: "networkidle"` is unreliable** (HMR websocket); T18's proven drivers use the default `load`. And playwright for this repo resolves only via `createRequire("<repo>/apps/web/")` — a bare `import "playwright"` from repo root fails.
 3. **Two same-accessible-name buttons break strict mode silently at click time**: AuthRoute's mode toggle and the submit button are both "Register" in register mode. Target `form button[type=submit]` (the submit carries `className="primary"`, toggles carry none).
+
+## Go-live capability descriptions (2026-09-24)
+
+1. **The capability registry has a deliberately frozen second representation**: additions to `capabilities.yaml` must be mirrored exactly in `milpbookml-implementation-guide/capabilities.generated.json` and its JSON Schema, or the registry checker correctly reports seed drift. Make descriptions mandatory in the schema and Pydantic boundary, then propagate them through `CapabilityDefinition` and `EffectiveCapability` rather than deriving UI copy from IDs or states.
 4. **In-process rate limiters reset with the process they live in**: the register limiter (3/IP/hour) is SlidingWindowLimiter in API memory, so a task-owned API restart cleanly resets the budget mid-journey — but budget accounting must happen BEFORE launching multi-registration drivers (2 browsers = 2 registers).
 5. **The registry's `required_test_groups` names (CAP-PROFILE-001/PHASE-GATE-001/PARITY-ACCEPTANCE-001) are forward-looking data, not suites** (T11 learning re-confirmed at gate time): phase-1 is judged by live REST/journey evidence recorded in the gate report, with the missing automated groups recorded as wave-2 deferrals — phase-0 gate precedent, advertised=0 stays emitter-pure in conformance.json.
 
@@ -430,3 +434,13 @@ ALL agent scratch (drivers, fixtures, DB clusters, logs, screenshots) lives unde
 
 1. Note revision idempotency must lock the note and validate `If-Match` before comparing the submitted canonical content hash. A matching current hash returns the immutable current snapshot without a new revision or ETag change; a stale ETag remains a conflict.
 2. Offline llama.cpp `test-chat-auto-parser` can parse the custom template without contacting or signaling the shared model server. The selected build classified this template as Qwen3-Coder and completed parser generation without a `defined`-test error.
+
+
+## FND-04 (2026-09-24)
+
+1. **llama.cpp chat-template compatibility**: this local Jinja runtime supports the `default` filter for an undefined top-level variable, but applying it to an object member can fail with `Unknown (built-in) filter 'default' for type Object`. For optional message/tool-call fields, initialize a local to `none` (or `[]`) and assign it only behind a map-key check such as `'arguments' in tc`; this avoids both `is defined` and object-member `| default` while preserving nested and flat tool calls.
+
+
+## FND-05 (2026-09-24)
+
+1. **Direct minja template regression inputs**: `build-sync0920/bin/test-chat-template --no-common --json <fixture> sharp_chat_template.jinja` evaluates the actual Jinja runtime with arbitrary root context, including `tool_call_format`. The tracked XML and JSON inputs in `tests/sharp-chat-template-regression-{xml,json}.json` each cover a nested call with a mapping argument, a flat call with `{}` arguments, and a flat call with no `arguments` key. Both exit 0; XML emits an empty function body for the two flat cases, while JSON emits `"arguments": {}` for each.

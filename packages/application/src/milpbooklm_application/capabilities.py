@@ -116,6 +116,7 @@ def _result(
     return EffectiveCapability(
         id=definition.id,
         name=definition.name,
+        description=definition.description,
         classification=definition.classification,
         state=state,
         reason=reason,

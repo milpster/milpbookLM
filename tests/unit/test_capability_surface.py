@@ -9,13 +9,26 @@ Then:   exactly the implemented core surface reaches available when its
 
 from __future__ import annotations
 
-from milpbooklm_api.capability_registry import load_capability_registry
+from http import HTTPStatus
+
+import pytest
+from fastapi import FastAPI
+from fastapi.testclient import TestClient
+from milpbooklm_api.capability_registry import RegistryEntry, load_capability_registry
+from milpbooklm_api.capability_routes import build_capability_router
 from milpbooklm_application.capabilities import CapabilityRuntime, compute_capabilities
 from milpbooklm_domain.capabilities import (
     CapabilityDefinition,
+    CapabilityId,
     CapabilityState,
     DependencyId,
     FeatureFlag,
+)
+from pydantic import ValidationError
+
+EXPECTED_CAPABILITY_COUNT = 61
+NOTEBOOK_MANAGEMENT_DESCRIPTION = (
+    "Create, organize, duplicate, share, and manage notebook metadata."
 )
 
 IMPLEMENTED_CORE = frozenset(
@@ -69,6 +82,41 @@ def test_registry_flip_matches_the_expected_core_surface() -> None:
     assert implemented == IMPLEMENTED_CORE
 
 
+def test_registry_has_a_specific_description_for_every_capability() -> None:
+    definitions = load_capability_registry()
+    assert len(definitions) == EXPECTED_CAPABILITY_COUNT
+    assert all(definition.description.strip() for definition in definitions)
+
+
+def test_registry_entry_rejects_missing_or_blank_description() -> None:
+    entry = {
+        "id": "test_capability",
+        "name": "Test capability",
+        "classification": "stable/core",
+        "implemented": False,
+        "enabled": False,
+        "feature_flag": None,
+        "dependencies": [],
+    }
+    with pytest.raises(ValidationError):
+        RegistryEntry.model_validate(entry)
+    with pytest.raises(ValidationError):
+        RegistryEntry.model_validate({**entry, "description": "  "})
+
+
+def test_capability_description_reaches_the_http_response() -> None:
+    app = FastAPI()
+    app.include_router(
+        build_capability_router(load_capability_registry(), CapabilityRuntime(), health=None)
+    )
+    response = TestClient(app).get("/api/v1/capabilities")
+    assert response.status_code == HTTPStatus.OK
+    capability = next(
+        item for item in response.json()["capabilities"] if item["id"] == "notebook_management"
+    )
+    assert capability["description"] == NOTEBOOK_MANAGEMENT_DESCRIPTION
+
+
 def test_implemented_core_surface_is_available_when_healthy() -> None:
     runtime = CapabilityRuntime(
         enabled_feature_flags=frozenset(
@@ -119,5 +167,10 @@ def test_unimplemented_capabilities_stay_disabled_under_fully_satisfied_inputs()
         capability.id: capability.state
         for capability in compute_capabilities(definitions, runtime, every_dependency_healthy)
     }
-    for capability_id in ("agentic_chat", "notes", "audio_overview", "code_data_analysis"):
+    for capability_id in (
+        CapabilityId("agentic_chat"),
+        CapabilityId("notes"),
+        CapabilityId("audio_overview"),
+        CapabilityId("code_data_analysis"),
+    ):
         assert effective[capability_id] is CapabilityState.DISABLED, capability_id

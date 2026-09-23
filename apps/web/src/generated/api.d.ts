@@ -701,6 +701,8 @@ export interface components {
       id: string;
       /** Name */
       name: string;
+      /** Specific human-readable explanation of the capability. */
+      description: string;
       classification: components["schemas"]["CapabilityClassification"];
       state: components["schemas"]["CapabilityState"];
       reason: components["schemas"]["CapabilityReason"] | null;
