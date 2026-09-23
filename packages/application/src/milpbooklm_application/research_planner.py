@@ -11,9 +11,12 @@ and tool policy never enter that channel.
 
 The shipped deterministic planner implements ``source_discovery`` mode as a
 fixed search -> fetch -> import -> finish program that is a pure function of
-the run's trusted inputs (goal + config): untrusted tool output cannot change
-its decisions. Model-driven planning for ``deep_research`` is an explicitly
-experimental capability and is refused honestly until its adapter exists.
+the run's trusted inputs (goal + tool set + config): untrusted tool output
+cannot change its decisions. A run whose tool set lacks ``source.import``
+finishes honestly after a successful fetch instead of proposing a call the
+executor would deny. Model-driven planning for ``deep_research`` is an
+explicitly experimental capability and is refused honestly until its adapter
+exists.
 """
 
 from __future__ import annotations
@@ -255,7 +258,14 @@ def _fetchable_url(turn: ToolTurn) -> str | None:
 
 
 class SourceDiscoveryPlanner:
-    """Deterministic source_discovery program: search, fetch, import, finish."""
+    """
+    Deterministic source_discovery program: search, fetch, import, finish.
+
+    The program only proposes tools the run was created with: when
+    ``source.import`` is absent from the run's tool set, a successful fetch
+    finishes the run honestly instead of proposing an action the executor's
+    authorization would deny every turn.
+    """
 
     async def next_action(self, context: PlannerContext) -> Mapping[str, object]:
         """Return the next action purely from the trusted run inputs."""
@@ -278,6 +288,14 @@ class SourceDiscoveryPlanner:
                     "args": {"summary": "no fetchable discovery result; stopping"},
                 }
             return {"tool": ResearchTool.WEB_FETCH.value, "args": {"url": url}}
+        if ResearchTool.SOURCE_IMPORT.value not in context.tools:
+            return {
+                "tool": FINISH_ACTION,
+                "args": {
+                    "summary": "web source retrieved; source.import tool not "
+                    "available in this run; finishing"
+                },
+            }
         imported = any(turn.tool == ResearchTool.SOURCE_IMPORT.value for turn in context.turns)
         if not imported:
             return {

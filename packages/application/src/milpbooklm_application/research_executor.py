@@ -101,6 +101,10 @@ DENIED_NOT_ENABLED = "tool_not_enabled_on_run"
 DENIED_NOT_APPROVED = "side_effect_not_approved"
 DENIED_MALFORMED = "malformed_action"
 
+# The same proposed action denied this many consecutive turns can never
+# succeed - the run fails with "action_denied_loop" instead of looping.
+DENIAL_LOOP_THRESHOLD = 2
+
 
 def authorize_tool_call(run: ResearchRunView, tool: str) -> str | None:
     """
@@ -198,7 +202,7 @@ class ResearchRunExecutor:
         self._retrieval = retrieval
         self._audit = audit
 
-    async def execute(  # noqa: C901, PLR0911, PLR0912 - run control loop exits
+    async def execute(  # noqa: C901, PLR0911, PLR0912, PLR0915 - run control loop exits
         self,
         run_id: uuid.UUID,
         *,
@@ -218,6 +222,11 @@ class ResearchRunExecutor:
         steps_executed = 0
         evidence_appended = 0
         tool_calls = self._count_tool_steps(run_id)
+        # Denial-loop guard: the same proposed action denied twice in a row by
+        # server-side authz can never succeed - fail explicitly instead of
+        # burning the step budget on a deterministic planner that repeats it.
+        last_denial: tuple[str, str] | None = None
+        consecutive_denials = 0
         while True:
             live = self._store.get_run(run_id)
             if live is None or live.status is not ResearchRunStatus.RUNNING:
@@ -254,6 +263,8 @@ class ResearchRunExecutor:
                 action = parse_action(proposal)
             except ActionParseError as exc:
                 self._deny(run, DENIED_MALFORMED, tool="none", step_id=step_id, detail=str(exc))
+                last_denial = None
+                consecutive_denials = 0
                 continue
             self._store.finish_step(step_id, status="succeeded")
             if isinstance(action, FinishAction):
@@ -262,7 +273,16 @@ class ResearchRunExecutor:
             denial = authorize_tool_call(run, tool)
             if denial is not None:
                 self._deny(run, denial, tool=tool, step_id=None)
+                if last_denial == (tool, denial):
+                    consecutive_denials += 1
+                else:
+                    last_denial = (tool, denial)
+                    consecutive_denials = 1
+                if consecutive_denials >= DENIAL_LOOP_THRESHOLD:
+                    return self._fail(run, "action_denied_loop")
                 continue
+            last_denial = None
+            consecutive_denials = 0
             if tool_calls >= run.budget.max_tool_calls:
                 return self._fail(run, "budget_tool_calls_exceeded")
             if (
@@ -273,6 +293,8 @@ class ResearchRunExecutor:
             tool_calls += 1
             progress(_PHASE_BY_TOOL.get(tool, "executing tool"), None, tool)
             outcome = await self._dispatch(run, action)
+            last_denial = None
+            consecutive_denials = 0
             steps_executed += 1
             if outcome.evidence_id is not None:
                 evidence_appended += 1

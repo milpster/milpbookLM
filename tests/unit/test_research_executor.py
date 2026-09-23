@@ -41,6 +41,7 @@ from milpbooklm_application.web_search import (
     WebSearchReport,
 )
 from milpbooklm_domain.research import (
+    MAX_RESEARCH_STEPS,
     RESEARCH_TOOL_SURFACE,
     ResearchBudget,
     ResearchRunStatus,
@@ -394,6 +395,7 @@ def _executor(
 def _running_run(
     store: MemoryRunStore,
     *,
+    tools: frozenset[str] | None = None,
     approved: frozenset[str] = frozenset({"source.import", "browser.interact"}),
     budget: ResearchBudget | None = None,
 ) -> uuid.UUID:
@@ -405,7 +407,7 @@ def _running_run(
         goal="hostile research goal",
         mode=RunMode.SOURCE_DISCOVERY,
         status=ResearchRunStatus.RUNNING,
-        tools=frozenset(RESEARCH_TOOL_SURFACE),
+        tools=tools or frozenset(RESEARCH_TOOL_SURFACE),
         approved_tools=approved,
         budget=budget or ResearchBudget(),
         error_code=None,
@@ -690,6 +692,34 @@ def test_cancel_mid_run_publishes_terminal_state_with_trace_intact() -> None:
     assert run.status is ResearchRunStatus.CANCELLED
     assert store.list_steps(run_id)
     assert store.list_evidence(run_id)
+
+
+def test_same_action_denied_twice_in_a_row_fails_run_before_step_budget() -> None:
+    store = MemoryRunStore()
+    planner = ScriptedPlanner(
+        [
+            {"tool": "web.search", "args": {"query": "q"}},
+            {"tool": "web.fetch", "args": {"url": FAKE_URL}},
+        ]
+        + [
+            {"tool": "source.import", "args": {"evidence_id": "e-1", "title": "t"}}
+            for _ in range(10)
+        ]
+    )
+    executor, audit = _executor(store, planner)
+    run_id = _running_run(store, tools=frozenset({"web.search", "web.fetch"}))
+
+    outcome = _drive(executor, run_id)
+
+    assert outcome.run_status is ResearchRunStatus.FAILED
+    assert store.extra_fields[run_id].get("error_code") == "action_denied_loop"
+    denials = [r for r in audit.records if r["action"] == "tool.denied"]
+    assert [d["details"]["reason"] for d in denials] == [
+        "tool_not_enabled_on_run",
+        "tool_not_enabled_on_run",
+    ]
+    # Terminated on the second consecutive denial, far below the step budget.
+    assert len(store.list_steps(run_id)) < MAX_RESEARCH_STEPS
 
 
 def test_step_budget_exhaustion_fails_the_run_explicitly() -> None:
