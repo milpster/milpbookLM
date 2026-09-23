@@ -108,6 +108,13 @@ class PgNoteStore:
                 raise NoteNotEditableError(note_id)
             if current["etag"] != expected_etag:
                 raise NoteConflictError(note_id)
+            current_revision = connection.execute(
+                sa.select(note_revisions).where(
+                    note_revisions.c.id == current["current_revision_id"]
+                )
+            ).mappings().one()
+            if current_revision["content_sha256"] == revision.content_sha256:
+                return NoteSnapshot(_note_view(current), _revision_view(current_revision))
             next_number = int(current["revision"]) + 1
             persisted = NoteRevisionView(
                 revision.revision_id,

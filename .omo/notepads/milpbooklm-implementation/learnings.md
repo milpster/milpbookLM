@@ -425,3 +425,8 @@ ALL agent scratch (drivers, fixtures, DB clusters, logs, screenshots) lives unde
 3. **Happy-dom fetch mocks discriminate ky requests by `input.method`**: ky passes a `Request` object (method on `input.method`), not `init.method` — `init?.method ?? (typeof input === "string" ? "GET" : input.method)` handles both shapes. Needed when POST and GET hit URL-substring-identical endpoints (`notebooks` create vs list).
 4. **Brand casing audit**: rendered variants found were `MilpBook LM` (title, banner, BrandMark comment), `MilBook LM` (ChatPanel 403 copy — missing-p typo), while `MILPBOOKLM_` env prefix in vite.config.ts is an identifier and stays. Grep `MilpBook|MilBook|Milpbook|MILPBOOK` after edits to prove only identifiers remain.
 5. Tests 30 → 35: navigate-on-create (mocked `useAuth` via `vi.hoisted` + `vi.mock` — factories are hoisted above consts), 3 dirty-check cases (disabled+hint, whitespace-only, re-disable after save-refetch where the mock must serve UPDATED fixtures after the POST), banner wordmark. tsc --build green; LSP clean on all 13 changed files.
+
+## Go-live follow-up (2026-09-23)
+
+1. Note revision idempotency must lock the note and validate `If-Match` before comparing the submitted canonical content hash. A matching current hash returns the immutable current snapshot without a new revision or ETag change; a stale ETag remains a conflict.
+2. Offline llama.cpp `test-chat-auto-parser` can parse the custom template without contacting or signaling the shared model server. The selected build classified this template as Qwen3-Coder and completed parser generation without a `defined`-test error.

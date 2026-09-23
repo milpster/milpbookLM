@@ -135,6 +135,48 @@ def test_edit_creates_new_revision_and_preserves_prior_content(pg: Db) -> None:
     assert revision_numbers == [1, 2]
 
 
+def test_identical_current_content_is_an_idempotent_revision_save(pg: Db) -> None:
+    # Given
+    actor = pg.user()
+    notebook = pg.notebook(actor)
+    store = _store()
+    created = CreateNote(store)(
+        CreateNoteCommand(actor, notebook, "Draft", _content("unchanged"))
+    )
+
+    # When
+    saved = EditNote(store)(
+        EditNoteCommand(actor, created.note.note_id, created.note.etag, _content("unchanged"))
+    )
+
+    # Then
+    assert saved is not None
+    assert saved.note.etag == created.note.etag
+    assert saved.revision.revision_id == created.revision.revision_id
+    revision_numbers = [
+        revision.revision_number for revision in store.list_revisions(created.note.note_id)
+    ]
+    assert revision_numbers == [1]
+
+
+def test_stale_identical_content_remains_a_conflict(pg: Db) -> None:
+    # Given
+    actor = pg.user()
+    notebook = pg.notebook(actor)
+    store = _store()
+    created = CreateNote(store)(CreateNoteCommand(actor, notebook, "Draft", _content("one")))
+    updated = EditNote(store)(
+        EditNoteCommand(actor, created.note.note_id, created.note.etag, _content("two"))
+    )
+    assert updated is not None
+
+    # When / Then
+    with pytest.raises(NoteConflictError):
+        _ = EditNote(store)(
+            EditNoteCommand(actor, created.note.note_id, created.note.etag, _content("two"))
+        )
+
+
 def test_saved_response_is_actor_owned_and_non_editable(pg: Db) -> None:
     # Given
     actor = pg.user()
