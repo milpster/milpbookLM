@@ -140,33 +140,62 @@ class NoteError(Exception):
     """Base class for typed note command failures."""
 
 
-@dataclass(frozen=True, slots=True)
 class NoteConflictError(NoteError):
-    """The submitted note ETag no longer matches the current logical note."""
+    """
+    The submitted note ETag no longer matches the current logical note.
 
-    note_id: uuid.UUID
+    Hand-written, not a frozen dataclass: the store raises it inside
+    ``engine.begin()``, and contextlib assigns ``exc.__traceback__`` while the
+    transaction context unwinds — a dataclass-generated frozen ``__setattr__``
+    turns that into ``TypeError`` and the 409 surfaces as a 500.
+    """
+
+    __slots__ = ("note_id",)
+
+    def __init__(self, note_id: uuid.UUID) -> None:
+        """Bind the conflicted logical note identity."""
+        super().__init__(note_id)
+        self.note_id = note_id
 
     def __str__(self) -> str:
         """Return the stable optimistic-conflict description."""
         return f"note {self.note_id} changed before the edit was applied"
 
 
-@dataclass(frozen=True, slots=True)
 class NoteNotEditableError(NoteError):
-    """The note policy forbids creating another revision."""
+    """
+    The note policy forbids creating another revision.
 
-    note_id: uuid.UUID
+    Same hand-written shape as ``NoteConflictError``: it must survive the
+    transaction context exit where the store raises it.
+    """
+
+    __slots__ = ("note_id",)
+
+    def __init__(self, note_id: uuid.UUID) -> None:
+        """Bind the non-editable logical note identity."""
+        super().__init__(note_id)
+        self.note_id = note_id
 
     def __str__(self) -> str:
         """Return the stable editability-policy description."""
         return f"note {self.note_id} is not editable"
 
 
-@dataclass(frozen=True, slots=True)
 class NoteSelectionError(NoteError):
-    """At least one explicitly selected revision is unavailable in the notebook."""
+    """
+    At least one explicitly selected revision is unavailable in the notebook.
 
-    revision_ids: tuple[uuid.UUID, ...]
+    Same hand-written shape as ``NoteConflictError``: it must survive any
+    transaction context exit where a store resolves the selection.
+    """
+
+    __slots__ = ("revision_ids",)
+
+    def __init__(self, revision_ids: tuple[uuid.UUID, ...]) -> None:
+        """Bind the exact revision identities that failed to resolve."""
+        super().__init__(revision_ids)
+        self.revision_ids = revision_ids
 
     def __str__(self) -> str:
         """Return the non-disclosing revision-selection description."""

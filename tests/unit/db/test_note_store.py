@@ -5,6 +5,7 @@ from __future__ import annotations
 import uuid
 from collections.abc import AsyncIterable
 from dataclasses import dataclass
+from datetime import UTC, datetime
 from pathlib import Path
 from unittest.mock import Mock
 
@@ -21,6 +22,7 @@ from milpbooklm_application.grounding import (
 from milpbooklm_application.note_core import (
     CreateNoteCommand,
     EditNoteCommand,
+    NoteConflictError,
     NoteNotEditableError,
     NoteRevisionView,
     NoteSelectionError,
@@ -174,6 +176,65 @@ def test_saved_response_is_actor_owned_and_non_editable(pg: Db) -> None:
                 _content("mutated response"),
             )
         )
+
+
+def test_stale_etag_conflict_survives_transaction_exit(pg: Db) -> None:
+    # Given
+    actor = pg.user()
+    notebook = pg.notebook(actor)
+    store = _store()
+    created = CreateNote(store)(
+        CreateNoteCommand(actor, notebook, "Draft", _content("version one"))
+    )
+    edited = EditNote(store)(
+        EditNoteCommand(actor, created.note.note_id, created.note.etag, _content("two"))
+    )
+    assert edited is not None
+
+    # When / Then: the conflict is raised INSIDE engine.begin(); the typed
+    # error must survive the context-manager unwind (the frozen-dataclass
+    # __traceback__ assignment used to replace it with TypeError -> 500).
+    with pytest.raises(NoteConflictError, match="changed before the edit was applied"):
+        EditNote(store)(
+            EditNoteCommand(
+                actor,
+                created.note.note_id,
+                created.note.etag,  # superseded by the edit above
+                _content("stale write"),
+            )
+        )
+
+
+def test_non_editable_append_survives_transaction_exit(pg: Db) -> None:
+    # Given
+    actor = pg.user()
+    notebook = pg.notebook(actor)
+    manifest = pg.manifest(notebook_id=notebook, created_by=actor, op_kind="ordinary_chat")
+    conversation = pg.conversation(actor, notebook_id=notebook)
+    message = pg.message(
+        conversation, manifest, role="assistant", content="Saved private response"
+    )
+    store = _store()
+    saved = SaveResponseToNote(store)(
+        SaveResponseToNoteCommand(actor, notebook, message, "Saved answer")
+    )
+    assert saved is not None
+    revision = NoteRevisionView(
+        revision_id=uuid.uuid4(),
+        note_id=saved.note.note_id,
+        revision_number=saved.note.revision + 1,
+        content=_content("attempt"),
+        content_sha256="0" * 64,
+        author_user_id=actor,
+        provenance_refs=(),
+        content_dependencies=(),
+        created_at=datetime.now(UTC),
+    )
+
+    # When / Then: store-level append bypasses the lifecycle editability
+    # guard, so the raise happens inside the row-lock transaction.
+    with pytest.raises(NoteNotEditableError, match="is not editable"):
+        store.append_revision(saved.note.note_id, saved.note.etag, revision)
 
 
 def test_transform_pins_only_explicit_revisions(pg: Db) -> None:

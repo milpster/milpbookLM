@@ -265,3 +265,100 @@ def test_e2e_004_notes_journey_is_revision_pinned_and_policy_checked(  # noqa: P
     )
     assert denied.status_code == status.HTTP_403_FORBIDDEN
     assert denied.json() == {"detail": {"reason": "deny:role"}}
+
+
+def _conflict_client(actor: uuid.UUID, notebook: uuid.UUID) -> TestClient:
+    """Wire the real note router over the live store for conflict-path tests."""
+    dsn = _scratch_dsn()
+    assert dsn is not None
+    engine = make_engine(dsn.replace("postgresql://", "postgresql+psycopg://"))
+    store = PgNoteStore(engine)
+    note_deps = NoteDeps(
+        store=store,
+        create=CreateNote(store),
+        edit=EditNote(store),
+        save_response=SaveResponseToNote(store),
+        transform=TransformNotes(store, _Transformer()),
+        promote=PromoteNoteToSource(store, Mock()),
+    )
+    reader = InMemoryNotebookReader()
+    reader.add_view(
+        actor,
+        NotebookView(notebook, "Notes", "none", MembershipRole.OWNER),
+    )
+
+    async def resolve_principal(_request: Request) -> Principal:
+        return _principal(actor, "owner@example.invalid")
+
+    app = FastAPI()
+    app.include_router(build_note_router(_api_deps(reader), resolve_principal, note_deps))
+    return TestClient(app)
+
+
+def test_stale_if_match_edit_returns_409_note_conflict(pg: Db) -> None:
+    # Given
+    actor = pg.user()
+    notebook = pg.notebook(actor)
+    client = _conflict_client(actor, notebook)
+    created = client.post(
+        f"/api/v1/notebooks/{notebook}/notes",
+        json={
+            "title": "Draft",
+            "content": {"blocks": [{"type": "paragraph", "text": "version one"}]},
+        },
+    )
+    assert created.status_code == status.HTTP_201_CREATED
+    body = created.json()
+    stale_etag = body["note"]["etag"]
+    first_edit = client.post(
+        f"/api/v1/notes/{body['note']['note_id']}/revisions",
+        headers={"If-Match": stale_etag},
+        json={
+            "content": {"blocks": [{"type": "paragraph", "text": "version two"}]},
+        },
+    )
+    assert first_edit.status_code == status.HTTP_201_CREATED
+
+    # When: the superseded etag is reused
+    conflicted = client.post(
+        f"/api/v1/notes/{body['note']['note_id']}/revisions",
+        headers={"If-Match": stale_etag},
+        json={
+            "content": {"blocks": [{"type": "paragraph", "text": "stale write"}]},
+        },
+    )
+
+    # Then: the typed conflict survives the transaction exit — 409, not 500
+    assert conflicted.status_code == status.HTTP_409_CONFLICT
+    assert conflicted.json()["code"] == "note_conflict"
+
+
+def test_non_editable_note_edit_returns_409_not_editable(pg: Db) -> None:
+    # Given
+    actor = pg.user()
+    notebook = pg.notebook(actor)
+    manifest = pg.manifest(notebook_id=notebook, created_by=actor)
+    conversation = pg.conversation(actor, notebook_id=notebook)
+    message = pg.message(
+        conversation, manifest, role="assistant", content="saved private response"
+    )
+    client = _conflict_client(actor, notebook)
+    saved = client.post(
+        f"/api/v1/notebooks/{notebook}/notes/from-response",
+        json={"message_id": str(message), "title": "Saved"},
+    )
+    assert saved.status_code == status.HTTP_201_CREATED
+    saved_body = saved.json()
+
+    # When
+    edited = client.post(
+        f"/api/v1/notes/{saved_body['note']['note_id']}/revisions",
+        headers={"If-Match": saved_body["note"]["etag"]},
+        json={
+            "content": {"blocks": [{"type": "paragraph", "text": "attempt"}]},
+        },
+    )
+
+    # Then
+    assert edited.status_code == status.HTTP_409_CONFLICT
+    assert edited.json()["code"] == "note_not_editable"
