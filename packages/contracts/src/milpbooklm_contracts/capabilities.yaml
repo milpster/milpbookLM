@@ -780,8 +780,8 @@ capabilities:
   reference_maturity: documented
   phase: 4
   planning_workstream: STD-01
-  implementation_status: not_started
-  implemented: false
+  implementation_status: implemented
+  implemented: true
   enabled: false
   feature_flag: cap.artifact_lifecycle
   dependencies:

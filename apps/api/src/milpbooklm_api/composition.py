@@ -13,6 +13,8 @@ from datetime import timedelta
 
 import sqlalchemy as sa
 from fastapi import FastAPI, HTTPException, Request
+from milpbooklm_adapters.artifact_export import PgExportAuthorizer
+from milpbooklm_adapters.artifact_store import PgArtifactStore
 from milpbooklm_adapters.blobs import FilesystemBlobStore, PgBlobRepository
 from milpbooklm_adapters.chat import PgConversationStore
 from milpbooklm_adapters.db.connections import make_engine
@@ -35,6 +37,21 @@ from milpbooklm_adapters.security.notebook_store import PgNotebookStore
 from milpbooklm_adapters.security.pg_identity import PgAuditLog, PgUserRepository
 from milpbooklm_adapters.security.session_store import PgSessionTokenStore
 from milpbooklm_adapters.sources import FilesystemQuarantineStore, PgSourceCatalog, PgSourcePurge
+from milpbooklm_application.artifact_export import ExportArtifact
+from milpbooklm_application.artifact_lifecycle import (
+    CancelArtifact,
+    CreateArtifact,
+    EditArtifact,
+    GenerateArtifact,
+    MarkOutOfDate,
+    RegenerateArtifact,
+)
+from milpbooklm_application.artifact_recipes import build_recipe_registry
+from milpbooklm_application.artifact_study import (
+    GetStudyState,
+    SnapshotStudySession,
+    UpdateStudyState,
+)
 from milpbooklm_application.authn import LoginUser, LogoutUser, RegisterUser, RotateSession
 from milpbooklm_application.capabilities import CapabilityRuntime
 from milpbooklm_application.chat import GenerateChatTurn, GenerateNotebookOverview
@@ -81,13 +98,14 @@ from milpbooklm_domain.capabilities import CapabilityDefinition, DependencyId, F
 from milpbooklm_domain.indexing import STRUCTURAL_CHUNKER_V1
 from starlette import status
 
+from .artifact_routes import build_artifact_router
 from .auth_routes import build_auth_router
 from .capability_registry import load_capability_registry
 from .capability_routes import build_capability_router
 from .config import ChatProvider, InstallationConfig
 from .config_loader import load_config
 from .conversation_routes import build_conversation_router
-from .deps import ApiDeps, ResearchRunDeps
+from .deps import ApiDeps, ArtifactDeps, ResearchRunDeps
 from .grounding_routes import build_grounding_router
 from .health_routes import DeploymentHealth, build_health_router
 from .job_routes import build_job_router
@@ -170,6 +188,7 @@ def build_app(
     conversations: PgConversationStore | None = None,
     completion: LlamaCppCompletionProvider | FakeGroundingCompletionProvider | None = None,
     research: ResearchRunDeps | None = None,
+    artifacts: ArtifactDeps | None = None,
 ) -> FastAPI:
     """Build the API app from wired ports (the test/QA seam)."""
     app = FastAPI(title="MilpBook LM API")
@@ -229,6 +248,7 @@ def build_app(
             else None
         ),
         research=research,
+        artifacts=artifacts,
     )
     app.state.deps = deps
 
@@ -264,6 +284,8 @@ def build_app(
         app.include_router(build_job_router(deps, principal, jobs))
     if research is not None:
         app.include_router(build_research_router(deps, principal, research))
+    if artifacts is not None:
+        app.include_router(build_artifact_router(deps, principal, artifacts))
     if source_acquisition is not None and source_catalog is not None:
         app.include_router(
             build_source_router(
@@ -371,6 +393,24 @@ def create_app() -> FastAPI:
     grounding = PgGroundingStore(engine)
     conversations = PgConversationStore(engine)
     research_store = PgResearchRunStore(engine)
+    artifact_store = PgArtifactStore(engine)
+    artifact_registry = build_recipe_registry()
+    artifacts = ArtifactDeps(
+        store=artifact_store,
+        create=CreateArtifact(artifact_store),
+        generate=GenerateArtifact(artifact_store, artifact_registry, blob_store),
+        edit=EditArtifact(artifact_store, artifact_registry, blob_store),
+        regenerate=RegenerateArtifact(artifact_store, artifact_registry, blob_store),
+        cancel=CancelArtifact(artifact_store),
+        mark_out_of_date=MarkOutOfDate(artifact_store),
+        export=ExportArtifact(
+            artifact_store,
+            PgExportAuthorizer(engine, users, notebooks, PolicyEngine()),
+        ),
+        update_state=UpdateStudyState(artifact_store),
+        get_state=GetStudyState(artifact_store),
+        snapshot=SnapshotStudySession(artifact_store),
+    )
     app = build_app(
         users=users,
         hasher=Argon2PasswordHasher(),
@@ -395,6 +435,7 @@ def create_app() -> FastAPI:
             resume=ResumeResearchRun(research_store, jobs),
             cancel=CancelResearchRun(research_store, jobs),
         ),
+        artifacts=artifacts,
         health=DeploymentHealth(
             engine,
             installation.blob_root,

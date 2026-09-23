@@ -6,6 +6,21 @@ from collections.abc import Awaitable, Callable
 from dataclasses import dataclass
 
 from fastapi import Request
+from milpbooklm_application.artifact_core import ArtifactStore
+from milpbooklm_application.artifact_export import ExportArtifact
+from milpbooklm_application.artifact_lifecycle import (
+    CancelArtifact,
+    CreateArtifact,
+    EditArtifact,
+    GenerateArtifact,
+    MarkOutOfDate,
+    RegenerateArtifact,
+)
+from milpbooklm_application.artifact_study import (
+    GetStudyState,
+    SnapshotStudySession,
+    UpdateStudyState,
+)
 from milpbooklm_application.authn import LoginUser, LogoutUser, RegisterUser, RotateSession
 from milpbooklm_application.chat import (
     ConversationStore,
@@ -51,6 +66,23 @@ class ResearchRunDeps:
 
 
 @dataclass(frozen=True, slots=True)
+class ArtifactDeps:
+    """The wired studio artifact surface (routes answer 503 when absent)."""
+
+    store: ArtifactStore
+    create: CreateArtifact
+    generate: GenerateArtifact
+    edit: EditArtifact
+    regenerate: RegenerateArtifact
+    cancel: CancelArtifact
+    mark_out_of_date: MarkOutOfDate
+    export: ExportArtifact
+    update_state: UpdateStudyState
+    get_state: GetStudyState
+    snapshot: SnapshotStudySession
+
+
+@dataclass(frozen=True, slots=True)
 class ApiDeps:
     """Everything the API routers need (wired once at the composition root)."""
 
@@ -80,6 +112,7 @@ class ApiDeps:
     chat_turn: GenerateChatTurn | None = None
     notebook_overview: GenerateNotebookOverview | None = None
     research: ResearchRunDeps | None = None
+    artifacts: ArtifactDeps | None = None
 
 
 PrincipalDependency = Callable[[Request], Awaitable[Principal]]

@@ -23,7 +23,7 @@ import uuid
 
 import psycopg
 
-from .harness import _current_version, downgrade_to, run_migrations
+from .harness import _current_version, current_script_head, downgrade_to, run_migrations
 from .schema import METADATA
 from .triggers import TRIGGER_DDL
 
@@ -80,7 +80,13 @@ def run_rehearsal(
     try:
         with psycopg.connect(migration_dsn) as conn:
             head_version = _current_version(conn)
-            _step(steps, "record_head", head_version == "0001_baseline", f"head={head_version!r}")
+            expected_head = current_script_head()
+            _step(
+                steps,
+                "record_head",
+                head_version == expected_head,
+                f"head={head_version!r} expected={expected_head!r}",
+            )
 
         # Destructive step: downgrade to base (previous supported release = empty schema).
         downgrade_to(migration_dsn=migration_dsn, target="base")
@@ -99,7 +105,7 @@ def run_rehearsal(
                 tables == EXPECTED_TABLES,
                 f"missing={sorted(EXPECTED_TABLES - tables)}",
             )
-            _step(steps, "version_at_head", report.final_version == "0001_baseline")
+            _step(steps, "version_at_head", report.final_version == current_script_head())
             trigger_count = _trigger_count(conn)
             _step(
                 steps,
@@ -141,8 +147,10 @@ def run_rehearsal(
             doc = _first(
                 conn.execute(
                     "INSERT INTO canonical_documents (id, source_version_id, "
-                    "canonical_schema_version, parser_version) "
-                    "VALUES (%s, %s, '1', '1') RETURNING id",
+                    "canonical_schema_version, parser_identity, parser_version, "
+                    "parser_profile, tool_versions, contract_json) "
+                    "VALUES (%s, %s, '1', 'rehearsal', '1', 'rehearsal', '{}'::jsonb, "
+                    "'{}'::jsonb) RETURNING id",
                     (uuid.uuid4(), version),
                 ).fetchone()
             )

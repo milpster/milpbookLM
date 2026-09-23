@@ -2,8 +2,8 @@
   "schema_version": 1,
   "generated_by": "tools/spec/emit_conformance.py",
   "task": "FND-02",
-  "build": "d0281acb899010a9f9af07849e99143025e87124",
-  "timestamp": "2026-09-22T22:18:16.664258+00:00",
+  "build": "a4f536649d035cc0bfe6f1c507eaf2347723fee8",
+  "timestamp": "2026-09-23T08:36:12.569466+00:00",
   "requirements_total": 507,
   "capabilities": [
     {
@@ -557,7 +557,7 @@
     {
       "id": "artifact_lifecycle",
       "classification": "stable/core",
-      "implementation_status": "not_started",
+      "implementation_status": "implemented",
       "enabled": false,
       "effective": false,
       "effective_reason": "no compiled support (not implemented/enabled in registry)",

@@ -1,0 +1,38 @@
+{
+  "task": "31",
+  "title": "STD-01 artifact framework (recipes, lifecycle, manifests, renditions, study state)",
+  "status": "complete",
+  "commit_message": "feat(studio): STD-01 artifact framework (ARCH-13-001..014, TECH-13-001, ARCH-14-001)",
+  "implemented": [
+    "domain artifacts.py: ArtifactType (10), ArtifactStatus (7-state lifecycle incl. out_of_date), transition table + assert_transition_allowed, ArtifactRequest.manifest_items(), FrozenInputs, Rendition, ArtifactRecipe protocol, payload schema v2 + v1 upcaster",
+    "application artifact_core.py: errors, views (Artifact/ArtifactVersion/UserArtifactState/StudySnapshot), ArtifactStore port (12 methods, CAS-only)",
+    "application artifact_recipes.py: typed RecipeRegistry + ONE deterministic composite_echo demo recipe (no model calls); empty-inputs rejected",
+    "application artifact_lifecycle.py: CreateArtifact, synchronous generate pipeline (CAS draft->generating, freeze manifest, CAS ->validating, plan/generate/validate, render, publish immutable version, CAS ->ready with current_version_id), EditArtifact (etag If-Match -> 409, new manifest child of base manifest), RegenerateArtifact (pinned base version), CancelArtifact, MarkOutOfDate; validation/CAS failure -> failed with prior versions untouched",
+    "application artifact_export.py: two-stage export - request revalidates authz + effective restrictions and issues a grant; download revalidates CURRENT restrictions (tightened -> denied); ExportDeniedError carries the policy reason",
+    "application artifact_study.py: UpdateStudyState (per-user, revision CAS), GetStudyState, SnapshotStudySession (private, never creates/mutates versions)",
+    "adapters artifact_store.py: PgArtifactStore (CAS, versions insert-only, optimistic user state, private snapshots, manifest round-trip)",
+    "adapters artifact_export.py: PgExportAuthorizer - notebook membership via NotebookReader, policy engine decide_notebook(READ_CONTENT), source_restrictions access_denied check (global or per-user)",
+    "api artifact_routes.py: 13 endpoints under /api/v1/artifacts (create/GET/generate/cancel/out-of-date/GET version/edit/regenerate/export request/export download/study state GET+PUT/snapshot); principal + authorize_notebook on every route; audit records with actor/request context; download route re-derives frozen source ids from the stored version row (client echo never trusted)",
+    "capability artifact_lifecycle registered: implemented=true, enabled=false in capabilities.yaml AND capabilities.generated.json (lockstep), conformance.json regenerated; NOT advertised until E2E-003/T35 enablement",
+    "migration 0009_std_01 (down_revision 0008_rsr_01b): additive widen of ck_artifacts_status to the full 7-state lifecycle; studio.py metadata updated to final shape; rehearse.py record_head/version_at_head now use current_script_head()",
+    "tests: full transition matrix (49 pairs), upcaster golden v1->v2 + idempotence + unknown rejection, lifecycle over fake store (edit lineage, prior-version retention, racing CAS -> failed), export double-revalidation with a flipping authorizer, study isolation + revision CAS + snapshot privacy, recipe registry/determinism/tamper-detection, live-PG store tests (CAS, insert-only versions, optimistic state, provenance)"
+  ],
+  "commands": [
+    {"command": "uv run python tools/spec/emit_conformance.py", "exit": 0, "result": "artifacts/conformance.json regenerated: artifact_lifecycle implementation_status=implemented, enabled=false"},
+    {"command": "MILPBOOKLM_DB_URL='postgresql://milpbooklm_migration:milpbooklm_migration@/milpbooklm_t13?host=/home/srcds/dev/milpbookLM/scratch/t13-smoke&port=29521' uv run alembic -c migrations/alembic.ini upgrade head", "exit": 0, "result": "0008_rsr_01b -> 0009_std_01 applied ADDITIVELY to live scratch DB; alembic_version=0009_std_01; constraint verified: status = ANY (ARRAY['draft','generating','validating','ready','failed','cancelled','out_of_date'])"},
+    {"command": "uv run pytest tests/meta tests/architecture tests/unit -q", "exit": 0, "result": "364 passed, 3 warnings in 26.67s (276 baseline + 88 new)"},
+    {"command": "uv run ruff check .", "exit": 0, "result": "all checks passed"},
+    {"command": "uv run mypy", "exit": 0, "result": "Success: no issues found in 218 source files"},
+    {"command": "uv run lint-imports", "exit": 0, "result": "Contracts: 4 kept, 0 broken (domain innermost, domain no adapter/app/framework, application no adapter, api/workers independent)"},
+    {"command": "rehearsal bootstrap: CREATE DATABASE milpbooklm_t31_rehearse OWNER milpbooklm_migration + roles.sql + public.uuidv7() shim (replicating the live t13-smoke PG17 function)", "exit": 0, "result": "fresh DB bootstrapped on the t13-smoke cluster (port 29521); alembic upgrade head -> 0009_std_01"},
+    {"command": "MILPBOOKLM_MIGRATION_DSN='postgresql://milpbooklm_migration:milpbooklm_migration@/milpbooklm_t31_rehearse?host=/home/srcds/dev/milpbookLM/scratch/t13-smoke&port=29521' bash migrations/rehearse.sh", "exit": 0, "result": "outcome PASS, 7/7 steps: record_head pass (0009_std_01==0009_std_01), downgrade_base pass (remaining=[]), triggers_gone pass, upgrade_head pass (missing=[]), version_at_head pass, triggers_restored pass (count=14), immutability_enforced pass; 509ms"}
+  ],
+  "notes": [
+    "Production bug found+fixed: _GenerationPipeline._publish built the ArtifactVersionView but never called store.create_version - the immutable row was never persisted. Fixed; caught by the fake-store test asserting exactly one published version.",
+    "Pre-existing stale rehearsal fixture fixed (not caused by 0009): rehearse.py's immutability spot-check INSERT omitted canonical_documents columns parser_identity/parser_profile/tool_versions/contract_json (NOT NULL since 0002_ing_01b). Aligned the fixture with the current schema; rehearsal now runs the full destructive cycle green.",
+    "Runtime deviation (scratch-only, never committed): the t13-smoke cluster runs host PostgreSQL 17, which lacks PG18's built-in uuidv7(); the rehearsal DB was given the same public.uuidv7() SQL shim already present in the live t13 DB (48-bit unix-ms | version 7 | variant 10 | rand, per task-4 precedent).",
+    "Capability state: artifact_lifecycle implemented=true, enabled=false - effective surface unchanged (never advertised). Enabling later requires adding cap.artifact_lifecycle to MILPBOOKLM_ENABLED_CAPABILITY_FLAGS in scratch/t20-gate/start-api.sh at the orchestrator's next restart (NOT done in this task).",
+    "Export security: the download endpoint re-derives the frozen source_version id set from the stored artifact_versions.evidence_dependencies and re-checks membership + restrictions fresh; client-echoed ids are validated for path match only, never trusted for authorization.",
+    "artifact_versions immutability is enforced by the generic milpbooklm_immutability_violation() trigger (rehearsal immutability_enforced step + live-PG test assert UPDATE blocked and row unchanged)."
+  ]
+}

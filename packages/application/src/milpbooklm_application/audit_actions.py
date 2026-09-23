@@ -33,11 +33,19 @@ class AuditAction(StrEnum):
     # Notebook lifecycle (implemented: UI-01 creation route).
     NOTEBOOK_CREATED = "notebook.created"
 
+    # Export (implemented: STD-01 two-stage artifact export revalidation).
+    EXPORT_INITIATED = "export.initiated"
+
+    # Studio artifacts (STD-01: lifecycle publication, export denial, study snapshots).
+    ARTIFACT_CREATED = "artifact.created"
+    ARTIFACT_VERSION_PUBLISHED = "artifact.version_published"
+    ARTIFACT_EXPORT_DENIED = "artifact.export_denied"
+    STUDY_SNAPSHOT_CREATED = "study.snapshot_created"
+
     # Seams for later features (named, not yet emitted by any code path):
-    # membership/shared-link changes, purge, export, and consequential tool actions.
+    # membership/shared-link changes, purge, and consequential tool actions.
     MEMBERSHIP_CHANGED = "membership.changed"
     PURGE_INITIATED = "purge.initiated"
-    EXPORT_INITIATED = "export.initiated"
     TOOL_INVOKED = "tool.invoked"
     # RSR-01b: server-side research tool denial (the prompt-injection log).
     TOOL_DENIED = "tool.denied"

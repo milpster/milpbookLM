@@ -97,7 +97,11 @@ artifacts = sa.Table(
     etag_column(),
     created_at(),
     updated_at(),
-    sa.CheckConstraint("status IN ('draft', 'ready', 'out_of_date')", name="ck_artifacts_status"),
+    sa.CheckConstraint(
+        "status IN ('draft', 'generating', 'validating', 'ready', 'failed', 'cancelled', "
+        "'out_of_date')",
+        name="ck_artifacts_status",
+    ),
     sa.CheckConstraint(
         "artifact_type IN ('report', 'table', 'mind_map', 'flashcards', 'quiz', 'slide_deck', "
         "'infographic', 'audio_overview', 'video_overview', 'composite')",
