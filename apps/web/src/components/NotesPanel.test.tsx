@@ -455,6 +455,74 @@ describe("NotesPanel", () => {
     expect(screen.queryByRole("textbox", { name: "Title" })).toBeNull();
   });
 
+  it("keeps the create subsection collapsed until New note, resets on Cancel, and clears the create error", async () => {
+    const note = notes[0];
+    if (note === undefined) throw new Error("expected note fixture");
+    let createAttempts = 0;
+    vi.stubGlobal(
+      "fetch",
+      vi.fn(async (input: RequestInfo | URL, init?: RequestInit): Promise<Response> => {
+        const url = requestUrl(input);
+        const method =
+          init?.method ??
+          (typeof input === "string" || input instanceof URL ? "GET" : input.method);
+        if (method === "POST" && url.includes(`/notebooks/${NOTEBOOK_ID}/notes`)) {
+          createAttempts += 1;
+          return jsonResponse(500, { detail: "storage unavailable" });
+        }
+        if (url.includes(`/notebooks/${NOTEBOOK_ID}/notes`))
+          return jsonResponse(200, { notes: [note] });
+        if (url.includes(`/notes/${note.note_id}/revisions`))
+          return jsonResponse(200, { revisions: revisionsFor(note) });
+        if (url.includes(`/notes/${note.note_id}`)) return jsonResponse(200, note);
+        return jsonResponse(404, { detail: "not found" });
+      }),
+    );
+
+    renderWithClient(<NotesPanel actorId={ACTOR_ID} notebookId={NOTEBOOK_ID} />);
+    // Read-first mount: the reading output shows and the create form is absent.
+    expect((await screen.findAllByText(`Body of ${note.title}`)).length).toBeGreaterThan(0);
+    expect(screen.queryByRole("textbox", { name: "Title" })).toBeNull();
+    expect(document.getElementById("note-create-form")).toBeNull();
+    const newNoteButton = screen.getByRole("button", { name: "New note" });
+    expect(newNoteButton.getAttribute("aria-expanded")).toBe("false");
+    expect(newNoteButton.getAttribute("aria-controls")).toBe("note-create-form");
+
+    fireEvent.click(newNoteButton);
+    expect(newNoteButton.getAttribute("aria-expanded")).toBe("true");
+    fireEvent.change(screen.getByRole("textbox", { name: "Title" }), {
+      target: { value: "Abandoned draft" },
+    });
+    fireEvent.change(screen.getByRole("textbox", { name: "Paragraph block 1" }), {
+      target: { value: "Draft body" },
+    });
+    fireEvent.click(screen.getByRole("button", { name: "+ Add block" }));
+    fireEvent.click(screen.getByRole("button", { name: "Heading" }));
+
+    // A failed create surfaces the error but keeps the subsection expanded.
+    fireEvent.click(screen.getByRole("button", { name: "Create note" }));
+    await vi.waitFor(() => expect(createAttempts).toBe(1));
+    expect(screen.getByText("Creating the note failed. Please try again.")).toBeDefined();
+    expect(newNoteButton.getAttribute("aria-expanded")).toBe("true");
+
+    fireEvent.click(screen.getByRole("button", { name: "Cancel" }));
+
+    expect(newNoteButton.getAttribute("aria-expanded")).toBe("false");
+    expect(document.getElementById("note-create-form")).toBeNull();
+    expect(screen.queryByRole("textbox", { name: "Title" })).toBeNull();
+    expect(screen.queryByText("Creating the note failed. Please try again.")).toBeNull();
+
+    // Reopening starts from a clean draft: empty title and a single empty paragraph.
+    fireEvent.click(newNoteButton);
+    const title = screen.getByRole("textbox", { name: "Title" }) as HTMLInputElement;
+    expect(title.value).toBe("");
+    const paragraph = screen.getByRole("textbox", {
+      name: "Paragraph block 1",
+    }) as HTMLTextAreaElement;
+    expect(paragraph.value).toBe("");
+    expect(screen.queryByRole("textbox", { name: "Heading block 2" })).toBeNull();
+  });
+
   it("edits one rich block while preserving the other blocks", async () => {
     const note = notes[0];
     if (note === undefined) throw new Error("expected note fixture");
