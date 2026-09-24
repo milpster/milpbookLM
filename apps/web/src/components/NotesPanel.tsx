@@ -85,6 +85,16 @@ export function NotesPanel({ actorId, notebookId }: Props): ReactNode {
     selectedId !== null && noteList.some((note) => note.note_id === selectedId)
       ? selectedId
       : firstId;
+  const selectedIndex =
+    effectiveId === null ? -1 : noteList.findIndex((note) => note.note_id === effectiveId);
+  // Chapter navigation: step through the notebook's note list in order, clamped
+  // at both ends (no wrap). Selecting a note always returns it to read-only view.
+  const stepToNote = (delta: number): void => {
+    const target = noteList[selectedIndex + delta];
+    if (target === undefined) return;
+    setSelectedId(target.note_id);
+    setEditingId(null);
+  };
   const [createBlocks, setCreateBlocks] = useState<readonly EditorBlock[]>(
     () => emptyEditorDocument().blocks,
   );
@@ -181,14 +191,39 @@ export function NotesPanel({ actorId, notebookId }: Props): ReactNode {
             <p>Select a note on the left to read and edit it.</p>
           </div>
         ) : (
-          <NoteDetail
-            key={effectiveId}
-            actorId={actorId}
-            notebookId={notebookId}
-            noteId={effectiveId}
-            isEditing={editingId === effectiveId}
-            onEditingChange={(editing) => setEditingId(editing ? effectiveId : null)}
-          />
+          <>
+            <div className="note-chapter-nav">
+              <button
+                className="secondary button-compact"
+                disabled={selectedIndex <= 0}
+                type="button"
+                aria-label="Previous note"
+                onClick={() => stepToNote(-1)}
+              >
+                Previous
+              </button>
+              <span className="note-chapter-position" aria-live="polite">
+                {selectedIndex + 1} / {noteList.length}
+              </span>
+              <button
+                className="secondary button-compact"
+                disabled={selectedIndex >= noteList.length - 1}
+                type="button"
+                aria-label="Next note"
+                onClick={() => stepToNote(1)}
+              >
+                Next
+              </button>
+            </div>
+            <NoteDetail
+              key={effectiveId}
+              actorId={actorId}
+              notebookId={notebookId}
+              noteId={effectiveId}
+              isEditing={editingId === effectiveId}
+              onEditingChange={(editing) => setEditingId(editing ? effectiveId : null)}
+            />
+          </>
         )}
       </section>
     </div>
@@ -353,7 +388,7 @@ function NoteDetail({
               </div>
               {note.editable && !viewingHistory ? (
                 <button
-                  className="primary"
+                  className="secondary button-compact"
                   type="button"
                   aria-label="Edit note"
                   onClick={() => {
