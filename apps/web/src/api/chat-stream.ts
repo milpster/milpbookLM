@@ -12,10 +12,14 @@ type StreamHandlers = {
 const tokenSchema = z.object({ token: z.string() });
 const errorSchema = z.object({ detail: z.string() });
 
-class ChatStreamError extends Error {
-  constructor(message: string) {
+export class ChatStreamError extends Error {
+  /** Detail from a server-sent `error` frame; null for transport-level failures. */
+  readonly serverDetail: string | null;
+
+  constructor(message: string, serverDetail: string | null = null) {
     super(message);
     this.name = "ChatStreamError";
+    this.serverDetail = serverDetail;
   }
 }
 
@@ -72,7 +76,7 @@ function dispatchFrame(frame: string, handlers: StreamHandlers): boolean {
     return true;
   } else if (event === "error") {
     const parsed = errorSchema.parse(JSON.parse(data));
-    throw new ChatStreamError(parsed.detail);
+    throw new ChatStreamError(parsed.detail, parsed.detail);
   }
   return false;
 }

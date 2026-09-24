@@ -1,7 +1,7 @@
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import type { FormEvent, KeyboardEvent, ReactNode } from "react";
 import { useRef, useState } from "react";
-import { streamChat } from "../api/chat-stream";
+import { ChatStreamError, streamChat } from "../api/chat-stream";
 import {
   cancelConversation,
   createConversation,
@@ -161,8 +161,9 @@ export function ChatPanel({ actorId, notebookId, navigate }: Props): ReactNode {
     } catch (caught) {
       if (caught instanceof DOMException && caught.name === "AbortError")
         setStatus("Generation cancelled");
-      else
-        setStatus("The connection was lost. The conversation was reloaded.");
+      else if (caught instanceof ChatStreamError && caught.serverDetail !== null)
+        setStatus(`The request failed: ${caught.serverDetail}`);
+      else setStatus("The connection was lost. The conversation was reloaded.");
       await queryClient.fetchQuery({
         queryKey: queryKeys.privateConversation(actorId, conversationId),
         queryFn: () => getConversation(conversationId),
@@ -262,6 +263,7 @@ export function ChatPanel({ actorId, notebookId, navigate }: Props): ReactNode {
           </div>
         )}
         <p className="muted" role="status" aria-live="polite" aria-label="Assistant status">
+          {isGenerating ? <span className="spinner" aria-hidden="true" /> : null}
           {status}
         </p>
         <fieldset className="note-selection">

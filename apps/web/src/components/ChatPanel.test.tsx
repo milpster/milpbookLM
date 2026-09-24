@@ -14,6 +14,8 @@ vi.mock("../api/chat-stream", () => ({
 const ACTOR_ID = "11111111-1111-4111-8111-111111111111";
 const NOTEBOOK_ID = "6f1e1b6e-0a3a-4d6c-9a8e-1c2d3e4f5a6b";
 const CONVERSATION_ID = "bbbbbbbb-0000-4000-8000-000000000001";
+const NOTE_A = "aaaaaaaa-0000-4000-8000-00000000000a";
+const NOTE_B = "aaaaaaaa-0000-4000-8000-00000000000b";
 
 const capabilitiesBody = {
   capabilities: [
@@ -100,6 +102,61 @@ function stubApiFetch() {
   );
 }
 
+function stubGroundingFetch() {
+  const note = (id: string, title: string, revisionId: string, revisionNumber: number) => ({
+    note_id: id,
+    notebook_id: NOTEBOOK_ID,
+    kind: "user",
+    editable: true,
+    title,
+    current_revision_id: revisionId,
+    revision: revisionNumber,
+    etag: String(revisionNumber),
+    created_by_user_id: ACTOR_ID,
+    created_at: "2026-01-01T00:00:00Z",
+    updated_at: "2026-01-01T00:00:00Z",
+  });
+  const revision = (id: string, noteId: string, revisionNumber: number) => ({
+    revision_id: id,
+    note_id: noteId,
+    revision_number: revisionNumber,
+    content: { blocks: [{ type: "paragraph", text: "Grounding" }] },
+    content_sha256: `hash-${revisionNumber}`,
+    author_user_id: ACTOR_ID,
+    provenance_refs: [],
+    content_dependencies: [],
+    created_at: "2026-01-01T00:00:00Z",
+  });
+  vi.stubGlobal(
+    "fetch",
+    vi.fn(async (input: RequestInfo | URL): Promise<Response> => {
+      const url = requestUrl(input);
+      if (url.includes("/capabilities")) return jsonResponse(200, capabilitiesBody);
+      if (url.includes(`/conversations/${CONVERSATION_ID}`))
+        return jsonResponse(200, conversationBody);
+      if (url.includes(`/notebooks/${NOTEBOOK_ID}/notes`))
+        return jsonResponse(200, {
+          notes: [
+            note(NOTE_A, "Research log", "cccccccc-0000-4000-8000-00000000000c", 2),
+            note(NOTE_B, "Reading list", "cccccccc-0000-4000-8000-00000000000e", 1),
+          ],
+        });
+      if (url.includes(`/notes/${NOTE_A}/revisions`))
+        return jsonResponse(200, {
+          revisions: [
+            revision("cccccccc-0000-4000-8000-00000000000c", NOTE_A, 1),
+            revision("cccccccc-0000-4000-8000-00000000000d", NOTE_A, 2),
+          ],
+        });
+      if (url.includes(`/notes/${NOTE_B}/revisions`))
+        return jsonResponse(200, {
+          revisions: [revision("cccccccc-0000-4000-8000-00000000000e", NOTE_B, 1)],
+        });
+      return jsonResponse(404, { detail: "not found" });
+    }),
+  );
+}
+
 afterEach(() => {
   cleanup();
   vi.unstubAllGlobals();
@@ -180,6 +237,66 @@ describe("ChatPanel composer", () => {
     fireEvent.keyDown(textarea, { key: "Enter" });
     await vi.waitFor(() => expect(vi.mocked(streamChat)).toHaveBeenCalledTimes(1));
     expect(vi.mocked(streamChat).mock.calls[0]?.[2]).toEqual([]);
+  });
+
+  it("seeds every revision selected with the tree collapsed on mount", async () => {
+    rememberActiveConversation(NOTEBOOK_ID, CONVERSATION_ID);
+    sessionStorage.clear();
+    stubGroundingFetch();
+    renderWithClient(
+      <ChatPanel actorId={ACTOR_ID} notebookId={NOTEBOOK_ID} navigate={() => undefined} />,
+    );
+    expect(await screen.findByText("3 / 3 selected")).toBeDefined();
+    expect(screen.queryByRole("checkbox")).toBeNull();
+    const showButton = screen.getByRole("button", { name: "Show notes" });
+    expect(showButton.getAttribute("aria-expanded")).toBe("false");
+    expect(
+      JSON.parse(
+        sessionStorage.getItem(`milpbookLM:chat-notes:${ACTOR_ID}:${NOTEBOOK_ID}`) ?? "[]",
+      ),
+    ).toEqual([
+      "cccccccc-0000-4000-8000-00000000000c",
+      "cccccccc-0000-4000-8000-00000000000d",
+      "cccccccc-0000-4000-8000-00000000000e",
+    ]);
+    fireEvent.click(showButton);
+    const checkboxes = await screen.findAllByRole("checkbox");
+    expect(checkboxes).toHaveLength(4);
+    for (const checkbox of checkboxes) expect((checkbox as HTMLInputElement).checked).toBe(true);
+    expect(screen.getByText("rev 2")).toBeDefined();
+    expect(screen.getAllByText("rev 1")).toHaveLength(1);
+  });
+
+  it("shows a spinner in the status line while a request is in flight", async () => {
+    let finishStream = (): void => undefined;
+    vi.mocked(streamChat).mockImplementationOnce(
+      async (_conversationId, _content, _noteIds, _signal, handlers) =>
+        new Promise<void>((resolve) => {
+          finishStream = () => {
+            handlers.onTerminal({
+              answer_message_id: null,
+              manifest_id: "eeeeeeee-0000-4000-8000-000000000001",
+              insufficient_evidence: false,
+              state: null,
+            });
+            resolve();
+          };
+        }),
+    );
+    rememberActiveConversation(NOTEBOOK_ID, CONVERSATION_ID);
+    stubApiFetch();
+    renderWithClient(
+      <ChatPanel actorId={ACTOR_ID} notebookId={NOTEBOOK_ID} navigate={() => undefined} />,
+    );
+    const textarea = await screen.findByRole("textbox");
+    fireEvent.change(textarea, { target: { value: "Spinner check" } });
+    fireEvent.keyDown(textarea, { key: "Enter" });
+    const status = await screen.findByRole("status", { name: "Assistant status" });
+    await vi.waitFor(() => expect(status.querySelector(".spinner")).not.toBeNull());
+    expect(status.textContent).toBe("Request in progress");
+    finishStream();
+    await vi.waitFor(() => expect(status.querySelector(".spinner")).toBeNull());
+    expect(status.textContent).toBe("Answer complete");
   });
 
   it("keeps the draft and does not submit on Shift+Enter", async () => {

@@ -802,6 +802,22 @@ label {
   overflow-wrap: anywhere;
   line-height: 1.65;
 }
+.spinner {
+  display: inline-block;
+  inline-size: 0.875rem;
+  block-size: 0.875rem;
+  margin-inline-end: var(--space-2);
+  border: 2px solid var(--border-default);
+  border-block-start-color: var(--accent-primary);
+  border-radius: 50%;
+  vertical-align: -0.125em;
+  animation: spinner-rotate 0.8s linear infinite;
+}
+@keyframes spinner-rotate {
+  to {
+    transform: rotate(360deg);
+  }
+}
 .citation-list {
   display: flex;
   flex-wrap: wrap;
@@ -1301,7 +1317,8 @@ html {
     .resource-card,
     .resource-row,
     .capability,
-    .skip-link
+    .skip-link,
+    .spinner
   ) {
     transition-duration: 0.01ms;
     animation-duration: 0.01ms;
