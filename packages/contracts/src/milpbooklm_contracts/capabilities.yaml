@@ -1223,9 +1223,9 @@ capabilities:
   reference_maturity: documented
   phase: 1
   planning_workstream: ING-01
-  implementation_status: not_started
-  implemented: false
-  enabled: false
+  implementation_status: implemented
+  implemented: true
+  enabled: true
   feature_flag: cap.source_pdf
   dependencies:
   - parser_registry

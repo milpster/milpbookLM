@@ -55,6 +55,7 @@ IMPLEMENTED_CORE = frozenset(
         "source_images",
         "source_audio",
         "source_public_youtube_urls_transcript_backed_video_sources",
+        "source_pdf",
     }
 )
 
@@ -97,6 +98,10 @@ IMPLEMENTED_EVIDENCE = {
     "source_web_urls": "apps/api/source_import_routes.py:/web-url + application/web_fetch.py",
     "source_public_youtube_urls_transcript_backed_video_sources": (
         "apps/api/source_import_routes.py:/public-video + application/public_video.py"
+    ),
+    "source_pdf": (
+        "source_import_routes.py:/import -> byte sniffing -> ingestion.parse -> "
+        "canonical persistence -> SourceActivationStore + tests/unit/db/test_pdf_ingestion.py"
     ),
 }
 
@@ -143,7 +148,7 @@ DISABLED_EVIDENCE = {
     "appearance": "no implemented appearance preference route",
     "responsive_web_access": "architecture property, not a separately implemented capability route",
     "custom_providers": "no implemented provider-configuration route",
-    "source_pdf": "PDF parser exists, but PDF ingestion is deferred: no go-live promotion",
+
     "source_plain_text_and_pasted_text": (
         "paste route/parser exist, but source-family activation is not promoted "
         "from parser presence"
@@ -325,7 +330,7 @@ def test_every_target_capability_has_audited_evidence_and_conservative_state() -
     registry = {definition.id: definition for definition in definitions}
     assert registry[CapabilityId("notes")].implemented is True
     assert registry[CapabilityId("notes")].enabled is False
-    assert registry[CapabilityId("source_pdf")].implemented is False
-    assert registry[CapabilityId("source_pdf")].enabled is False
+    assert registry[CapabilityId("source_pdf")].implemented is True
+    assert registry[CapabilityId("source_pdf")].enabled is True
     assert registry[CapabilityId("source_plain_text_and_pasted_text")].implemented is False
     assert registry[CapabilityId("source_plain_text_and_pasted_text")].enabled is False
