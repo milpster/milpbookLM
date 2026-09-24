@@ -338,9 +338,42 @@ code {
 .note-list-item {
   flex-direction: column;
   align-items: flex-start;
+  justify-content: flex-start;
   gap: var(--space-1);
   inline-size: 100%;
   text-align: start;
+}
+.note-list-item > :first-child {
+  min-inline-size: 0;
+  color: var(--text-primary);
+  overflow-wrap: anywhere;
+}
+.note-header {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: var(--space-3) var(--space-4);
+  min-inline-size: 0;
+}
+.note-header-main {
+  min-inline-size: 0;
+  min-block-size: 100%;
+}
+.note-header-main h3 {
+  margin: 0;
+  overflow-wrap: anywhere;
+}
+.note-header-main p {
+  margin: 0;
+}
+.note-revision-label {
+  min-inline-size: 0;
+  overflow-wrap: anywhere;
+}
+.note-revisions {
+  border-block-start: 1px solid var(--border-default);
+  padding-block-start: var(--space-4);
 }
 .note-content {
   display: grid;

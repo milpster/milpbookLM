@@ -87,6 +87,7 @@ export function NotesPanel({ actorId, notebookId }: Props): ReactNode {
       : firstId;
   const selectedIndex =
     effectiveId === null ? -1 : noteList.findIndex((note) => note.note_id === effectiveId);
+  const activeNote = selectedIndex >= 0 ? (noteList[selectedIndex] ?? null) : null;
   // Chapter navigation: step through the notebook's note list in order, clamped
   // at both ends (no wrap). Selecting a note always returns it to read-only view.
   const stepToNote = (delta: number): void => {
@@ -168,7 +169,7 @@ export function NotesPanel({ actorId, notebookId }: Props): ReactNode {
             <button
               key={note.note_id}
               type="button"
-              className="note-list-item"
+              className="note-list-item resource-row"
               aria-pressed={note.note_id === effectiveId}
               onClick={() => {
                 setSelectedId(note.note_id);
@@ -185,35 +186,43 @@ export function NotesPanel({ actorId, notebookId }: Props): ReactNode {
       </section>
       <section className="panel-stack" aria-labelledby="note-detail-title">
         <h2 id="note-detail-title">Note</h2>
-        {effectiveId === null ? (
+        {activeNote === null || effectiveId === null ? (
           <div className="empty-state">
             <h3>No note selected</h3>
             <p>Select a note on the left to read and edit it.</p>
           </div>
         ) : (
           <>
-            <div className="note-chapter-nav">
-              <button
-                className="secondary button-compact"
-                disabled={selectedIndex <= 0}
-                type="button"
-                aria-label="Previous note"
-                onClick={() => stepToNote(-1)}
-              >
-                Previous
-              </button>
-              <span className="note-chapter-position" aria-live="polite">
-                {selectedIndex + 1} / {noteList.length}
-              </span>
-              <button
-                className="secondary button-compact"
-                disabled={selectedIndex >= noteList.length - 1}
-                type="button"
-                aria-label="Next note"
-                onClick={() => stepToNote(1)}
-              >
-                Next
-              </button>
+            <div className="note-header">
+              <div className="note-header-main">
+                <h3>{activeNote.title}</h3>
+                <p className="resource-meta">
+                  {activeNote.kind} | revision {activeNote.revision}
+                </p>
+              </div>
+              <div className="note-chapter-nav">
+                <button
+                  className="secondary button-compact"
+                  disabled={selectedIndex <= 0}
+                  type="button"
+                  aria-label="Previous note"
+                  onClick={() => stepToNote(-1)}
+                >
+                  Previous
+                </button>
+                <span className="note-chapter-position" aria-live="polite">
+                  {selectedIndex + 1} / {noteList.length}
+                </span>
+                <button
+                  className="secondary button-compact"
+                  disabled={selectedIndex >= noteList.length - 1}
+                  type="button"
+                  aria-label="Next note"
+                  onClick={() => stepToNote(1)}
+                >
+                  Next
+                </button>
+              </div>
             </div>
             <NoteDetail
               key={effectiveId}
@@ -320,12 +329,6 @@ function NoteDetail({
         </p>
       ) : (
         <>
-          <div className="row-main">
-            <h3>{note.title}</h3>
-            <p className="resource-meta">
-              {note.kind} | {note.editable ? "editable" : "read-only"} | etag {note.etag}
-            </p>
-          </div>
           {conflictMessage === "" ? null : (
             <p className="notice error" role="alert">
               {conflictMessage}
@@ -355,7 +358,7 @@ function NoteDetail({
                   {edit.isPending ? "Saving..." : "Save new revision"}
                 </button>
                 <button
-                  className="secondary"
+                  className="secondary button-compact"
                   disabled={edit.isPending}
                   type="button"
                   onClick={cancelEdit}
@@ -367,13 +370,32 @@ function NoteDetail({
             </form>
           ) : (
             <>
+              {note.editable && !viewingHistory ? (
+                <div className="action-cluster">
+                  <button
+                    className="secondary button-compact"
+                    type="button"
+                    aria-label="Edit note"
+                    onClick={() => {
+                      edit.reset();
+                      onEditingChange(true);
+                    }}
+                  >
+                    Edit
+                  </button>
+                </div>
+              ) : null}
               <div className="note-detail">
                 {viewingHistory && displayedRevision !== null ? (
                   <div className="revision-banner" role="status">
                     <p className="muted">
                       Viewing revision {displayedRevision.revision_number} (read-only)
                     </p>
-                    <button type="button" onClick={() => setViewingId(null)}>
+                    <button
+                      className="secondary button-compact"
+                      type="button"
+                      onClick={() => setViewingId(null)}
+                    >
                       Return to current revision
                     </button>
                   </div>
@@ -386,33 +408,21 @@ function NoteDetail({
                   <ContentView content={displayedRevision.content} />
                 )}
               </div>
-              {note.editable && !viewingHistory ? (
-                <button
-                  className="secondary button-compact"
-                  type="button"
-                  aria-label="Edit note"
-                  onClick={() => {
-                    edit.reset();
-                    onEditingChange(true);
-                  }}
-                >
-                  Edit
-                </button>
-              ) : null}
             </>
           )}
-          <div className="form-stack compact">
+          <div className="note-revisions form-stack compact">
             <p className="muted">Revisions</p>
             <ol className="plain-list">
               {revisions.map((revision) => (
                 <li key={revision.revision_id}>
-                  <span>
+                  <span className="note-revision-label">
                     Revision {revision.revision_number} | {revision.created_at}
                   </span>
                   {revision.revision_id === note.current_revision_id ? (
                     <span className="muted">(current)</span>
                   ) : (
                     <button
+                      className="secondary button-compact"
                       type="button"
                       aria-pressed={revision.revision_id === viewingId}
                       onClick={() =>
