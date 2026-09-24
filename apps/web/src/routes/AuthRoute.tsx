@@ -85,7 +85,7 @@ export function AuthRoute({ navigate }: RouteProps): ReactNode {
               {error}
             </p>
           )}
-          <button className="primary" type="submit" disabled={busy}>
+          <button className="primary button-primary" type="submit" disabled={busy}>
             {busy ? "Working..." : mode === "login" ? "Log in" : "Register"}
           </button>
         </form>

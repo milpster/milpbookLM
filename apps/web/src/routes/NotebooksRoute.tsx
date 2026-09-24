@@ -62,12 +62,12 @@ export function NotebooksRoute({ navigate }: RouteProps): ReactNode {
               maxLength={300}
               placeholder="Notebook title"
             />
-            <button className="primary" type="submit" disabled={create.isPending}>
+            <button className="primary button-primary" type="submit" disabled={create.isPending}>
               {create.isPending ? "Creating..." : "Create notebook"}
             </button>
           </form>
         ) : (
-          <button className="primary" type="button" disabled aria-describedby="create-status">
+          <button className="primary button-primary" type="button" disabled aria-describedby="create-status">
             Create notebook
           </button>
         )}
@@ -101,7 +101,7 @@ export function NotebooksRoute({ navigate }: RouteProps): ReactNode {
             <h2>{notebook.title}</h2>
             <p>Custody: {notebook.custody_state}</p>
             <button
-              className="secondary"
+              className="secondary button-ghost"
               type="button"
               onClick={() => navigate(`/notebooks/${notebook.notebook_id}`)}
             >
