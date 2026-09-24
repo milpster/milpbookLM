@@ -321,7 +321,7 @@ describe("NotesPanel", () => {
     );
     renderWithClient(<NotesPanel actorId={ACTOR_ID} notebookId={NOTEBOOK_ID} />);
     expect(await screen.findByRole("heading", { name: "Heading" })).toBeDefined();
-    expect(screen.getAllByRole("list")).toHaveLength(3);
+    expect(screen.getAllByRole("list")).toHaveLength(5);
     expect(screen.getByText(/fallback/)).toBeDefined();
     const textarea = screen.getByDisplayValue("Editable");
     fireEvent.change(textarea, { target: { value: "Edited" } });
@@ -337,6 +337,219 @@ describe("NotesPanel", () => {
           { type: "unknown", payload: "fallback" },
         ],
       },
+    });
+  });
+
+  it("creates a note with heading, paragraph, and list blocks", async () => {
+    const sourceNote = notes[0];
+    if (sourceNote === undefined) throw new Error("expected note fixture");
+    const createdNote = {
+      ...sourceNote,
+      note_id: noteId(99),
+      title: "Structured note",
+      current_revision_id: revId(99),
+      revision: 1,
+      etag: "created-etag",
+    };
+    const createdRevision = {
+      ...revisionsFor(createdNote)[0],
+      content: {
+        blocks: [
+          { type: "paragraph", text: "Research starts here." },
+          { type: "heading", level: 3, text: "Next steps" },
+          { type: "ordered_list", items: ["First", "Second"] },
+          { type: "unordered_list", items: ["Keep the source" ] },
+        ],
+      },
+    };
+    let submitted: unknown;
+    let created = false;
+    vi.stubGlobal(
+      "fetch",
+      vi.fn(async (input: RequestInfo | URL, init?: RequestInit): Promise<Response> => {
+        const url = requestUrl(input);
+        const method =
+          init?.method ??
+          (typeof input === "string" || input instanceof URL ? "GET" : input.method);
+        if (method === "POST" && url.includes(`/notebooks/${NOTEBOOK_ID}/notes`)) {
+          if (!(input instanceof Request)) throw new Error("expected ky request");
+          submitted = JSON.parse(await input.clone().text());
+          created = true;
+          return jsonResponse(201, { note: createdNote, revision: createdRevision });
+        }
+        if (url.includes(`/notebooks/${NOTEBOOK_ID}/notes`))
+          return jsonResponse(200, { notes: created ? [createdNote] : [] });
+        if (url.includes(`/notes/${createdNote.note_id}/revisions`))
+          return jsonResponse(200, { revisions: [createdRevision] });
+        if (url.includes(`/notes/${createdNote.note_id}`)) return jsonResponse(200, createdNote);
+        return jsonResponse(404, { detail: "not found" });
+      }),
+    );
+
+    renderWithClient(<NotesPanel actorId={ACTOR_ID} notebookId={NOTEBOOK_ID} />);
+    fireEvent.change(await screen.findByRole("textbox", { name: "Title" }), {
+      target: { value: "Structured note" },
+    });
+    fireEvent.change(screen.getByRole("textbox", { name: "Paragraph block 1" }), {
+      target: { value: "Research starts here." },
+    });
+    fireEvent.click(screen.getByRole("button", { name: "+ Add block" }));
+    fireEvent.click(screen.getByRole("button", { name: "Heading" }));
+    fireEvent.change(screen.getByRole("textbox", { name: "Heading block 2" }), {
+      target: { value: "Next steps" },
+    });
+    fireEvent.click(screen.getByRole("button", { name: "Set heading block 2 to H3" }));
+    fireEvent.click(screen.getByRole("button", { name: "+ Add block" }));
+    fireEvent.click(screen.getByRole("button", { name: "Ordered list" }));
+    fireEvent.change(screen.getByRole("textbox", { name: "List item 1 in block 3" }), {
+      target: { value: "First" },
+    });
+    fireEvent.keyDown(screen.getByRole("textbox", { name: "List item 1 in block 3" }), {
+      key: "Enter",
+    });
+    fireEvent.change(screen.getByRole("textbox", { name: "List item 2 in block 3" }), {
+      target: { value: "Second" },
+    });
+    fireEvent.click(screen.getByRole("button", { name: "+ Add block" }));
+    fireEvent.click(screen.getByRole("button", { name: "Unordered list" }));
+    fireEvent.change(screen.getByRole("textbox", { name: "List item 1 in block 4" }), {
+      target: { value: "Keep the source" },
+    });
+    fireEvent.click(screen.getByRole("button", { name: "Create note" }));
+
+    await vi.waitFor(() => expect(submitted).not.toBeUndefined());
+    expect(submitted).toEqual({
+      title: "Structured note",
+      content: {
+        blocks: [
+          { type: "paragraph", text: "Research starts here." },
+          { type: "heading", level: 3, text: "Next steps" },
+          { type: "ordered_list", items: ["First", "Second"] },
+          { type: "unordered_list", items: ["Keep the source"] },
+        ],
+      },
+    });
+  });
+
+  it("edits one rich block while preserving the other blocks", async () => {
+    const note = notes[0];
+    if (note === undefined) throw new Error("expected note fixture");
+    const revision = {
+      ...revisionsFor(note)[0],
+      content: {
+        blocks: [
+          { type: "heading", level: 2, text: "Original heading" },
+          { type: "paragraph", text: "Keep this paragraph" },
+          { type: "unordered_list", items: ["Keep this item"] },
+          { type: "unknown", payload: "keep this block" },
+        ],
+      },
+    };
+    let submitted: unknown;
+    vi.stubGlobal(
+      "fetch",
+      vi.fn(async (input: RequestInfo | URL, init?: RequestInit): Promise<Response> => {
+        const url = requestUrl(input);
+        const method =
+          init?.method ??
+          (typeof input === "string" || input instanceof URL ? "GET" : input.method);
+        if (method === "POST" && url.includes(`/notes/${note.note_id}/revisions`)) {
+          if (!(input instanceof Request)) throw new Error("expected ky request");
+          submitted = JSON.parse(await input.clone().text());
+          return jsonResponse(201, { note, revision });
+        }
+        if (url.includes(`/notebooks/${NOTEBOOK_ID}/notes`)) return jsonResponse(200, { notes: [note] });
+        if (url.includes(`/notes/${note.note_id}/revisions`)) return jsonResponse(200, { revisions: [revision] });
+        if (url.includes(`/notes/${note.note_id}`)) return jsonResponse(200, note);
+        return jsonResponse(404, { detail: "not found" });
+      }),
+    );
+
+    renderWithClient(<NotesPanel actorId={ACTOR_ID} notebookId={NOTEBOOK_ID} />);
+    const heading = await screen.findByRole("textbox", { name: "Heading block 1" });
+    expect(heading.className).toContain("note-editor-heading-input");
+    fireEvent.change(heading, {
+      target: { value: "Updated heading" },
+    });
+    fireEvent.click(screen.getByRole("button", { name: /save new revision/i }));
+    await vi.waitFor(() => expect(submitted).not.toBeUndefined());
+    expect(submitted).toEqual({
+      content: {
+        blocks: [
+          { type: "heading", level: 2, text: "Updated heading" },
+          { type: "paragraph", text: "Keep this paragraph" },
+          { type: "unordered_list", items: ["Keep this item"] },
+          { type: "unknown", payload: "keep this block" },
+        ],
+      },
+    });
+  });
+
+  it("adds and removes blocks and list items", async () => {
+    vi.stubGlobal(
+      "fetch",
+      vi.fn(async (input: RequestInfo | URL): Promise<Response> => {
+        const url = requestUrl(input);
+        if (url.includes(`/notebooks/${NOTEBOOK_ID}/notes`)) return jsonResponse(200, { notes: [] });
+        return jsonResponse(404, { detail: "not found" });
+      }),
+    );
+
+    renderWithClient(<NotesPanel actorId={ACTOR_ID} notebookId={NOTEBOOK_ID} />);
+    expect(await screen.findByRole("heading", { name: "No notes yet" })).toBeDefined();
+    fireEvent.click(screen.getByRole("button", { name: "+ Add block" }));
+    fireEvent.click(screen.getByRole("button", { name: "Unordered list" }));
+    fireEvent.click(screen.getByRole("button", { name: "Move block 2 up" }));
+    expect(screen.getByRole("textbox", { name: "List item 1 in block 1" })).toBeDefined();
+    fireEvent.click(screen.getByRole("button", { name: "Move block 1 down" }));
+    const firstItem = screen.getByRole("textbox", { name: "List item 1 in block 2" });
+    fireEvent.keyDown(firstItem, { key: "Enter" });
+    const secondItem = screen.getByRole("textbox", { name: "List item 2 in block 2" });
+    fireEvent.keyDown(secondItem, { key: "Backspace" });
+    expect(screen.queryByRole("textbox", { name: "List item 2 in block 2" })).toBeNull();
+    expect(document.activeElement).toBe(firstItem);
+    fireEvent.click(screen.getByRole("button", { name: "Delete block 2" }));
+    expect(screen.queryByRole("textbox", { name: "List item 1 in block 2" })).toBeNull();
+  });
+
+  it("keeps a legacy paragraph note editable", async () => {
+    const note = notes[0];
+    if (note === undefined) throw new Error("expected note fixture");
+    const revision = {
+      ...revisionsFor(note)[0],
+      content: { blocks: [{ type: "paragraph", text: "Legacy body" }] },
+    };
+    let submitted: unknown;
+    vi.stubGlobal(
+      "fetch",
+      vi.fn(async (input: RequestInfo | URL, init?: RequestInit): Promise<Response> => {
+        const url = requestUrl(input);
+        const method =
+          init?.method ??
+          (typeof input === "string" || input instanceof URL ? "GET" : input.method);
+        if (method === "POST" && url.includes(`/notes/${note.note_id}/revisions`)) {
+          if (!(input instanceof Request)) throw new Error("expected ky request");
+          submitted = JSON.parse(await input.clone().text());
+          return jsonResponse(201, { note, revision });
+        }
+        if (url.includes(`/notebooks/${NOTEBOOK_ID}/notes`)) return jsonResponse(200, { notes: [note] });
+        if (url.includes(`/notes/${note.note_id}/revisions`)) return jsonResponse(200, { revisions: [revision] });
+        if (url.includes(`/notes/${note.note_id}`)) return jsonResponse(200, note);
+        return jsonResponse(404, { detail: "not found" });
+      }),
+    );
+
+    renderWithClient(<NotesPanel actorId={ACTOR_ID} notebookId={NOTEBOOK_ID} />);
+    const paragraph = await screen.findByDisplayValue("Legacy body");
+    expect(paragraph.getAttribute("aria-label")).toBe("Paragraph block 1");
+    expect(paragraph.className).toContain("note-editor-paragraph");
+    fireEvent.change(paragraph, {
+      target: { value: "Legacy body revised" },
+    });
+    fireEvent.click(screen.getByRole("button", { name: /save new revision/i }));
+    await vi.waitFor(() => expect(submitted).not.toBeUndefined());
+    expect(submitted).toEqual({
+      content: { blocks: [{ type: "paragraph", text: "Legacy body revised" }] },
     });
   });
 });

@@ -1,5 +1,5 @@
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
-import type { FormEvent, ReactNode } from "react";
+import type { ReactNode, SyntheticEvent } from "react";
 import { useState } from "react";
 import {
   createNote,
@@ -10,49 +10,18 @@ import {
   listNotes,
 } from "../api/client";
 import { queryKeys } from "../api/query-keys";
+import { BlockEditor } from "./NoteBlockEditor";
+import {
+  type EditorBlock,
+  type EditorDocument,
+  editorDocumentFromContent,
+  editorDocumentSignature,
+  emptyEditorDocument,
+  serializeEditorBlocks,
+  serializeEditorDocument,
+} from "./note-blocks";
 
 type Props = { readonly actorId: string; readonly notebookId: string };
-
-function paragraphContent(text: string): Record<string, unknown> {
-  return { blocks: [{ type: "paragraph", text }] };
-}
-
-function toParagraphText(content: Record<string, unknown>): string | null {
-  const blocks = content["blocks"];
-  if (!Array.isArray(blocks)) return null;
-  for (const block of blocks) {
-    if (
-      typeof block === "object" &&
-      block !== null &&
-      (block as { readonly type?: unknown }).type === "paragraph" &&
-      typeof (block as { readonly text?: unknown }).text === "string"
-    )
-      return (block as { readonly text: string }).text;
-  }
-  return null;
-}
-
-function replaceParagraphText(content: Record<string, unknown>, text: string): Record<string, unknown> {
-  const blocks = content["blocks"];
-  if (!Array.isArray(blocks)) return paragraphContent(text);
-  let replaced = false;
-  return {
-    ...content,
-    blocks: blocks.map((block) => {
-      if (
-        !replaced &&
-        typeof block === "object" &&
-        block !== null &&
-        (block as { readonly type?: unknown }).type === "paragraph" &&
-        typeof (block as { readonly text?: unknown }).text === "string"
-      ) {
-        replaced = true;
-        return { ...(block as Record<string, unknown>), text };
-      }
-      return block;
-    }),
-  };
-}
 
 function stringItems(block: Record<string, unknown>): readonly string[] | null {
   const items = block["items"];
@@ -113,9 +82,12 @@ export function NotesPanel({ actorId, notebookId }: Props): ReactNode {
     selectedId !== null && noteList.some((note) => note.note_id === selectedId)
       ? selectedId
       : firstId;
+  const [createBlocks, setCreateBlocks] = useState<readonly EditorBlock[]>(
+    () => emptyEditorDocument().blocks,
+  );
   const create = useMutation({
-    mutationFn: (input: { readonly title: string; readonly text: string }) =>
-      createNote(notebookId, input.title, paragraphContent(input.text)),
+    mutationFn: (input: { readonly title: string; readonly blocks: readonly EditorBlock[] }) =>
+      createNote(notebookId, input.title, serializeEditorBlocks(input.blocks)),
     onMutate: () => setCreateError(""),
     onSuccess: (snapshot) => {
       setSelectedId(snapshot.note.note_id);
@@ -123,14 +95,15 @@ export function NotesPanel({ actorId, notebookId }: Props): ReactNode {
     },
     onError: () => setCreateError("Creating the note failed. Please try again."),
   });
-  const submitCreate = (event: FormEvent<HTMLFormElement>): void => {
+  const submitCreate = (event: SyntheticEvent<HTMLFormElement>): void => {
     event.preventDefault();
     const data = new FormData(event.currentTarget);
     create.mutate({
       title: String(data.get("title") ?? ""),
-      text: String(data.get("text") ?? ""),
+      blocks: createBlocks,
     });
     event.currentTarget.reset();
+    setCreateBlocks(emptyEditorDocument().blocks);
   };
   return (
     <div className="split-content">
@@ -146,10 +119,10 @@ export function NotesPanel({ actorId, notebookId }: Props): ReactNode {
             Title
             <input name="title" required maxLength={300} />
           </label>
-          <label>
-            Text
-            <textarea name="text" required rows={4} />
-          </label>
+          <div className="form-stack compact">
+            <h3>Blocks</h3>
+            <BlockEditor blocks={createBlocks} onChange={setCreateBlocks} disabled={create.isPending} />
+          </div>
           <button className="primary" disabled={create.isPending} type="submit">
             {create.isPending ? "Creating..." : "Create note"}
           </button>
@@ -235,29 +208,26 @@ function NoteDetail({
       : currentRevision;
   const viewingHistory =
     viewingId !== null && displayedRevision !== null && viewingId !== currentRevision?.revision_id;
-  const currentText =
-    currentRevision === null ? "" : (toParagraphText(currentRevision.content) ?? "");
-  // The draft resets whenever the server's current revision text changes (initial
+  const currentContent = currentRevision?.content ?? { blocks: [] };
+  const currentDocument = editorDocumentFromContent(currentContent);
+  const currentContentKey = editorDocumentSignature(currentDocument);
+  // The draft resets whenever the server's current revision content changes (initial
   // load, refetch after save, conflict reload) — the baseline detects that shift.
-  const [draft, setDraft] = useState(() => ({ baseline: currentText, text: currentText }));
-  if (draft.baseline !== currentText) {
-    setDraft({ baseline: currentText, text: currentText });
+  const [draft, setDraft] = useState<{ readonly baseline: string; readonly document: EditorDocument }>(
+    () => ({ baseline: currentContentKey, document: currentDocument }),
+  );
+  if (draft.baseline !== currentContentKey) {
+    setDraft({ baseline: currentContentKey, document: currentDocument });
   }
-  const hasDraftChanges = draft.text.trim() !== currentText.trim();
+  const draftContent = serializeEditorDocument(draft.document);
+  const hasDraftChanges = editorDocumentSignature(draft.document) !== currentContentKey;
   const refetchAll = (): void => {
     void queryClient.invalidateQueries({ queryKey: noteKey });
     void queryClient.invalidateQueries({ queryKey: revisionsKey });
     void queryClient.invalidateQueries({ queryKey: queryKeys.notes(actorId, notebookId) });
   };
   const edit = useMutation({
-    mutationFn: (text: string) =>
-      editNote(
-        noteId,
-        note?.etag ?? "",
-        currentRevision === null
-          ? paragraphContent(text)
-          : replaceParagraphText(currentRevision.content, text),
-      ),
+    mutationFn: (content: Record<string, unknown>) => editNote(noteId, note?.etag ?? "", content),
     onSuccess: () => {
       setViewingId(null);
       refetchAll();
@@ -272,9 +242,9 @@ function NoteDetail({
       : edit.isError
         ? "Saving the new revision failed. Please try again."
         : "";
-  const submitEdit = (event: FormEvent<HTMLFormElement>): void => {
+  const submitEdit = (event: SyntheticEvent<HTMLFormElement>): void => {
     event.preventDefault();
-    edit.mutate(draft.text);
+    edit.mutate(draftContent);
   };
   if (noteQuery.isPending && note === undefined)
     return (
@@ -322,18 +292,19 @@ function NoteDetail({
           </div>
           {note.editable && !viewingHistory ? (
             <form className="form-stack compact" onSubmit={submitEdit}>
-              <label>
-                Text
-                <textarea
-                  name="text"
-                  value={draft.text}
-                  onChange={(event) =>
-                    setDraft({ baseline: draft.baseline, text: event.target.value })
+              <div className="form-stack compact">
+                <h4>Content blocks</h4>
+                <BlockEditor
+                  blocks={draft.document.blocks}
+                  onChange={(blocks) =>
+                    setDraft({
+                      baseline: draft.baseline,
+                      document: { ...draft.document, blocks },
+                    })
                   }
-                  rows={6}
-                  required
+                  disabled={edit.isPending}
                 />
-              </label>
+              </div>
               <button
                 className="primary"
                 disabled={edit.isPending || !hasDraftChanges}
