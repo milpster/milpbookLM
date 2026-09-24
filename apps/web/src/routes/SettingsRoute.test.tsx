@@ -15,8 +15,6 @@ vi.mock("../state/auth", () => ({
   }),
 }));
 
-vi.mock("../state/jobs", () => ({ useJobs: () => ({ jobs: [] }) }));
-
 const capability = {
   id: "notebook_management",
   name: "Notebook management",
@@ -27,6 +25,18 @@ const capability = {
 };
 
 const capabilityResponse = { capabilities: [capability] };
+
+const activityBody = {
+  queued: 1,
+  running: 2,
+  active: [
+    { kind: "parse.text", state: "running", age_seconds: 12 },
+    { kind: "index.build", state: "queued", age_seconds: 40 },
+  ],
+  recent: [{ kind: "source.acquire", state: "succeeded", age_seconds: 94 }],
+};
+
+const idleActivityBody = { queued: 0, running: 0, active: [], recent: [] };
 
 const healthBody = {
   components: [
@@ -104,5 +114,70 @@ describe("SettingsRoute", () => {
     const { description: _description, ...withoutDescription } = capability;
     expect(capabilitySchema.safeParse(withoutDescription).success).toBe(false);
     expect(capabilitySchema.safeParse({ ...withoutDescription, description: "   " }).success).toBe(false);
+  });
+
+  it("renders the server-wide activity feed with counts, jobs, and ages", async () => {
+    vi.stubGlobal(
+      "fetch",
+      vi.fn(async (input: RequestInfo | URL): Promise<Response> => {
+        const url = typeof input === "string" ? input : input instanceof URL ? input.href : input.url;
+        const body = url.includes("/jobs/activity")
+          ? activityBody
+          : url.includes("/health/components")
+            ? healthBody
+            : capabilityResponse;
+        return new Response(JSON.stringify(body), {
+          status: 200,
+          headers: { "content-type": "application/json" },
+        });
+      }),
+    );
+    renderWithClient(<SettingsRoute navigate={vi.fn()} params={{}} />);
+
+    expect(
+      await screen.findByText(
+        "2 running · 1 queued — parse.text (running, 12s), index.build (queued, 40s)",
+      ),
+    ).toBeTruthy();
+    expect(screen.getByText("recent: source.acquire succeeded 1m ago")).toBeTruthy();
+  });
+
+  it("renders the idle state when the server reports no current or recent jobs", async () => {
+    vi.stubGlobal(
+      "fetch",
+      vi.fn(async (input: RequestInfo | URL): Promise<Response> => {
+        const url = typeof input === "string" ? input : input instanceof URL ? input.href : input.url;
+        const body = url.includes("/jobs/activity")
+          ? idleActivityBody
+          : url.includes("/health/components")
+            ? healthBody
+            : capabilityResponse;
+        return new Response(JSON.stringify(body), {
+          status: 200,
+          headers: { "content-type": "application/json" },
+        });
+      }),
+    );
+    renderWithClient(<SettingsRoute navigate={vi.fn()} params={{}} />);
+
+    expect(await screen.findByText("idle", { selector: ".panel-stack p.muted" })).toBeTruthy();
+  });
+
+  it("renders a quiet unavailable note when the activity endpoint fails", async () => {
+    vi.stubGlobal(
+      "fetch",
+      vi.fn(async (input: RequestInfo | URL): Promise<Response> => {
+        const url = typeof input === "string" ? input : input instanceof URL ? input.href : input.url;
+        if (url.includes("/jobs/activity")) return new Response("server error", { status: 500 });
+        const body = url.includes("/health/components") ? healthBody : capabilityResponse;
+        return new Response(JSON.stringify(body), {
+          status: 200,
+          headers: { "content-type": "application/json" },
+        });
+      }),
+    );
+    renderWithClient(<SettingsRoute navigate={vi.fn()} params={{}} />);
+
+    expect(await screen.findByText("Server activity is unavailable right now.")).toBeTruthy();
   });
 });

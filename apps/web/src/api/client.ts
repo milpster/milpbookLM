@@ -11,6 +11,7 @@ import {
   actorSchema,
   capabilitiesSchema,
   conversationSchema,
+  jobActivitySchema,
   jobSchema,
   instanceStatsSchema,
   locatorSchema,
@@ -166,6 +167,7 @@ export const editNote = (id: string, etag: string, content: Record<string, unkno
     noteSnapshotSchema,
   );
 export const getJob = (id: string) => parsed(api.get(`jobs/${id}`), jobSchema);
+export const getJobActivity = () => parsed(api.get("jobs/activity"), jobActivitySchema);
 export const resolveLocator = (versionId: string, nodeId: string) =>
   parsed(api.get(`source-versions/${versionId}/nodes/${nodeId}`), locatorSchema);
 

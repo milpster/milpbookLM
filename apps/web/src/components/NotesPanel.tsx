@@ -23,6 +23,22 @@ import {
 
 type Props = { readonly actorId: string; readonly notebookId: string };
 
+const kindLabels: Readonly<Record<string, string | null>> = {
+  user: null,
+  saved_chat_response: "Saved chat",
+  derived_from_source: "Derived from source",
+};
+
+const timestampFormat = new Intl.DateTimeFormat("en", {
+  dateStyle: "medium",
+  timeStyle: "short",
+});
+
+function formatTimestamp(iso: string): string {
+  const parsed = new Date(iso);
+  return Number.isNaN(parsed.getTime()) ? iso : timestampFormat.format(parsed);
+}
+
 function stringItems(block: Record<string, unknown>): readonly string[] | null {
   const items = block["items"];
   return Array.isArray(items) && items.every((item) => typeof item === "string")
@@ -210,7 +226,7 @@ export function NotesPanel({ actorId, notebookId }: Props): ReactNode {
             >
               <span>{note.title}</span>
               <span className="resource-meta">
-                {note.kind} | revision {note.revision} | {note.etag}
+                by {note.created_by_name} | revision {note.revision}
               </span>
             </button>
           ))}
@@ -229,7 +245,14 @@ export function NotesPanel({ actorId, notebookId }: Props): ReactNode {
               <div className="note-header-main">
                 <h3>{activeNote.title}</h3>
                 <p className="resource-meta">
-                  {activeNote.kind} | revision {activeNote.revision}
+                  {[
+                    kindLabels[activeNote.kind],
+                    `by ${activeNote.created_by_name}`,
+                    `revision ${activeNote.revision}`,
+                    `updated ${formatTimestamp(activeNote.updated_at)}`,
+                  ]
+                    .filter((part) => part !== null)
+                    .join(" | ")}
                 </p>
               </div>
               <div className="note-chapter-nav">
@@ -448,7 +471,8 @@ function NoteDetail({
               {revisions.map((revision) => (
                 <li key={revision.revision_id}>
                   <span className="note-revision-label">
-                    Revision {revision.revision_number} | {revision.created_at}
+                    Revision {revision.revision_number} | by {revision.author_name} |{" "}
+                    {formatTimestamp(revision.created_at)}
                   </span>
                   {revision.revision_id === note.current_revision_id ? (
                     <span className="muted">(current)</span>

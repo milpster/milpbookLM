@@ -21,4 +21,5 @@ export const queryKeys = {
   chatNoteRevisions: (actorId: string, notebookId: string) =>
     ["actor", actorId, "notebook", notebookId, "chat-note-revisions"] as const,
   job: (actorId: string, jobId: string) => ["actor", actorId, "private", "job", jobId] as const,
+  jobActivity: () => ["actor", "job-activity"] as const,
 } as const;

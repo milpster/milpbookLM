@@ -22,6 +22,8 @@ const noteId = (index: number) =>
 const revId = (index: number) =>
   `aaaaaaaa-0000-4000-8000-${(index + 1).toString(16).padStart(12, "0")}`;
 
+const AUTHOR_NAME = "Balin Fundin";
+
 const notes = TITLES.map((title, index) => ({
   note_id: noteId(index),
   notebook_id: NOTEBOOK_ID,
@@ -32,6 +34,7 @@ const notes = TITLES.map((title, index) => ({
   revision: 1,
   etag: `etag-${index}`,
   created_by_user_id: ACTOR_ID,
+  created_by_name: AUTHOR_NAME,
   created_at: "2026-01-01T00:00:00Z",
   updated_at: "2026-01-01T00:00:00Z",
 }));
@@ -44,6 +47,7 @@ const revisionsFor = (note: (typeof notes)[number]) => [
     content: { blocks: [{ type: "paragraph", text: `Body of ${note.title}` }] },
     content_sha256: "sha",
     author_user_id: ACTOR_ID,
+    author_name: AUTHOR_NAME,
     provenance_refs: [],
     content_dependencies: [],
     created_at: "2026-01-01T00:00:00Z",
@@ -100,6 +104,42 @@ describe("NotesPanel", () => {
     expect(screen.queryByDisplayValue(`Body of ${firstTitle}`)).toBeNull();
   });
 
+  it("renders attribution as a quiet meta line without raw ids, etags, or ISO timestamps", async () => {
+    vi.stubGlobal(
+      "fetch",
+      vi.fn(async (input: RequestInfo | URL): Promise<Response> => {
+        const url = requestUrl(input);
+        if (url.includes(`/notebooks/${NOTEBOOK_ID}/notes`)) return jsonResponse(200, { notes });
+        for (const note of notes) {
+          if (url.includes(`/notes/${note.note_id}/revisions`))
+            return jsonResponse(200, { revisions: revisionsFor(note) });
+          if (url.includes(`/notes/${note.note_id}`)) return jsonResponse(200, note);
+        }
+        return jsonResponse(404, { detail: "not found" });
+      }),
+    );
+    renderWithClient(<NotesPanel actorId={ACTOR_ID} notebookId={NOTEBOOK_ID} />);
+    expect(await screen.findAllByText(`by ${AUTHOR_NAME} | revision 1`)).toHaveLength(
+      TITLES.length,
+    );
+    expect(
+      screen.getAllByText(
+        new RegExp(`by ${AUTHOR_NAME} \\| revision 1 \\| updated \\w{3} \\d{1,2}, \\d{4}`),
+      ).length,
+    ).toBeGreaterThan(0);
+    expect(
+      (
+        await screen.findAllByText(
+          new RegExp(`Revision 1 \\| by ${AUTHOR_NAME} \\| \\w{3} \\d{1,2}, \\d{4}`),
+        )
+      ).length,
+    ).toBeGreaterThan(0);
+    const body = document.body.textContent ?? "";
+    expect(body.includes(ACTOR_ID)).toBe(false);
+    expect(body.includes("etag-")).toBe(false);
+    expect(body.includes("2026-01-01T00:00:00Z")).toBe(false);
+  });
+
   it("marks the sole revision as current and renders no dead View button", async () => {
     const firstNote = notes[0];
     if (firstNote === undefined) throw new Error("expected a seeded note fixture");
@@ -134,6 +174,7 @@ describe("NotesPanel", () => {
       revision: 2,
       etag: "etag-rev2",
       created_by_user_id: ACTOR_ID,
+      created_by_name: AUTHOR_NAME,
       created_at: "2026-01-01T00:00:00Z",
       updated_at: "2026-01-02T00:00:00Z",
     };
@@ -144,6 +185,7 @@ describe("NotesPanel", () => {
       content: { blocks: [{ type: "paragraph", text }] },
       content_sha256: "sha",
       author_user_id: ACTOR_ID,
+      author_name: AUTHOR_NAME,
       provenance_refs: [],
       content_dependencies: [],
       created_at: "2026-01-01T00:00:00Z",
@@ -200,6 +242,7 @@ describe("NotesPanel", () => {
       revision: 2,
       etag: "etag-rev2",
       created_by_user_id: ACTOR_ID,
+      created_by_name: AUTHOR_NAME,
       created_at: "2026-01-01T00:00:00Z",
       updated_at: "2026-01-02T00:00:00Z",
     };
@@ -210,6 +253,7 @@ describe("NotesPanel", () => {
       content: { blocks: [{ type: "paragraph", text }] },
       content_sha256: "sha",
       author_user_id: ACTOR_ID,
+      author_name: AUTHOR_NAME,
       provenance_refs: [],
       content_dependencies: [],
       created_at: "2026-01-01T00:00:00Z",

@@ -1,11 +1,10 @@
 import { useQuery } from "@tanstack/react-query";
 import type { ReactNode } from "react";
 import type { RouteProps } from "../App";
-import { getCapabilities, getHealthComponents } from "../api/client";
+import { getCapabilities, getHealthComponents, getJobActivity } from "../api/client";
 import { queryKeys } from "../api/query-keys";
-import type { ServerComponent } from "../api/schemas";
+import type { JobActivitySlot, ServerComponent } from "../api/schemas";
 import { useAuth } from "../state/auth";
-import { useJobs } from "../state/jobs";
 
 const componentLabels: Readonly<Record<string, string>> = {
   database: "Database",
@@ -20,13 +19,31 @@ function componentLabel(component: ServerComponent): string {
   return componentLabels[component.component] ?? component.component;
 }
 
+function formatAge(seconds: number): string {
+  if (seconds < 60) return `${seconds}s`;
+  if (seconds < 3600) return `${Math.floor(seconds / 60)}m`;
+  return `${Math.floor(seconds / 3600)}h`;
+}
+
+function activeLine(slot: JobActivitySlot): string {
+  return `${slot.kind} (${slot.state}, ${formatAge(slot.age_seconds)})`;
+}
+
+function recentLine(slot: JobActivitySlot): string {
+  return `${slot.kind} ${slot.state} ${formatAge(slot.age_seconds)} ago`;
+}
+
 export function SettingsRoute(_props: RouteProps): ReactNode {
   const { actor } = useAuth();
-  const { jobs } = useJobs();
   const capabilities = useQuery({ queryKey: queryKeys.capabilities(), queryFn: getCapabilities });
   const health = useQuery({
     queryKey: queryKeys.healthComponents(),
     queryFn: getHealthComponents,
+    refetchInterval: 20_000,
+  });
+  const activity = useQuery({
+    queryKey: queryKeys.jobActivity(),
+    queryFn: getJobActivity,
     refetchInterval: 20_000,
   });
   return (
@@ -70,18 +87,27 @@ export function SettingsRoute(_props: RouteProps): ReactNode {
           </dl>
         </section>
         <section className="panel-stack">
-          <h2>Job activity</h2>
-          {jobs.length === 0 ? (
-            <p className="muted">No background tasks in this session.</p>
+          <h2>Server activity</h2>
+          {activity.isPending ? (
+            <p className="muted" role="status">
+              Loading activity...
+            </p>
+          ) : activity.isError ? (
+            <p className="muted">Server activity is unavailable right now.</p>
+          ) : activity.data.active.length === 0 && activity.data.recent.length === 0 ? (
+            <p className="muted">idle</p>
           ) : (
-            <ul className="plain-list">
-              {jobs.map((job) => (
-                <li key={job.job_id}>
-                  <strong>{job.kind}</strong>
-                  <span>{job.state}</span>
-                </li>
-              ))}
-            </ul>
+            <div className="form-stack compact">
+              <p className="resource-meta">
+                {activity.data.running} running · {activity.data.queued} queued
+                {activity.data.active.length > 0
+                  ? ` — ${activity.data.active.map(activeLine).join(", ")}`
+                  : ""}
+              </p>
+              {activity.data.recent.length === 0 ? null : (
+                <p className="muted">recent: {activity.data.recent.map(recentLine).join(", ")}</p>
+              )}
+            </div>
           )}
         </section>
       </div>

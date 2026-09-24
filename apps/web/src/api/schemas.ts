@@ -150,6 +150,20 @@ export const jobSchema = z.object({
   finished_at: z.string().nullable(),
 });
 
+// Identity-free server-wide activity slot (kind, state, age only).
+export const jobActivitySlotSchema = z.object({
+  kind: z.string(),
+  state: z.string(),
+  age_seconds: z.number().int().nonnegative(),
+});
+
+export const jobActivitySchema = z.object({
+  queued: z.number().int().nonnegative(),
+  running: z.number().int().nonnegative(),
+  active: z.array(jobActivitySlotSchema),
+  recent: z.array(jobActivitySlotSchema),
+});
+
 export const locatorSchema = z.discriminatedUnion("state", [
   z.object({ state: z.literal("unavailable (purged)") }),
   z.object({
@@ -180,6 +194,7 @@ export const noteRevisionSchema = z.object({
   content: z.record(z.string(), z.unknown()),
   content_sha256: z.string(),
   author_user_id: z.string().uuid(),
+  author_name: z.string(),
   provenance_refs: z.array(noteContentRefSchema),
   content_dependencies: z.array(noteContentRefSchema),
   created_at: z.string(),
@@ -195,6 +210,7 @@ export const noteSchema = z.object({
   revision: z.number().int().positive(),
   etag: z.string(),
   created_by_user_id: z.string().uuid(),
+  created_by_name: z.string(),
   created_at: z.string(),
   updated_at: z.string(),
 });
@@ -209,6 +225,8 @@ export type ChatConfig = z.infer<typeof chatConfigSchema>;
 export type Citation = z.infer<typeof citationSchema>;
 export type Conversation = z.infer<typeof conversationSchema>;
 export type Job = z.infer<typeof jobSchema>;
+export type JobActivity = z.infer<typeof jobActivitySchema>;
+export type JobActivitySlot = z.infer<typeof jobActivitySlotSchema>;
 export type Locator = z.infer<typeof locatorSchema>;
 export type Note = z.infer<typeof noteSchema>;
 export type NoteKind = z.infer<typeof noteKindSchema>;
