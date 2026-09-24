@@ -50,8 +50,13 @@ export function ChatPanel({ actorId, notebookId, navigate }: Props): ReactNode {
     queryKey: queryKeys.chatNoteRevisions(actorId, notebookId),
     queryFn: async () => {
       const notes = await listNotes(notebookId);
-      const revisions = await Promise.all(notes.notes.map((note) => listNoteRevisions(note.note_id)));
-      return revisions.flatMap((result) => result.revisions);
+      const entries = await Promise.all(
+        notes.notes.map(async (note) => ({
+          note,
+          revisions: (await listNoteRevisions(note.note_id)).revisions,
+        })),
+      );
+      return entries.filter((entry) => entry.revisions.length > 0);
     },
   });
   const selectionKey = `milpbookLM:chat-notes:${actorId}:${notebookId}`;
@@ -218,25 +223,30 @@ export function ChatPanel({ actorId, notebookId, navigate }: Props): ReactNode {
         <fieldset className="note-selection">
           <legend>Selected notes for grounding</legend>
           <p className="muted">Only checked immutable revisions are sent with this chat request.</p>
-          {noteRevisions.data?.map((revision) => {
-            const selected = selectedNoteRevisionIds.includes(revision.revision_id);
-            return (
-              <label key={revision.revision_id}>
-                <input
-                  type="checkbox"
-                  checked={selected}
-                  onChange={() => {
-                    const next = selected
-                      ? selectedNoteRevisionIds.filter((id) => id !== revision.revision_id)
-                      : [...selectedNoteRevisionIds, revision.revision_id];
-                    sessionStorage.setItem(selectionKey, JSON.stringify(next));
-                    setSelectedNoteRevisionIds(next);
-                  }}
-                />
-                Note revision {revision.revision_number}
-              </label>
-            );
-          })}
+          {noteRevisions.data?.map(({ note, revisions }) =>
+            revisions.map((revision) => {
+              const selected = selectedNoteRevisionIds.includes(revision.revision_id);
+              return (
+                <label key={revision.revision_id}>
+                  <input
+                    type="checkbox"
+                    checked={selected}
+                    onChange={() => {
+                      const next = selected
+                        ? selectedNoteRevisionIds.filter((id) => id !== revision.revision_id)
+                        : [...selectedNoteRevisionIds, revision.revision_id];
+                      sessionStorage.setItem(selectionKey, JSON.stringify(next));
+                      setSelectedNoteRevisionIds(next);
+                    }}
+                  />
+                  <span className="note-selection-title">{note.title}</span>
+                  {revisions.length > 1 ? (
+                    <span className="note-selection-rev">rev {revision.revision_number}</span>
+                  ) : null}
+                </label>
+              );
+            }),
+          )}
         </fieldset>
         <form className="composer" onSubmit={(event) => void send(event)}>
           <label htmlFor="chat-message">Ask about selected notes and sources</label>

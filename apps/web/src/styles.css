@@ -800,12 +800,27 @@ label {
 .note-selection label {
   flex-direction: row;
   align-items: center;
+  gap: var(--space-2);
+  min-inline-size: 0;
   min-block-size: 2rem;
   font-weight: 400;
 }
 .note-selection input {
+  flex: none;
   inline-size: 1rem;
   min-block-size: 1rem;
+}
+.note-selection-title {
+  flex: 1;
+  min-inline-size: 0;
+  color: var(--text-primary);
+  overflow-wrap: anywhere;
+}
+.note-selection-rev {
+  flex: none;
+  color: var(--text-muted);
+  font-size: 0.75rem;
+  font-variant-numeric: tabular-nums;
 }
 .composer {
   display: flex;
