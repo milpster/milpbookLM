@@ -17,6 +17,8 @@ from milpbooklm_domain.ownership import MembershipRole
 from milpbooklm_domain.sources import Availability, SourceType
 from starlette import status
 
+ROOT_NODE_ID = uuid.UUID("aaaaaaaa-0000-4000-8000-000000000001")
+
 
 class SourceListCatalog:
     def __init__(self, sources: list[SourceView]) -> None:
@@ -51,6 +53,7 @@ def _client(member: bool) -> tuple[TestClient, SourceListCatalog, uuid.UUID, uui
         "active",
         "0",
         uuid.uuid4(),
+        ROOT_NODE_ID,
     )
     catalog = SourceListCatalog([source])
     deps = Mock(spec=ApiDeps)
@@ -82,6 +85,7 @@ def test_list_sources_returns_persisted_versions_for_member() -> None:
     # Then
     assert response.status_code == status.HTTP_200_OK
     assert response.json()[0]["display_title"] == "Persisted source"
+    assert response.json()[0]["canonical_root_node_id"] == str(ROOT_NODE_ID)
     assert catalog.calls == [(notebook_id, actor_id)]
 
 

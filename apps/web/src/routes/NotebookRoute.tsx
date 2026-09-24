@@ -46,7 +46,7 @@ export function NotebookRoute({ navigate, params }: RouteProps): ReactNode {
         </p>
       ) : null}
       {tab === "sources" ? (
-        <SourcePanel actorId={actor.user_id} notebookId={notebookId} />
+        <SourcePanel actorId={actor.user_id} notebookId={notebookId} navigate={navigate} />
       ) : tab === "chat" ? (
         <ChatPanel actorId={actor.user_id} notebookId={notebookId} navigate={navigate} />
       ) : (

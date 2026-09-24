@@ -15,29 +15,15 @@ import type { Source } from "../api/schemas";
 import { terminalJobStates } from "../api/schemas";
 import { useJobs } from "../state/jobs";
 import { mergeSources } from "../state/source-list";
+import { SourceRow } from "./SourceRow";
 
-type Props = { readonly actorId: string; readonly notebookId: string };
-
-// Total map over both server enums; colors come from the matching
-// .status.<class> modifiers in styles.css (green/amber/red tokens).
-type StatusVisualClass = "ready" | "in-progress" | "failed";
-const STATUS_CLASS: Readonly<
-  Record<Source["pipeline_status"] | Source["availability"], StatusVisualClass>
-> = {
-  parsed: "ready",
-  active: "ready",
-  activating: "in-progress",
-  parsing: "in-progress",
-  parse_failed: "failed",
-  encrypted: "failed",
-  inactive: "failed",
-  tombstoned: "failed",
-  stale: "failed",
-  inaccessible_revoked: "failed",
-  deleted_tombstoned: "failed",
+type Props = {
+  readonly actorId: string;
+  readonly notebookId: string;
+  readonly navigate: (path: string) => void;
 };
 
-export function SourcePanel({ actorId, notebookId }: Props): ReactNode {
+export function SourcePanel({ actorId, notebookId, navigate }: Props): ReactNode {
   const queryClient = useQueryClient();
   const { jobs, watch } = useJobs();
   const key = queryKeys.sources(actorId, notebookId);
@@ -187,6 +173,7 @@ export function SourcePanel({ actorId, notebookId }: Props): ReactNode {
             <SourceRow
               key={source.source_id}
               source={source}
+              onOpen={navigate}
               onRename={(title) => rename.mutate({ source, title })}
               onLifecycle={(action) => lifecycle.mutate({ source, action })}
             />
@@ -194,66 +181,5 @@ export function SourcePanel({ actorId, notebookId }: Props): ReactNode {
         </div>
       </section>
     </div>
-  );
-}
-
-function SourceRow({
-  source,
-  onRename,
-  onLifecycle,
-}: {
-  readonly source: Source;
-  readonly onRename: (title: string) => void;
-  readonly onLifecycle: (action: "select" | "remove") => void;
-}): ReactNode {
-  const [editing, setEditing] = useState(false);
-  return (
-    <article className="resource-row">
-      <div className="row-main">
-        <h3>{source.display_title}</h3>
-        <p className="resource-meta">
-          <span className={`status ${STATUS_CLASS[source.pipeline_status]}`}>
-            {source.pipeline_status}
-          </span>
-          {" | "}
-          <span className={`status ${STATUS_CLASS[source.availability]}`}>
-            {source.availability}
-          </span>
-        </p>
-      </div>
-      <div className="action-cluster">
-        {editing ? (
-          <form
-            onSubmit={(event) => {
-              event.preventDefault();
-              const title = String(new FormData(event.currentTarget).get("title") ?? "");
-              onRename(title);
-              setEditing(false);
-            }}
-          >
-            <label className="sr-only" htmlFor={`rename-${source.source_id}`}>
-              New title
-            </label>
-            <input
-              id={`rename-${source.source_id}`}
-              name="title"
-              defaultValue={source.display_title}
-              required
-            />
-            <button type="submit">Save</button>
-          </form>
-        ) : (
-          <button type="button" onClick={() => setEditing(true)}>
-            Rename
-          </button>
-        )}
-        <button
-          type="button"
-          onClick={() => onLifecycle(source.availability === "active" ? "remove" : "select")}
-        >
-          {source.availability === "active" ? "Remove" : "Select"}
-        </button>
-      </div>
-    </article>
   );
 }

@@ -9,6 +9,7 @@ const ACTOR_ID = "11111111-1111-4111-8111-111111111111";
 const NOTEBOOK_ID = "6f1e1b6e-0a3a-4d6c-9a8e-1c2d3e4f5a6b";
 const SOURCE_ID = "cccccccc-0000-4000-8000-000000000001";
 const VERSION_ID = "dddddddd-0000-4000-8000-000000000001";
+const ROOT_NODE_ID = "aaaaaaaa-0000-4000-8000-000000000001";
 const JOB_ID = "eeeeeeee-0000-4000-8000-000000000001";
 
 const activatingSource = {
@@ -23,11 +24,13 @@ const activatingSource = {
   status: "quarantined_identified",
   pipeline_status: "activating" as const,
   etag: "etag-source",
+  canonical_root_node_id: null,
   job_id: JOB_ID,
 };
 const terminalSource = {
   ...activatingSource,
   pipeline_status: "active" as const,
+  canonical_root_node_id: ROOT_NODE_ID,
   job_id: undefined,
 };
 const succeededJob = {
@@ -64,6 +67,7 @@ const source = (
   status: "quarantined_identified",
   pipeline_status,
   etag: `etag-${n}`,
+  canonical_root_node_id: n === 4 ? ROOT_NODE_ID : null,
 });
 
 // Every enum value of pipeline_status and availability appears once.
@@ -128,6 +132,7 @@ afterEach(() => {
 describe("SourcePanel live status", () => {
   it("refreshes a pasted source to its terminal status once the ingestion job completes", async () => {
     let sourcesCalls = 0;
+    const navigate = vi.fn();
     vi.stubGlobal("EventSource", FakeEventSource);
     vi.stubGlobal(
       "fetch",
@@ -142,7 +147,9 @@ describe("SourcePanel live status", () => {
         return jsonResponse(404, { detail: "not found" });
       }),
     );
-    renderWithProviders(<SourcePanel actorId={ACTOR_ID} notebookId={NOTEBOOK_ID} />);
+    renderWithProviders(
+      <SourcePanel actorId={ACTOR_ID} notebookId={NOTEBOOK_ID} navigate={navigate} />,
+    );
     fireEvent.change(screen.getByLabelText(/title/i), { target: { value: "My source" } });
     fireEvent.change(screen.getByLabelText(/text/i), { target: { value: "Some content" } });
     fireEvent.click(screen.getByRole("button", { name: /paste text/i }));
@@ -153,6 +160,8 @@ describe("SourcePanel live status", () => {
       expect(badge.className).toBe("status ready");
     }
     expect(screen.queryByText("activating")).toBeNull();
+    fireEvent.click(screen.getByRole("button", { name: "Open Pasted source" }));
+    expect(navigate).toHaveBeenCalledWith(`/viewer/${VERSION_ID}/${ROOT_NODE_ID}`);
   });
 
   it("colors every pipeline status and availability value with its state class", async () => {
@@ -171,7 +180,9 @@ describe("SourcePanel live status", () => {
         return jsonResponse(404, { detail: "not found" });
       }),
     );
-    renderWithProviders(<SourcePanel actorId={ACTOR_ID} notebookId={NOTEBOOK_ID} />);
+    renderWithProviders(
+      <SourcePanel actorId={ACTOR_ID} notebookId={NOTEBOOK_ID} navigate={vi.fn()} />,
+    );
     const expectBadges = (label: string, visualClass: string): void => {
       const badges = screen.getAllByText(label);
       expect(badges.length).toBeGreaterThan(0);
@@ -189,5 +200,11 @@ describe("SourcePanel live status", () => {
     expectBadges("inactive", "failed");
     expectBadges("tombstoned", "failed");
     expectBadges("deleted_tombstoned", "failed");
+    expect(screen.getAllByRole("button", { name: /^Open Source / })).toHaveLength(
+      ALL_STATE_SOURCES.length,
+    );
+    // The activating and parsing rows intentionally share this reason.
+    expect(screen.getAllByText("Source content is still being prepared.")).toHaveLength(2);
+    expect(screen.getByText("Source processing failed, so its contents are unavailable.")).toBeDefined();
   });
 });

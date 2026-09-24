@@ -10,6 +10,7 @@ import anyio
 import pytest
 import sqlalchemy as sa
 from milpbooklm_adapters.blobs import FilesystemBlobStore, PgBlobRepository
+from milpbooklm_adapters.grounding import PgGroundingStore
 from milpbooklm_adapters.parsers.isolation import IsolatedParser, ParseFailure
 from milpbooklm_adapters.parsers.pg_canonical import PgCanonicalRepository
 from milpbooklm_adapters.security.clock import SystemClock
@@ -131,12 +132,22 @@ def test_real_pdf_upload_reaches_active_canonical_source(tmp_path: Path) -> None
         },
     )
     result = handler.run(parse_job, _Context())
-    activated = PgSourceCatalog(engine).activate(view.source_id, actor)
+    catalog = PgSourceCatalog(engine)
+    activated = catalog.activate(view.source_id, actor)
+    ready_view = catalog.get(view.source_id, actor)
 
     # Then
     assert created is True
     assert result.result_ref is not None
     assert activated is True
+    assert ready_view is not None
+    assert ready_view.canonical_root_node_id is not None
+    locator = PgGroundingStore(engine).jump(
+        actor_user_id=actor,
+        source_version_id=ready_view.source_version_id,
+        canonical_node_id=ready_view.canonical_root_node_id,
+    )
+    assert locator["text"] == PDF_TEXT
     row = db.conn.execute(
         "SELECT sv.status, s.availability, cd.active, cn.text_content "
         "FROM source_versions sv "

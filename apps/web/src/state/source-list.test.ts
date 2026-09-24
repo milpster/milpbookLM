@@ -14,6 +14,7 @@ const source = (sourceId: string, versionId: string, title: string): Source => (
   status: "quarantined_identified",
   pipeline_status: "active",
   etag: "0",
+  canonical_root_node_id: null,
 });
 
 describe("mergeSources", () => {

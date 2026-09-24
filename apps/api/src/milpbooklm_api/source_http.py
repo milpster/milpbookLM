@@ -69,6 +69,11 @@ def source_payload(view: SourceView, job_id: uuid.UUID | None = None) -> dict[st
         "status": "quarantined_identified",
         "pipeline_status": view.version_status,
         "etag": view.etag,
+        "canonical_root_node_id": (
+            str(view.canonical_root_node_id)
+            if view.canonical_root_node_id is not None
+            else None
+        ),
     }
     if job_id is not None:
         payload["job_id"] = str(job_id)

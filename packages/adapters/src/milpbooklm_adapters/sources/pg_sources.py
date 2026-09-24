@@ -25,6 +25,7 @@ from milpbooklm_adapters.db.tables.blobs import blob_references
 from milpbooklm_adapters.db.tables.collaboration import notebook_memberships
 from milpbooklm_adapters.db.tables.sources import (
     canonical_documents,
+    canonical_nodes,
     source_versions,
     sources,
 )
@@ -52,6 +53,23 @@ _SOURCE_TYPES: Final = {
     "video/mp4": SourceType.VIDEO,
     "video/webm": SourceType.VIDEO,
 }
+
+_CANONICAL_ROOT_NODE_ID: Final = (
+    sa.select(canonical_nodes.c.id)
+    .join(
+        canonical_documents,
+        canonical_documents.c.id == canonical_nodes.c.canonical_document_id,
+    )
+    .where(
+        canonical_documents.c.source_version_id == source_versions.c.id,
+        canonical_documents.c.active.is_(True),
+        canonical_nodes.c.parent_node_id.is_(None),
+    )
+    .order_by(canonical_nodes.c.seq)
+    .limit(1)
+    .correlate(source_versions)
+    .scalar_subquery()
+)
 
 
 class PgSourceCatalog(SourceCatalog):
@@ -296,6 +314,7 @@ class PgSourceCatalog(SourceCatalog):
                     source_versions.c.content_size_bytes,
                     source_versions.c.status.label("version_status"),
                     source_versions.c.original_blob_id,
+                    _CANONICAL_ROOT_NODE_ID.label("canonical_root_node_id"),
                 )
                 .join(source_versions, source_versions.c.source_id == sources.c.id)
                 .join(
@@ -452,6 +471,7 @@ class PgSourceCatalog(SourceCatalog):
             int,
             str,
             uuid.UUID,
+            uuid.UUID | None,
         ]
     ]:
         return (
@@ -467,6 +487,7 @@ class PgSourceCatalog(SourceCatalog):
                 source_versions.c.content_size_bytes,
                 source_versions.c.status.label("version_status"),
                 source_versions.c.original_blob_id,
+                _CANONICAL_ROOT_NODE_ID.label("canonical_root_node_id"),
             )
             .join(source_versions, source_versions.c.source_id == sources.c.id)
             .order_by(source_versions.c.version_number.desc())
@@ -487,4 +508,5 @@ class PgSourceCatalog(SourceCatalog):
             version_status=row["version_status"],
             etag=row["etag"],
             blob_id=row["original_blob_id"],
+            canonical_root_node_id=row["canonical_root_node_id"],
         )

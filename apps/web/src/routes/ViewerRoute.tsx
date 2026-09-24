@@ -83,6 +83,15 @@ function Viewer({
         />
       </div>
     );
+  if (locator.text !== undefined)
+    return (
+      <div className="viewer-frame">
+        <p className="muted">{summary}</p>
+        <article className="message">
+          <p className="message-content">{locator.text}</p>
+        </article>
+      </div>
+    );
   return (
     <div className="empty-state">
       <h2>Source not viewable here</h2>

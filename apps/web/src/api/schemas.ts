@@ -54,6 +54,7 @@ export const sourceSchema = z.object({
   status: z.string(),
   pipeline_status: sourcePipelineStatusSchema,
   etag: z.string(),
+  canonical_root_node_id: z.string().uuid().nullable(),
   job_id: z.string().uuid().optional(),
 });
 
@@ -147,6 +148,7 @@ export const locatorSchema = z.discriminatedUnion("state", [
     node_id: z.string().uuid(),
     media_type: z.string().optional(),
     html: z.string().optional(),
+    text: z.string().optional(),
     content_url: z.string().optional(),
     page: z.number().int().positive().optional(),
     time_seconds: z.number().nonnegative().optional(),

@@ -50,6 +50,7 @@ class SourceView:
     version_status: str
     etag: str
     blob_id: uuid.UUID
+    canonical_root_node_id: uuid.UUID | None = None
 
 
 @dataclass(frozen=True, slots=True)
