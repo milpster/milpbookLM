@@ -66,7 +66,7 @@ describe("SettingsRoute", () => {
     ).toBeTruthy();
   });
 
-  it("renders the server health panel with a status dot per component", async () => {
+  it("renders the server health chip strip with a status dot per component", async () => {
     vi.stubGlobal(
       "fetch",
       vi.fn(async (input: RequestInfo | URL): Promise<Response> => {
@@ -80,21 +80,24 @@ describe("SettingsRoute", () => {
     );
     renderWithClient(<SettingsRoute navigate={vi.fn()} params={{}} />);
 
-    expect(await screen.findByRole("heading", { name: "Server health" })).toBeTruthy();
-    expect((await screen.findAllByText("connected")).length).toBeGreaterThan(0);
+    expect(await screen.findByText("Database")).toBeTruthy();
+    const chips = document.querySelectorAll(".health-chip");
+    expect(chips.length).toBe(6);
     const ok = document.querySelector(".health-dot.ok");
     const degraded = document.querySelector(".health-dot.degraded");
     const down = document.querySelector(".health-dot.down");
     expect(ok).not.toBeNull();
     expect(degraded).not.toBeNull();
     expect(down).not.toBeNull();
-    expect(screen.getByText("Database")).toBeTruthy();
     expect(screen.getByText("Blob store")).toBeTruthy();
     expect(screen.getByText("Worker")).toBeTruthy();
     expect(screen.getByText("Chat provider")).toBeTruthy();
     expect(screen.getByText("Embeddings")).toBeTruthy();
     expect(screen.getByText("Search")).toBeTruthy();
-    expect(screen.getByText("no recent worker activity")).toBeTruthy();
+    const workerChip = screen.getByText("Worker");
+    expect(workerChip.getAttribute("title")).toBe("no recent worker activity");
+    expect(workerChip.textContent).toBe("Worker: degraded");
+    expect(screen.queryByRole("heading", { name: "Server health" })).toBeNull();
   });
 
   it("rejects missing or blank capability descriptions", () => {

@@ -37,6 +37,20 @@ export function SettingsRoute(_props: RouteProps): ReactNode {
           <h1 id="settings-title">Settings</h1>
         </div>
       </header>
+      <p className="health-strip">
+        <span>Server health:</span>
+        {health.isPending ? null : health.isError ? (
+          <span title="Server health could not be loaded.">unavailable</span>
+        ) : (
+          health.data.components.map((component) => (
+            <span className="health-chip" key={component.component} title={component.detail}>
+              <span className={`health-dot ${component.status}`} aria-hidden="true" />
+              {componentLabel(component)}
+              <span className="sr-only">: {component.status}</span>
+            </span>
+          ))
+        )}
+      </p>
       <div className="split-content">
         <section className="panel-stack">
           <h2>Account</h2>
@@ -71,55 +85,26 @@ export function SettingsRoute(_props: RouteProps): ReactNode {
           )}
         </section>
       </div>
-      <div className="settings-grid">
-        <section className="panel-stack" aria-labelledby="capabilities-title">
-          <h2 id="capabilities-title">Capabilities</h2>
-          <p className="muted">
-            Each feature reports whether it is available on this installation.
-          </p>
-          {capabilities.isPending ? (
-            <p role="status">Loading capabilities...</p>
-          ) : (
-            <div className="capability-grid">
-              {capabilities.data?.capabilities.map((capability) => (
-                <article key={capability.id} className="capability">
-                  <div>
-                    <h3>{capability.name}</h3>
-                  </div>
-                  <p>{capability.description}</p>
-                  <p className={`status ${capability.state}`}>{capability.state}</p>
-                  {capability.reason === null ? null : <p className="muted">{capability.reason}</p>}
-                </article>
-              ))}
-            </div>
-          )}
-        </section>
-        <section className="panel-stack" aria-labelledby="server-health-title">
-          <h2 id="server-health-title">Server health</h2>
-          <p className="muted">
-            Status of this installation&apos;s components. Green means ok, amber degraded, red down.
-          </p>
-          {health.isPending ? (
-            <p role="status">Loading server health...</p>
-          ) : health.isError ? (
-            <p className="notice error" role="alert">
-              Server health could not be loaded. Please try again.
-            </p>
-          ) : (
-            <ul className="health-list">
-              {health.data.components.map((component) => (
-                <li className="health-row" key={component.component}>
-                  <span className={`health-dot ${component.status}`} aria-hidden="true" />
-                  <strong>{componentLabel(component)}</strong>
-                  <span className="resource-meta" title={component.detail}>
-                    {component.detail}
-                  </span>
-                </li>
-              ))}
-            </ul>
-          )}
-        </section>
-      </div>
+      <section className="panel-stack" aria-labelledby="capabilities-title">
+        <h2 id="capabilities-title">Capabilities</h2>
+        <p className="muted">Each feature reports whether it is available on this installation.</p>
+        {capabilities.isPending ? (
+          <p role="status">Loading capabilities...</p>
+        ) : (
+          <div className="capability-grid">
+            {capabilities.data?.capabilities.map((capability) => (
+              <article key={capability.id} className="capability">
+                <div>
+                  <h3>{capability.name}</h3>
+                </div>
+                <p>{capability.description}</p>
+                <p className={`status ${capability.state}`}>{capability.state}</p>
+                {capability.reason === null ? null : <p className="muted">{capability.reason}</p>}
+              </article>
+            ))}
+          </div>
+        )}
+      </section>
     </section>
   );
 }
