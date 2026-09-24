@@ -46,7 +46,7 @@ class SourceView:
     display_title: str
     availability: Availability
     content_sha256: str
-    content_size_bytes: int
+    content_size_bytes: int | None
     version_status: str
     etag: str
     blob_id: uuid.UUID

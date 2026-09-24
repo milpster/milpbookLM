@@ -30,7 +30,10 @@ class SourceListCatalog:
         return self.sources
 
 
-def _client(member: bool) -> tuple[TestClient, SourceListCatalog, uuid.UUID, uuid.UUID]:
+def _client(
+    member: bool,
+    sources: list[SourceView] | None = None,
+) -> tuple[TestClient, SourceListCatalog, uuid.UUID, uuid.UUID]:
     actor_id = uuid.uuid4()
     notebook_id = uuid.uuid4()
     user = User(actor_id, "reader@example.com", "Reader")
@@ -55,7 +58,7 @@ def _client(member: bool) -> tuple[TestClient, SourceListCatalog, uuid.UUID, uui
         uuid.uuid4(),
         ROOT_NODE_ID,
     )
-    catalog = SourceListCatalog([source])
+    catalog = SourceListCatalog(sources if sources is not None else [source])
     deps = Mock(spec=ApiDeps)
     deps.notebooks = readers
     deps.engine = PolicyEngine()
@@ -99,3 +102,31 @@ def test_list_sources_hides_notebook_from_non_member() -> None:
     # Then
     assert response.status_code == status.HTTP_404_NOT_FOUND
     assert catalog.calls == []
+
+
+def test_list_sources_serializes_blobless_version_size_as_number() -> None:
+    """Blob-less versions (public-video unavailable, purged) must keep the
+    web contract ``content_size_bytes: number`` — JSON null breaks the
+    client Zod schema and the whole Sources tab with it."""
+    # Given
+    blobless = SourceView(
+        uuid.uuid4(),
+        uuid.uuid4(),
+        uuid.uuid4(),
+        SourceType.YOUTUBE,
+        "Blob-less source",
+        Availability.ACTIVE,
+        "b" * 64,
+        None,
+        "parse_failed",
+        "0",
+        uuid.uuid4(),
+    )
+    client, _catalog, notebook_id, _actor_id = _client(member=True, sources=[blobless])
+
+    # When
+    response = client.get("/api/v1/sources", params={"notebook_id": str(notebook_id)})
+
+    # Then
+    assert response.status_code == status.HTTP_200_OK
+    assert response.json()[0]["content_size_bytes"] == 0

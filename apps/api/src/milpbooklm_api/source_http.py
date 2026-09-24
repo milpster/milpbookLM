@@ -65,7 +65,9 @@ def source_payload(view: SourceView, job_id: uuid.UUID | None = None) -> dict[st
         "display_title": view.display_title,
         "availability": view.availability.value,
         "content_sha256": view.content_sha256,
-        "content_size_bytes": view.content_size_bytes,
+        # Blob-less versions (public-video unavailable, purged) persist NULL;
+        # the web Zod contract requires a JSON number.
+        "content_size_bytes": view.content_size_bytes if view.content_size_bytes is not None else 0,
         "status": "quarantined_identified",
         "pipeline_status": view.version_status,
         "etag": view.etag,
