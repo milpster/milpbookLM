@@ -35,15 +35,15 @@ afterEach(() => {
 
 describe("Shell", () => {
   it("renders aggregate counts and polls every twenty seconds", async () => {
-    getInstanceStats.mockResolvedValue({ registered_users: 4, logged_in_users: 2 });
+    getInstanceStats.mockResolvedValue({ registered_users: 4, active_users: 2 });
     const client = new QueryClient({ defaultOptions: { queries: { retry: false } } });
     render(
       <QueryClientProvider client={client}>
         <Shell path="/notebooks" navigate={() => undefined}><p>Content</p></Shell>
       </QueryClientProvider>,
     );
-    expect(await screen.findByText("4 registered · 2 signed in")).toBeTruthy();
-    expect(client.getQueryState(["actor", "instance-stats"])?.data).toEqual({ registered_users: 4, logged_in_users: 2 });
+    expect(await screen.findByText("4 registered · 2 users active")).toBeTruthy();
+    expect(client.getQueryState(["actor", "instance-stats"])?.data).toEqual({ registered_users: 4, active_users: 2 });
   });
 
   it("keeps navigation usable without a count when aggregate request fails", async () => {

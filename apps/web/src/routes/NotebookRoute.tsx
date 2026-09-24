@@ -1,6 +1,6 @@
 import { useQuery } from "@tanstack/react-query";
 import type { ReactNode } from "react";
-import { useState } from "react";
+import { useRef, useState } from "react";
 import type { RouteProps } from "../App";
 import { getNotebook } from "../api/client";
 import { queryKeys } from "../api/query-keys";
@@ -9,6 +9,7 @@ import { NotesPanel } from "../components/NotesPanel";
 import { SourcePanel } from "../components/SourcePanel";
 import { useAuth } from "../state/auth";
 import type { NotebookTab } from "../state/conversations";
+import { rememberLastNotebook } from "../state/last-notebook";
 
 export function NotebookRoute({ navigate, params }: RouteProps): ReactNode {
   const notebookId = params["notebookId"] ?? "";
@@ -19,6 +20,13 @@ export function NotebookRoute({ navigate, params }: RouteProps): ReactNode {
     queryFn: () => getNotebook(notebookId ?? ""),
     enabled: actor !== null && notebookId !== undefined,
   });
+  // Remember the last successfully opened notebook once per mount, so
+  // navigating away and back reopens it (App resolves "/notebooks").
+  const rememberedNotebook = useRef(false);
+  if (!rememberedNotebook.current && notebook.data !== undefined && actor !== null) {
+    rememberedNotebook.current = true;
+    rememberLastNotebook(actor.user_id, notebookId);
+  }
   if (actor === null || notebookId === undefined)
     return <p className="notice error">This notebook link is not valid.</p>;
   return (

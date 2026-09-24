@@ -1,10 +1,11 @@
 import { useQuery } from "@tanstack/react-query";
 import type { ComponentType, ReactNode } from "react";
-import { lazy, Suspense, useCallback, useEffect, useState } from "react";
+import { lazy, Suspense, useCallback, useEffect, useRef, useState } from "react";
 import { getCapabilities } from "./api/client";
 import { Shell } from "./components/Shell";
 import { useAuth } from "./state/auth";
 import { JobProvider } from "./state/jobs";
+import { resolveNotebooksPath } from "./state/last-notebook";
 
 const AuthRoute = lazy(() =>
   import("./routes/AuthRoute").then((module) => ({ default: module.AuthRoute })),
@@ -45,17 +46,29 @@ function matchRoute(path: string): RouteMatch {
 export function App(): ReactNode {
   const { actor, checking } = useAuth();
   const [path, setPath] = useState(window.location.pathname);
+  const pathRef = useRef(path);
   const capabilities = useQuery({ queryKey: ["public", "capabilities"], queryFn: getCapabilities });
-  const navigate = useCallback((next: string) => {
-    window.history.pushState({}, "", next);
-    setPath(next);
-    window.scrollTo(0, 0);
-  }, []);
+  const navigate = useCallback(
+    (next: string) => {
+      const target = resolveNotebooksPath(next, pathRef.current, actor?.user_id ?? null);
+      window.history.pushState({}, "", target);
+      pathRef.current = target;
+      setPath(target);
+      window.scrollTo(0, 0);
+    },
+    [actor],
+  );
   useEffect(() => {
-    const pop = (): void => setPath(window.location.pathname);
+    const pop = (): void => {
+      const current = window.location.pathname;
+      const target = resolveNotebooksPath(current, pathRef.current, actor?.user_id ?? null);
+      if (target !== current) window.history.replaceState({}, "", target);
+      pathRef.current = target;
+      setPath(target);
+    };
     window.addEventListener("popstate", pop);
     return () => window.removeEventListener("popstate", pop);
-  }, []);
+  }, [actor]);
   if (checking) return <RouteLoading />;
   if (actor === null)
     return (

@@ -11,7 +11,17 @@ export const actorSchema = z.object({
 
 export const instanceStatsSchema = z.object({
   registered_users: z.number().int().nonnegative(),
-  logged_in_users: z.number().int().nonnegative(),
+  active_users: z.number().int().nonnegative(),
+});
+
+export const serverComponentSchema = z.object({
+  component: z.string(),
+  status: z.enum(["ok", "degraded", "down"]),
+  detail: z.string(),
+});
+
+export const serverComponentsSchema = z.object({
+  components: z.array(serverComponentSchema),
 });
 
 export const loginSchema = z.object({ user_id: z.string().uuid(), csrf_token: z.string() });
@@ -205,6 +215,7 @@ export type NoteKind = z.infer<typeof noteKindSchema>;
 export type NoteRevision = z.infer<typeof noteRevisionSchema>;
 export type NoteSnapshot = z.infer<typeof noteSnapshotSchema>;
 export type Notebook = z.infer<typeof notebookSchema>;
+export type ServerComponent = z.infer<typeof serverComponentSchema>;
 export type Source = z.infer<typeof sourceSchema>;
 export type Terminal = z.infer<typeof terminalSchema>;
 

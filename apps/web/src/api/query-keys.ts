@@ -2,6 +2,7 @@ export const queryKeys = {
   capabilities: () => ["public", "capabilities"] as const,
   actor: (actorId: string) => ["actor", actorId, "profile"] as const,
   instanceStats: () => ["actor", "instance-stats"] as const,
+  healthComponents: () => ["actor", "health-components"] as const,
   notebooks: (actorId: string) => ["actor", actorId, "notebooks"] as const,
   notebook: (actorId: string, notebookId: string) =>
     ["actor", actorId, "notebook", notebookId] as const,

@@ -28,6 +28,17 @@ const capability = {
 
 const capabilityResponse = { capabilities: [capability] };
 
+const healthBody = {
+  components: [
+    { component: "database", status: "ok", detail: "connected" },
+    { component: "blob_store", status: "ok", detail: "blob root writable" },
+    { component: "worker", status: "degraded", detail: "no recent worker activity" },
+    { component: "chat_provider", status: "ok", detail: "last request 2m ago" },
+    { component: "embedding_provider", status: "ok", detail: "last request 1m ago" },
+    { component: "search", status: "down", detail: "unavailable (database down)" },
+  ],
+};
+
 function renderWithClient(ui: ReactNode): void {
   const client = new QueryClient({ defaultOptions: { queries: { retry: false } } });
   render(<QueryClientProvider client={client}>{ui}</QueryClientProvider>);
@@ -53,6 +64,37 @@ describe("SettingsRoute", () => {
     expect(
       await screen.findByText("Create, organize, duplicate, share, and manage notebook metadata."),
     ).toBeTruthy();
+  });
+
+  it("renders the server health panel with a status dot per component", async () => {
+    vi.stubGlobal(
+      "fetch",
+      vi.fn(async (input: RequestInfo | URL): Promise<Response> => {
+        const url = typeof input === "string" ? input : input instanceof URL ? input.href : input.url;
+        const body = url.includes("/health/components") ? healthBody : capabilityResponse;
+        return new Response(JSON.stringify(body), {
+          status: 200,
+          headers: { "content-type": "application/json" },
+        });
+      }),
+    );
+    renderWithClient(<SettingsRoute navigate={vi.fn()} params={{}} />);
+
+    expect(await screen.findByRole("heading", { name: "Server health" })).toBeTruthy();
+    expect((await screen.findAllByText("connected")).length).toBeGreaterThan(0);
+    const ok = document.querySelector(".health-dot.ok");
+    const degraded = document.querySelector(".health-dot.degraded");
+    const down = document.querySelector(".health-dot.down");
+    expect(ok).not.toBeNull();
+    expect(degraded).not.toBeNull();
+    expect(down).not.toBeNull();
+    expect(screen.getByText("Database")).toBeTruthy();
+    expect(screen.getByText("Blob store")).toBeTruthy();
+    expect(screen.getByText("Worker")).toBeTruthy();
+    expect(screen.getByText("Chat provider")).toBeTruthy();
+    expect(screen.getByText("Embeddings")).toBeTruthy();
+    expect(screen.getByText("Search")).toBeTruthy();
+    expect(screen.getByText("no recent worker activity")).toBeTruthy();
   });
 
   it("rejects missing or blank capability descriptions", () => {

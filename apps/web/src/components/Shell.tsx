@@ -50,7 +50,7 @@ export function Shell({ path, navigate, children }: ShellProps): ReactNode {
         </a>
         {actor === null ? null : <p className="actor-label">{actor.display_name}</p>}
         {stats.data === undefined ? null : (
-          <p className="instance-stats">{stats.data.registered_users} registered · {stats.data.logged_in_users} signed in</p>
+          <p className="instance-stats">{stats.data.registered_users} registered · {stats.data.active_users} users active</p>
         )}
       </header>
       <div className="shell-body">

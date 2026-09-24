@@ -20,6 +20,7 @@ import {
   noteSnapshotSchema,
   notebookSchema,
   revisionListSchema,
+  serverComponentsSchema,
   sourceSchema,
 } from "./schemas";
 
@@ -100,6 +101,8 @@ export async function getActor(): Promise<Actor> {
 }
 export const getCapabilities = () => parsed(api.get("capabilities"), capabilitiesSchema);
 export const getInstanceStats = () => parsed(api.get("auth/instance-stats"), instanceStatsSchema);
+export const getHealthComponents = () =>
+  parsed(api.get("health/components"), serverComponentsSchema);
 export const listNotebooks = () => parsed(api.get("notebooks"), notebookSchema.array());
 export const getNotebook = (id: string) => parsed(api.get(`notebooks/${id}`), notebookSchema);
 export const createNotebook = (input: CreateNotebookRequest) =>

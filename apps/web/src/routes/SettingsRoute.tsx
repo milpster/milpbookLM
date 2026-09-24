@@ -1,15 +1,34 @@
 import { useQuery } from "@tanstack/react-query";
 import type { ReactNode } from "react";
 import type { RouteProps } from "../App";
-import { getCapabilities } from "../api/client";
+import { getCapabilities, getHealthComponents } from "../api/client";
 import { queryKeys } from "../api/query-keys";
+import type { ServerComponent } from "../api/schemas";
 import { useAuth } from "../state/auth";
 import { useJobs } from "../state/jobs";
+
+const componentLabels: Readonly<Record<string, string>> = {
+  database: "Database",
+  blob_store: "Blob store",
+  worker: "Worker",
+  chat_provider: "Chat provider",
+  embedding_provider: "Embeddings",
+  search: "Search",
+};
+
+function componentLabel(component: ServerComponent): string {
+  return componentLabels[component.component] ?? component.component;
+}
 
 export function SettingsRoute(_props: RouteProps): ReactNode {
   const { actor } = useAuth();
   const { jobs } = useJobs();
   const capabilities = useQuery({ queryKey: queryKeys.capabilities(), queryFn: getCapabilities });
+  const health = useQuery({
+    queryKey: queryKeys.healthComponents(),
+    queryFn: getHealthComponents,
+    refetchInterval: 20_000,
+  });
   return (
     <section className="page-stack" aria-labelledby="settings-title">
       <header className="page-heading">
@@ -52,6 +71,29 @@ export function SettingsRoute(_props: RouteProps): ReactNode {
           )}
         </section>
       </div>
+      <section className="panel-stack" aria-labelledby="server-health-title">
+        <h2 id="server-health-title">Server health</h2>
+        <p className="muted">
+          Status of this installation&apos;s components. Green means ok, amber degraded, red down.
+        </p>
+        {health.isPending ? (
+          <p role="status">Loading server health...</p>
+        ) : health.isError ? (
+          <p className="notice error" role="alert">
+            Server health could not be loaded. Please try again.
+          </p>
+        ) : (
+          <ul className="health-list">
+            {health.data.components.map((component) => (
+              <li className="health-row" key={component.component}>
+                <span className={`health-dot ${component.status}`} aria-hidden="true" />
+                <strong>{componentLabel(component)}</strong>
+                <span className="resource-meta">{component.detail}</span>
+              </li>
+            ))}
+          </ul>
+        )}
+      </section>
       <section className="panel-stack" aria-labelledby="capabilities-title">
         <h2 id="capabilities-title">Capabilities</h2>
         <p className="muted">Each feature reports whether it is available on this installation.</p>

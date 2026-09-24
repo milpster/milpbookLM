@@ -818,6 +818,39 @@ label {
     transform: rotate(360deg);
   }
 }
+.health-list {
+  display: grid;
+  gap: var(--space-2);
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+.health-row {
+  display: flex;
+  align-items: center;
+  gap: var(--space-3);
+  min-inline-size: 0;
+}
+.health-row .resource-meta {
+  min-inline-size: 0;
+  overflow-wrap: anywhere;
+}
+.health-dot {
+  flex: none;
+  inline-size: 0.5rem;
+  block-size: 0.5rem;
+  border-radius: 50%;
+  background: var(--text-muted);
+}
+.health-dot.ok {
+  background: var(--status-success);
+}
+.health-dot.degraded {
+  background: var(--status-warning);
+}
+.health-dot.down {
+  background: var(--status-error);
+}
 .citation-list {
   display: flex;
   flex-wrap: wrap;
