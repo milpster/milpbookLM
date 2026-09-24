@@ -41,6 +41,7 @@ class SecuritySettings:
 
     secret_key: str
     base_url: str
+    session_cookie_secure: bool = True
     session_ttl: timedelta = DEFAULT_SESSION_TTL
     login_max_attempts: int = 5
     login_window: timedelta = timedelta(minutes=15)
@@ -117,22 +118,24 @@ def principal_from_request(
     )
 
 
-def set_session_cookie(response: Response, token: str, *, ttl: timedelta) -> None:
+def set_session_cookie(
+    response: Response, token: str, *, ttl: timedelta, secure: bool
+) -> None:
     """Apply the cookie discipline to a session-issuing response."""
     response.set_cookie(
         SESSION_COOKIE,
         token,
         max_age=int(ttl.total_seconds()),
-        secure=True,
+        secure=secure,
         httponly=True,
         samesite="lax",
         path="/",
     )
 
 
-def clear_session_cookie(response: Response) -> None:
+def clear_session_cookie(response: Response, *, secure: bool) -> None:
     """Clear the session cookie with the same flags it was set with."""
-    response.delete_cookie(SESSION_COOKIE, secure=True, httponly=True, samesite="lax", path="/")
+    response.delete_cookie(SESSION_COOKIE, secure=secure, httponly=True, samesite="lax", path="/")
 
 
 class CsrfOriginMiddleware(BaseHTTPMiddleware):

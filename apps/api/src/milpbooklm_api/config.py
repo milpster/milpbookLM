@@ -88,6 +88,9 @@ class InstallationConfig(BaseModel):
     login_window_minutes: float = Field(default=15, gt=0)
     register_max_attempts: int = Field(default=3, ge=1)
     register_window_minutes: float = Field(default=60, gt=0)
+    # Session cookie Secure flag: HTTPS deployments keep True; an HTTP-only
+    # LAN / forwarded-port prototype is the only deployment that sets false.
+    session_cookie_secure: bool = True
     enabled_capability_flags: tuple[str, ...] = ()
     configured_provider_capabilities: tuple[str, ...] = ()
     chat_provider: ChatProvider = ChatProvider.LLAMA_CPP

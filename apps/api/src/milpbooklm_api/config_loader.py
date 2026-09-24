@@ -44,6 +44,7 @@ INSTALLATION_ENV_KEYS = frozenset(
         "MILPBOOKLM_REQUIRED_POSTGRES_MAJOR",
         "MILPBOOKLM_LOGIN_MAX_ATTEMPTS",
         "MILPBOOKLM_LOGIN_WINDOW_MINUTES",
+        "MILPBOOKLM_SESSION_COOKIE_SECURE",
         "MILPBOOKLM_REGISTER_MAX_ATTEMPTS",
         "MILPBOOKLM_REGISTER_WINDOW_MINUTES",
         "MILPBOOKLM_ENABLED_CAPABILITY_FLAGS",
@@ -171,6 +172,11 @@ def load_installation(env: Mapping[str, str]) -> InstallationConfig:
             key="MILPBOOKLM_REGISTER_WINDOW_MINUTES",
             default=60,
         ),
+        session_cookie_secure=_parse_bool(
+            resolved.get("MILPBOOKLM_SESSION_COOKIE_SECURE", ""),
+            key="MILPBOOKLM_SESSION_COOKIE_SECURE",
+            default=True,
+        ),
         enabled_capability_flags=_parse_csv(
             resolved.get("MILPBOOKLM_ENABLED_CAPABILITY_FLAGS", "")
         ),
@@ -247,6 +253,17 @@ def _parse_positive_float(raw: str, *, key: str, default: float) -> float:
     if not math.isfinite(parsed) or parsed <= 0:
         raise ConfigError(f"{key} must be a positive number", keys=(key,))
     return parsed
+
+
+def _parse_bool(raw: str, *, key: str, default: bool) -> bool:
+    value = raw.strip().lower()
+    if not value:
+        return default
+    if value in {"true", "1", "yes"}:
+        return True
+    if value in {"false", "0", "no"}:
+        return False
+    raise ConfigError(f"{key} must be 'true' or 'false'", keys=(key,))
 
 
 def _parse_csv(raw: str) -> tuple[str, ...]:

@@ -386,6 +386,7 @@ def create_app() -> FastAPI:
     settings = SecuritySettings(
         secret_key=installation.secret_key.get_secret_value(),
         base_url=installation.base_url,
+        session_cookie_secure=installation.session_cookie_secure,
         login_max_attempts=installation.login_max_attempts,
         login_window=timedelta(minutes=installation.login_window_minutes),
         register_max_attempts=installation.register_max_attempts,

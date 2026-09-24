@@ -104,7 +104,12 @@ def _login_response(deps: ApiDeps, email: str, password: str) -> JSONResponse:
     logger.info("login succeeded", extra={"user_id": str(outcome.user_id)})
     csrf = derive_csrf_token(deps.settings.secret_key, session.token)
     response = JSONResponse(content={"user_id": str(outcome.user_id), "csrf_token": csrf})
-    set_session_cookie(response, session.token, ttl=deps.settings.session_ttl)
+    set_session_cookie(
+        response,
+        session.token,
+        ttl=deps.settings.session_ttl,
+        secure=deps.settings.session_cookie_secure,
+    )
     return response
 
 
@@ -158,7 +163,7 @@ def build_auth_router(deps: ApiDeps, principal: PrincipalDependency) -> APIRoute
         """Revoke the presented session and clear the cookie."""
         deps.logout(principal.token)
         response = Response(status_code=status.HTTP_204_NO_CONTENT)
-        clear_session_cookie(response)
+        clear_session_cookie(response, secure=deps.settings.session_cookie_secure)
         return response
 
     @router.post("/rotate")
@@ -171,7 +176,12 @@ def build_auth_router(deps: ApiDeps, principal: PrincipalDependency) -> APIRoute
             )
         csrf = derive_csrf_token(deps.settings.secret_key, new_session.token)
         response = JSONResponse(content={"csrf_token": csrf})
-        set_session_cookie(response, new_session.token, ttl=deps.settings.session_ttl)
+        set_session_cookie(
+            response,
+            new_session.token,
+            ttl=deps.settings.session_ttl,
+            secure=deps.settings.session_cookie_secure,
+        )
         return response
 
     @router.get("/me")
