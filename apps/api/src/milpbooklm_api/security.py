@@ -96,12 +96,24 @@ def origin_of(url: str) -> str:
 
 
 def _origin_ok(base_url: str, request: Request) -> bool:
-    """Return True when the request Origin (fallback Referer) matches the installation origin."""
-    expected = origin_of(base_url)
+    """Return True when origins match, treating localhost, IPv4, and IPv6 loopback as equivalent."""
+    expected = urlsplit(base_url)
+    loopback_hosts = frozenset({"localhost", "127.0.0.1", "::1"})
+    expected_host = "loopback" if expected.hostname in loopback_hosts else expected.hostname
     for header in ("origin", "referer"):
         value = request.headers.get(header)
         if value:
-            return origin_of(value) == expected
+            actual = urlsplit(value)
+            actual_host = "loopback" if actual.hostname in loopback_hosts else actual.hostname
+            return (
+                actual.scheme,
+                actual_host,
+                actual.port,
+            ) == (
+                expected.scheme,
+                expected_host,
+                expected.port,
+            )
     return False
 
 
