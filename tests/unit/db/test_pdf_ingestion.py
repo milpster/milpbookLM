@@ -12,15 +12,13 @@ import sqlalchemy as sa
 from milpbooklm_adapters.blobs import FilesystemBlobStore, PgBlobRepository
 from milpbooklm_adapters.parsers.isolation import IsolatedParser, ParseFailure
 from milpbooklm_adapters.parsers.pg_canonical import PgCanonicalRepository
-
-from milpbooklm_workers.handlers import SourceParseHandler
 from milpbooklm_adapters.security.clock import SystemClock
 from milpbooklm_adapters.sources.filesystem_quarantine import FilesystemQuarantineStore
-
 from milpbooklm_adapters.sources.pg_sources import PgSourceCatalog
-
 from milpbooklm_application.source_acquisition import AcquireSource, AcquireSourceCommand
 from milpbooklm_domain.jobs import JobRecord
+from milpbooklm_workers.handlers import SourceParseHandler
+
 from tests.domain.invariants._factories import Db
 
 FIXTURES = Path(__file__).resolve().parents[2] / "fixtures" / "sources"
@@ -50,8 +48,12 @@ class _Jobs:
     def __init__(self) -> None:
         self.job: JobRecord | None = None
 
-    def enqueue(self, *, kind: str, payload: dict[str, object], **_: object) -> tuple[JobRecord, bool]:
-        self.job = JobRecord(id=uuid.uuid4(), kind=kind, queue="ingestion_indexing", payload=payload)
+    def enqueue(
+        self, *, kind: str, payload: dict[str, object], **_: object
+    ) -> tuple[JobRecord, bool]:
+        self.job = JobRecord(
+            id=uuid.uuid4(), kind=kind, queue="ingestion_indexing", payload=payload
+        )
         return self.job, True
 
 

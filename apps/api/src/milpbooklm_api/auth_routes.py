@@ -121,6 +121,21 @@ def _seed_onboarding(deps: ApiDeps, user_id: uuid.UUID) -> None:
         )
 
 
+def _register_account(deps: ApiDeps, request: Request, body: RegisterRequest) -> dict[str, str]:
+    """Register the account (rate-limited per client IP; 409 on policy conflict)."""
+    key = f"register:{_client_host(request)}"
+    if not deps.register_limiter.allow(key):
+        raise _too_many(deps.register_limiter.retry_after_seconds(key))
+    try:
+        user_id = deps.register(body.email, body.display_name, body.password)
+    except RegistrationError as exc:
+        raise HTTPException(
+            status_code=status.HTTP_409_CONFLICT, detail=str(exc)
+        ) from exc
+    _seed_onboarding(deps, user_id)
+    return {"user_id": str(user_id)}
+
+
 def build_auth_router(deps: ApiDeps, principal: PrincipalDependency) -> APIRouter:
     """Build the /api/v1/auth router over the wired dependencies."""
     router = APIRouter(prefix="/api/v1/auth", tags=["auth"])
@@ -128,17 +143,7 @@ def build_auth_router(deps: ApiDeps, principal: PrincipalDependency) -> APIRoute
     @router.post("/register", status_code=201)
     async def register(body: RegisterRequest, request: Request) -> dict[str, str]:
         """Create a local account (rate-limited per client IP)."""
-        key = f"register:{_client_host(request)}"
-        if not deps.register_limiter.allow(key):
-            raise _too_many(deps.register_limiter.retry_after_seconds(key))
-        try:
-            user_id = deps.register(body.email, body.display_name, body.password)
-        except RegistrationError as exc:
-            raise HTTPException(
-                status_code=status.HTTP_409_CONFLICT, detail=str(exc)
-            ) from exc
-        _seed_onboarding(deps, user_id)
-        return {"user_id": str(user_id)}
+        return _register_account(deps, request, body)
 
     @router.post("/login")
     async def login(body: LoginRequest, request: Request) -> JSONResponse:

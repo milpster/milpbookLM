@@ -196,7 +196,7 @@ def test_instance_stats_counts_distinct_unrevoked_unexpired_users() -> None:
     login(client, "first@example.com")
     deps = client.app.state.deps
     deps.sessions.issue(user_id=first_id, ttl=timedelta(hours=1))
-    expired = deps.sessions.issue(user_id=second_id, ttl=timedelta(seconds=1))
+    deps.sessions.issue(user_id=second_id, ttl=timedelta(seconds=1))
     revoked = deps.sessions.issue(user_id=third_id, ttl=timedelta(hours=1))
     deps.sessions.revoke(revoked.session_id)
     deps.clock.advance(1)

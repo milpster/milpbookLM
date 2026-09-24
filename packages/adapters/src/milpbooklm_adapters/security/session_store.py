@@ -212,6 +212,7 @@ class InMemorySessionTokenStore:
         return None
 
     def count_live_users(self, *, now: datetime) -> int:
+        """Count the distinct users with a live (unrevoked, unexpired) session."""
         return len(
             {
                 row.user_id
