@@ -6,6 +6,7 @@ import uuid
 
 from fastapi import APIRouter, Depends
 from fastapi.responses import JSONResponse
+from milpbooklm_application.note_core import NoteRevisionView, NoteView
 from milpbooklm_domain.policy import PolicyAction
 from starlette import status
 
@@ -13,6 +14,19 @@ from .deps import ApiDeps, NoteDeps, PrincipalDependency
 from .note_http import note_payload, revision_payload
 from .security import Principal
 from .source_http import authorize_notebook, problem
+
+
+def _names_for(
+    note_deps: NoteDeps,
+    notes: tuple[NoteView, ...] = (),
+    revisions: tuple[NoteRevisionView, ...] = (),
+) -> dict[uuid.UUID, str]:
+    """Resolve attribution names for every author referenced by the response."""
+    ids = frozenset(
+        {note.created_by_user_id for note in notes}
+        | {revision.author_user_id for revision in revisions}
+    )
+    return dict(note_deps.display_names(ids))
 
 
 def _build_notebook_note_router(
@@ -25,16 +39,12 @@ def _build_notebook_note_router(
         notebook_id: uuid.UUID,
         principal: Principal = Depends(principal_dependency),
     ) -> JSONResponse:
-        denied = authorize_notebook(
-            deps, principal, notebook_id, PolicyAction.READ_CONTENT
-        )
+        denied = authorize_notebook(deps, principal, notebook_id, PolicyAction.READ_CONTENT)
         if denied is not None:
             return denied
-        return JSONResponse(
-            content={
-                "notes": [note_payload(note) for note in note_deps.store.list_notes(notebook_id)]
-            }
-        )
+        notes = tuple(note_deps.store.list_notes(notebook_id))
+        names = _names_for(note_deps, notes=notes)
+        return JSONResponse(content={"notes": [note_payload(note, names) for note in notes]})
 
     return router
 
@@ -51,15 +61,11 @@ def _build_logical_note_router(
     ) -> JSONResponse:
         note = note_deps.store.get_note(note_id)
         if note is None:
-            return problem(
-                "note_not_found", "note not found", status.HTTP_404_NOT_FOUND
-            )
-        denied = authorize_notebook(
-            deps, principal, note.notebook_id, PolicyAction.READ_CONTENT
-        )
+            return problem("note_not_found", "note not found", status.HTTP_404_NOT_FOUND)
+        denied = authorize_notebook(deps, principal, note.notebook_id, PolicyAction.READ_CONTENT)
         if denied is not None:
             return denied
-        return JSONResponse(content=note_payload(note))
+        return JSONResponse(content=note_payload(note, _names_for(note_deps, notes=(note,))))
 
     @router.get("/notes/{note_id}/revisions", response_model=None)
     def list_revisions(
@@ -68,21 +74,14 @@ def _build_logical_note_router(
     ) -> JSONResponse:
         note = note_deps.store.get_note(note_id)
         if note is None:
-            return problem(
-                "note_not_found", "note not found", status.HTTP_404_NOT_FOUND
-            )
-        denied = authorize_notebook(
-            deps, principal, note.notebook_id, PolicyAction.READ_CONTENT
-        )
+            return problem("note_not_found", "note not found", status.HTTP_404_NOT_FOUND)
+        denied = authorize_notebook(deps, principal, note.notebook_id, PolicyAction.READ_CONTENT)
         if denied is not None:
             return denied
+        revisions = tuple(note_deps.store.list_revisions(note_id))
+        names = _names_for(note_deps, notes=(note,), revisions=revisions)
         return JSONResponse(
-            content={
-                "revisions": [
-                    revision_payload(revision)
-                    for revision in note_deps.store.list_revisions(note_id)
-                ]
-            }
+            content={"revisions": [revision_payload(revision, names) for revision in revisions]}
         )
 
     return router
@@ -107,15 +106,13 @@ def _build_revision_router(
             )
         note = note_deps.store.get_note(revision.note_id)
         if note is None:
-            return problem(
-                "note_not_found", "note not found", status.HTTP_404_NOT_FOUND
-            )
-        denied = authorize_notebook(
-            deps, principal, note.notebook_id, PolicyAction.READ_CONTENT
-        )
+            return problem("note_not_found", "note not found", status.HTTP_404_NOT_FOUND)
+        denied = authorize_notebook(deps, principal, note.notebook_id, PolicyAction.READ_CONTENT)
         if denied is not None:
             return denied
-        return JSONResponse(content=revision_payload(revision))
+        return JSONResponse(
+            content=revision_payload(revision, _names_for(note_deps, revisions=(revision,)))
+        )
 
     return router
 

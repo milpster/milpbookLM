@@ -59,6 +59,7 @@ from milpbooklm_application.research import (
 )
 from milpbooklm_application.retrieval import RetrieveChunks
 
+from .note_http import DisplayNameResolver, no_display_names
 from .security import ActiveUsersTracker, Principal, SecuritySettings, SlidingWindowLimiter
 
 
@@ -101,6 +102,7 @@ class NoteDeps:
     save_response: SaveResponseToNote
     transform: TransformNotes
     promote: PromoteNoteToSource
+    display_names: DisplayNameResolver = no_display_names
 
 
 @dataclass(frozen=True, slots=True)

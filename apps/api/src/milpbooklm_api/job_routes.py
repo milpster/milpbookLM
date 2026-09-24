@@ -13,9 +13,12 @@ from __future__ import annotations
 import asyncio
 import json
 import uuid
-from collections.abc import AsyncIterator
+from collections.abc import AsyncIterator, Callable
+from dataclasses import dataclass
+from datetime import datetime
 from typing import Any
 
+import sqlalchemy as sa
 from fastapi import APIRouter, Depends, Header
 from fastapi.responses import JSONResponse, StreamingResponse
 from milpbooklm_application.job_actor import InitiatingActor
@@ -33,13 +36,97 @@ from milpbooklm_domain.jobs import JobRecord
 from milpbooklm_domain.policy import PolicyAction
 from milpbooklm_domain.telemetry import current_context
 from pydantic import BaseModel, ConfigDict
+from sqlalchemy.exc import SQLAlchemyError
 from starlette import status
 
 from .deps import ApiDeps, PrincipalDependency
 from .security import Principal
+from .source_http import problem
 
 SSE_KEEPALIVE_INTERVAL_S = 0.5
 SSE_BATCH_LIMIT = 100
+ACTIVITY_FEED_LIMIT = 8
+
+
+@dataclass(frozen=True, slots=True)
+class JobActivitySlot:
+    """One job summarized as kind, state, and age - no identity, no content."""
+
+    kind: str
+    state: str
+    age_seconds: int
+
+
+@dataclass(frozen=True, slots=True)
+class JobActivity:
+    """Server-wide snapshot of current and recent work across all users."""
+
+    queued: int
+    running: int
+    active: tuple[JobActivitySlot, ...]
+    recent: tuple[JobActivitySlot, ...]
+
+
+def job_activity(engine: sa.engine.Engine, now: datetime) -> JobActivity:
+    """Read the honest server-wide activity view from durable job rows."""
+    with engine.connect() as connection:
+        queued = int(
+            connection.execute(
+                sa.text("SELECT count(*) FROM jobs WHERE status = 'queued'")
+            ).scalar_one()
+        )
+        running = int(
+            connection.execute(
+                sa.text("SELECT count(*) FROM jobs WHERE status IN ('leased','running')")
+            ).scalar_one()
+        )
+        active_rows = connection.execute(
+            sa.text(
+                "SELECT kind, status, EXTRACT(EPOCH FROM (CAST(:now AS timestamptz)"
+                " - COALESCE(started_at, enqueued_at))) AS age"
+                " FROM jobs WHERE status NOT IN ('succeeded','failed','cancelled')"
+                " ORDER BY COALESCE(started_at, enqueued_at) ASC"
+                " LIMIT :limit"
+            ),
+            {"now": now, "limit": ACTIVITY_FEED_LIMIT},
+        ).all()
+        recent_rows = connection.execute(
+            sa.text(
+                "SELECT kind, status, EXTRACT(EPOCH FROM (CAST(:now AS timestamptz)"
+                " - COALESCE(finished_at, updated_at))) AS age"
+                " FROM jobs WHERE status IN ('succeeded','failed','cancelled')"
+                " ORDER BY COALESCE(finished_at, updated_at) DESC"
+                " LIMIT :limit"
+            ),
+            {"now": now, "limit": ACTIVITY_FEED_LIMIT},
+        ).all()
+    return JobActivity(
+        queued=queued,
+        running=running,
+        active=tuple(JobActivitySlot(row.kind, row.status, int(row.age)) for row in active_rows),
+        recent=tuple(JobActivitySlot(row.kind, row.status, int(row.age)) for row in recent_rows),
+    )
+
+
+def _activity_payload(activity: JobActivity) -> dict[str, object]:
+    def slot(slot_: JobActivitySlot) -> dict[str, object]:
+        return {"kind": slot_.kind, "state": slot_.state, "age_seconds": slot_.age_seconds}
+
+    return {
+        "queued": activity.queued,
+        "running": activity.running,
+        "active": [slot(entry) for entry in activity.active],
+        "recent": [slot(entry) for entry in activity.recent],
+    }
+
+
+def _activity_response(activity: Callable[[], JobActivity] | None) -> JSONResponse:
+    if activity is None:
+        return problem("job_activity_unavailable", "job activity is not configured", 503)
+    try:
+        return JSONResponse(content=_activity_payload(activity()))
+    except SQLAlchemyError:
+        return problem("job_activity_unavailable", "job activity is unreadable", 503)
 
 
 class EnqueueJobRequest(BaseModel):
@@ -78,7 +165,12 @@ def _job_view(record: JobRecord) -> dict[str, object]:
     }
 
 
-def build_job_router(deps: ApiDeps, principal: PrincipalDependency, jobs: JobPorts) -> APIRouter:
+def build_job_router(
+    deps: ApiDeps,
+    principal: PrincipalDependency,
+    jobs: JobPorts,
+    activity: Callable[[], JobActivity] | None = None,
+) -> APIRouter:
     """Build the /api/v1/jobs router over the wired job ports."""
     router = APIRouter(prefix="/api/v1/jobs", tags=["jobs"])
 
@@ -89,8 +181,8 @@ def build_job_router(deps: ApiDeps, principal: PrincipalDependency, jobs: JobPor
         """Accept durable work (202 + job resource); 409 on idempotency key conflict."""
         return _enqueue(deps, principal, body, jobs)
 
-    # /events must register before /{job_id}: Starlette matches by path pattern
-    # first, so a later /events route would 422 on UUID validation of the segment.
+    # /events and /activity must register before /{job_id}: Starlette matches by
+    # path pattern first, so a later static route would 422 on UUID validation.
     @router.get("/events")
     async def job_events(
         last_event_id: int | None = Header(default=None, alias="Last-Event-ID"),
@@ -104,10 +196,16 @@ def build_job_router(deps: ApiDeps, principal: PrincipalDependency, jobs: JobPor
             headers={"Cache-Control": "no-cache", "X-Accel-Buffering": "no"},
         )
 
-    @router.get("/{job_id}", response_model=None)
-    async def get_job(
-        job_id: uuid.UUID, principal: Principal = Depends(principal)
+    @router.get("/activity", response_model=None)
+    async def job_activity_view(
+        principal: Principal = Depends(principal),
     ) -> JSONResponse:
+        """Server-wide current and recent job activity (identity-free)."""
+        del principal
+        return _activity_response(activity)
+
+    @router.get("/{job_id}", response_model=None)
+    async def get_job(job_id: uuid.UUID, principal: Principal = Depends(principal)) -> JSONResponse:
         """One job's status (404 when unknown or not the principal's job)."""
         job = jobs.repo.get(job_id)
         if job is None or job.actor_user_id != principal.user.id:

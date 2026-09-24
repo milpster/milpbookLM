@@ -13,6 +13,7 @@ from milpbooklm_application.note_core import (
     NoteConflictError,
     NoteNotEditableError,
     NoteSelectionError,
+    NoteSnapshot,
     PromoteNoteCommand,
     SaveResponseToNoteCommand,
     TransformNotesCommand,
@@ -54,6 +55,17 @@ def _audit_note(
     )
 
 
+def _snapshot_response(
+    note_deps: NoteDeps, snapshot: NoteSnapshot, status_code: int
+) -> JSONResponse:
+    names = dict(
+        note_deps.display_names(
+            frozenset({snapshot.note.created_by_user_id, snapshot.revision.author_user_id})
+        )
+    )
+    return JSONResponse(status_code=status_code, content=snapshot_payload(snapshot, names))
+
+
 def _build_creation_router(
     deps: ApiDeps, principal_dependency: PrincipalDependency, note_deps: NoteDeps
 ) -> APIRouter:
@@ -69,9 +81,7 @@ def _build_creation_router(
         body: CreateNoteRequest,
         principal: Principal = Depends(principal_dependency),
     ) -> JSONResponse:
-        denied = authorize_notebook(
-            deps, principal, notebook_id, PolicyAction.NOTE_MUTATE
-        )
+        denied = authorize_notebook(deps, principal, notebook_id, PolicyAction.NOTE_MUTATE)
         if denied is not None:
             return denied
         snapshot = note_deps.create(
@@ -84,10 +94,7 @@ def _build_creation_router(
             subject_kind="note",
             subject_id=snapshot.note.note_id,
         )
-        return JSONResponse(
-            status_code=status.HTTP_201_CREATED,
-            content=snapshot_payload(snapshot),
-        )
+        return _snapshot_response(note_deps, snapshot, status.HTTP_201_CREATED)
 
     @router.post(
         "/notebooks/{notebook_id}/notes/from-response",
@@ -99,15 +106,11 @@ def _build_creation_router(
         body: SaveResponseRequest,
         principal: Principal = Depends(principal_dependency),
     ) -> JSONResponse:
-        denied = authorize_notebook(
-            deps, principal, notebook_id, PolicyAction.NOTE_MUTATE
-        )
+        denied = authorize_notebook(deps, principal, notebook_id, PolicyAction.NOTE_MUTATE)
         if denied is not None:
             return denied
         snapshot = note_deps.save_response(
-            SaveResponseToNoteCommand(
-                principal.user.id, notebook_id, body.message_id, body.title
-            )
+            SaveResponseToNoteCommand(principal.user.id, notebook_id, body.message_id, body.title)
         )
         if snapshot is None:
             return problem(
@@ -123,10 +126,7 @@ def _build_creation_router(
             subject_id=snapshot.note.note_id,
             details={"kind": snapshot.note.kind.value},
         )
-        return JSONResponse(
-            status_code=status.HTTP_201_CREATED,
-            content=snapshot_payload(snapshot),
-        )
+        return _snapshot_response(note_deps, snapshot, status.HTTP_201_CREATED)
 
     @router.post(
         "/notebooks/{notebook_id}/notes/transforms",
@@ -138,9 +138,7 @@ def _build_creation_router(
         body: TransformNotesRequest,
         principal: Principal = Depends(principal_dependency),
     ) -> JSONResponse:
-        denied = authorize_notebook(
-            deps, principal, notebook_id, PolicyAction.NOTE_MUTATE
-        )
+        denied = authorize_notebook(deps, principal, notebook_id, PolicyAction.NOTE_MUTATE)
         if denied is not None:
             return denied
         try:
@@ -167,10 +165,7 @@ def _build_creation_router(
             subject_id=snapshot.note.note_id,
             details={"transform_kind": body.kind.value},
         )
-        return JSONResponse(
-            status_code=status.HTTP_201_CREATED,
-            content=snapshot_payload(snapshot),
-        )
+        return _snapshot_response(note_deps, snapshot, status.HTTP_201_CREATED)
 
     return router
 
@@ -193,12 +188,8 @@ def _build_edit_router(
     ) -> JSONResponse:
         note = note_deps.store.get_note(note_id)
         if note is None:
-            return problem(
-                "note_not_found", "note not found", status.HTTP_404_NOT_FOUND
-            )
-        denied = authorize_notebook(
-            deps, principal, note.notebook_id, PolicyAction.NOTE_MUTATE
-        )
+            return problem("note_not_found", "note not found", status.HTTP_404_NOT_FOUND)
+        denied = authorize_notebook(deps, principal, note.notebook_id, PolicyAction.NOTE_MUTATE)
         if denied is not None:
             return denied
         try:
@@ -210,9 +201,7 @@ def _build_edit_router(
         except NoteNotEditableError as error:
             return problem("note_not_editable", str(error), status.HTTP_409_CONFLICT)
         if snapshot is None:
-            return problem(
-                "note_not_found", "note not found", status.HTTP_404_NOT_FOUND
-            )
+            return problem("note_not_found", "note not found", status.HTTP_404_NOT_FOUND)
         _audit_note(
             deps,
             principal,
@@ -220,10 +209,7 @@ def _build_edit_router(
             subject_kind="note_revision",
             subject_id=snapshot.revision.revision_id,
         )
-        return JSONResponse(
-            status_code=status.HTTP_201_CREATED,
-            content=snapshot_payload(snapshot),
-        )
+        return _snapshot_response(note_deps, snapshot, status.HTTP_201_CREATED)
 
     return router
 
@@ -252,19 +238,13 @@ def _build_promotion_router(
             )
         note = note_deps.store.get_note(revision.note_id)
         if note is None:
-            return problem(
-                "note_not_found", "note not found", status.HTTP_404_NOT_FOUND
-            )
-        denied = authorize_notebook(
-            deps, principal, note.notebook_id, PolicyAction.SOURCE_MUTATE
-        )
+            return problem("note_not_found", "note not found", status.HTTP_404_NOT_FOUND)
+        denied = authorize_notebook(deps, principal, note.notebook_id, PolicyAction.SOURCE_MUTATE)
         if denied is not None:
             return denied
         try:
             promotion = await note_deps.promote(
-                PromoteNoteCommand(
-                    principal.user.id, note.notebook_id, revision_id, body.title
-                )
+                PromoteNoteCommand(principal.user.id, note.notebook_id, revision_id, body.title)
             )
         except NoteSelectionError as error:
             return problem(

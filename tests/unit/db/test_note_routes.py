@@ -18,6 +18,7 @@ from milpbooklm_adapters.grounding_completion import FakeGroundingCompletionProv
 from milpbooklm_adapters.note_store import PgNoteStore
 from milpbooklm_adapters.security.clock import SystemClock
 from milpbooklm_adapters.security.fakes import InMemoryAuditLog, InMemoryNotebookReader
+from milpbooklm_adapters.security.pg_identity import display_names
 from milpbooklm_api.deps import ApiDeps, NoteDeps
 from milpbooklm_api.note_routes import build_note_router
 from milpbooklm_api.security import ActiveUsersTracker, Principal
@@ -162,6 +163,7 @@ def test_e2e_004_notes_journey_is_revision_pinned_and_policy_checked(  # noqa: P
         save_response=SaveResponseToNote(store),
         transform=TransformNotes(store, transformer),
         promote=PromoteNoteToSource(store, ingestion),
+        display_names=lambda ids: display_names(engine, ids),
     )
     reader = InMemoryNotebookReader()
     reader.add_view(
@@ -237,6 +239,12 @@ def test_e2e_004_notes_journey_is_revision_pinned_and_policy_checked(  # noqa: P
     revisions = client.get(f"/api/v1/notes/{note_id}/revisions").json()["revisions"]
     assert [revision["revision_number"] for revision in revisions] == [1, 2]
     assert revisions[0]["content"]["blocks"][0]["text"] == "version one"
+    # Attribution resolves to the users-table display name at the boundary
+    assert created_body["note"]["created_by_name"] == "Test User"
+    assert edited.json()["revision"]["author_name"] == "Test User"
+    assert revisions[0]["author_name"] == "Test User"
+    listed = client.get(f"/api/v1/notebooks/{notebook}/notes").json()["notes"]
+    assert all(note["created_by_name"] == "Test User" for note in listed)
 
     transformed_revision_id = transformed.json()["revision"]["revision_id"]
     answer = GenerateGroundedAnswer(
@@ -311,6 +319,8 @@ def test_stale_if_match_edit_returns_409_note_conflict(pg: Db) -> None:
     )
     assert created.status_code == status.HTTP_201_CREATED
     body = created.json()
+    # No display-name resolver wired: the payload falls back to the stable unknown label
+    assert body["note"]["created_by_name"] == "unknown"
     stale_etag = body["note"]["etag"]
     first_edit = client.post(
         f"/api/v1/notes/{body['note']['note_id']}/revisions",

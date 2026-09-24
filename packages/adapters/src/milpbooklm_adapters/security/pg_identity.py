@@ -24,11 +24,26 @@ from milpbooklm_adapters.db.tables.identity import users
 # The audit action whose presence (for a live user) marks the installation admin.
 ADMIN_GRANT_ACTION = "installation_admin.granted"
 
-_ADMIN_GRANT = sa.select(sa.func.count()).select_from(audit_events).where(
-    audit_events.c.action == ADMIN_GRANT_ACTION,
-    audit_events.c.subject_kind == "user",
-    audit_events.c.subject_id == sa.bindparam("user_id"),
+_ADMIN_GRANT = (
+    sa.select(sa.func.count())
+    .select_from(audit_events)
+    .where(
+        audit_events.c.action == ADMIN_GRANT_ACTION,
+        audit_events.c.subject_kind == "user",
+        audit_events.c.subject_id == sa.bindparam("user_id"),
+    )
 )
+
+
+def display_names(engine: sa.engine.Engine, user_ids: frozenset[uuid.UUID]) -> dict[uuid.UUID, str]:
+    """Batch-resolve display names for attribution (missing rows are omitted)."""
+    if not user_ids:
+        return {}
+    with engine.connect() as conn:
+        rows = conn.execute(
+            sa.select(users.c.id, users.c.display_name).where(users.c.id.in_(user_ids))
+        ).all()
+    return {row.id: row.display_name for row in rows}
 
 
 class PgUserRepository:
@@ -95,8 +110,13 @@ class PgUserRepository:
         """Return the account, or None."""
         with self._engine.begin() as conn:
             row = conn.execute(
-                sa.select(users.c.id, users.c.email, users.c.display_name, users.c.status,
-                          users.c.created_at).where(users.c.id == user_id)
+                sa.select(
+                    users.c.id,
+                    users.c.email,
+                    users.c.display_name,
+                    users.c.status,
+                    users.c.created_at,
+                ).where(users.c.id == user_id)
             ).first()
             if row is None:
                 return None
@@ -106,8 +126,13 @@ class PgUserRepository:
         """Return the account for the exact email, or None."""
         with self._engine.begin() as conn:
             row = conn.execute(
-                sa.select(users.c.id, users.c.email, users.c.display_name, users.c.status,
-                          users.c.created_at).where(users.c.email == email)
+                sa.select(
+                    users.c.id,
+                    users.c.email,
+                    users.c.display_name,
+                    users.c.status,
+                    users.c.created_at,
+                ).where(users.c.email == email)
             ).first()
             if row is None:
                 return None
@@ -118,8 +143,12 @@ class PgUserRepository:
         with self._engine.begin() as conn:
             row = conn.execute(
                 sa.select(
-                    users.c.id, users.c.email, users.c.display_name, users.c.status,
-                    users.c.password_hash, users.c.created_at,
+                    users.c.id,
+                    users.c.email,
+                    users.c.display_name,
+                    users.c.status,
+                    users.c.password_hash,
+                    users.c.created_at,
                 ).where(users.c.email == email)
             ).first()
             if row is None:

@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 import uuid
+from collections.abc import Callable, Mapping
 
 from milpbooklm_application.note_core import (
     NoteRevisionView,
@@ -11,6 +12,17 @@ from milpbooklm_application.note_core import (
     NoteView,
 )
 from pydantic import BaseModel, ConfigDict, Field
+
+# Resolves user ids to display names at the HTTP boundary so note payloads
+# never leak a raw uuid where a human-readable attribution is displayed.
+DisplayNameResolver = Callable[[frozenset[uuid.UUID]], Mapping[uuid.UUID, str]]
+
+UNKNOWN_AUTHOR = "unknown"
+
+
+def no_display_names(_: frozenset[uuid.UUID]) -> Mapping[uuid.UUID, str]:
+    """Default resolver for unwired installations: no names are known."""
+    return {}
 
 
 class CreateNoteRequest(BaseModel):
@@ -57,8 +69,9 @@ class PromoteNoteRequest(BaseModel):
     title: str = Field(min_length=1, max_length=300)
 
 
-def note_payload(note: NoteView) -> dict[str, object]:
+def note_payload(note: NoteView, names: Mapping[uuid.UUID, str] | None = None) -> dict[str, object]:
     """Serialize mutable logical-note metadata without content."""
+    resolved = names if names is not None else {}
     return {
         "note_id": str(note.note_id),
         "notebook_id": str(note.notebook_id),
@@ -71,13 +84,17 @@ def note_payload(note: NoteView) -> dict[str, object]:
         "revision": note.revision,
         "etag": note.etag,
         "created_by_user_id": str(note.created_by_user_id),
+        "created_by_name": resolved.get(note.created_by_user_id, UNKNOWN_AUTHOR),
         "created_at": note.created_at.isoformat(),
         "updated_at": note.updated_at.isoformat(),
     }
 
 
-def revision_payload(revision: NoteRevisionView) -> dict[str, object]:
+def revision_payload(
+    revision: NoteRevisionView, names: Mapping[uuid.UUID, str] | None = None
+) -> dict[str, object]:
     """Serialize one immutable revision and its exact dependency references."""
+    resolved = names if names is not None else {}
     return {
         "revision_id": str(revision.revision_id),
         "note_id": str(revision.note_id),
@@ -85,6 +102,7 @@ def revision_payload(revision: NoteRevisionView) -> dict[str, object]:
         "content": revision.content,
         "content_sha256": revision.content_sha256,
         "author_user_id": str(revision.author_user_id),
+        "author_name": resolved.get(revision.author_user_id, UNKNOWN_AUTHOR),
         "provenance_refs": [
             {"kind": reference.kind.value, "id": str(reference.id)}
             for reference in revision.provenance_refs
@@ -97,9 +115,11 @@ def revision_payload(revision: NoteRevisionView) -> dict[str, object]:
     }
 
 
-def snapshot_payload(snapshot: NoteSnapshot) -> dict[str, object]:
+def snapshot_payload(
+    snapshot: NoteSnapshot, names: Mapping[uuid.UUID, str] | None = None
+) -> dict[str, object]:
     """Serialize a logical note paired with its newly current revision."""
     return {
-        "note": note_payload(snapshot.note),
-        "revision": revision_payload(snapshot.revision),
+        "note": note_payload(snapshot.note, names),
+        "revision": revision_payload(snapshot.revision, names),
     }

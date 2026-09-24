@@ -43,7 +43,11 @@ from milpbooklm_adapters.security.clock import SystemClock
 from milpbooklm_adapters.security.custody_store import PgNotebookCustodyStore
 from milpbooklm_adapters.security.notebook_reader import PgNotebookReader
 from milpbooklm_adapters.security.notebook_store import PgNotebookStore
-from milpbooklm_adapters.security.pg_identity import PgAuditLog, PgUserRepository
+from milpbooklm_adapters.security.pg_identity import (
+    PgAuditLog,
+    PgUserRepository,
+    display_names,
+)
 from milpbooklm_adapters.security.session_store import PgSessionTokenStore
 from milpbooklm_adapters.sources import FilesystemQuarantineStore, PgSourceCatalog, PgSourcePurge
 from milpbooklm_application.artifact_export import ExportArtifact
@@ -132,7 +136,7 @@ from .health_routes import (
     build_health_router,
     probe_worker,
 )
-from .job_routes import build_job_router
+from .job_routes import JobActivity, build_job_router, job_activity
 from .note_routes import build_note_router
 from .notebook_overview_routes import build_notebook_overview_router
 from .notebook_routes import build_notebook_router
@@ -230,6 +234,7 @@ def build_app(
     research: ResearchRunDeps | None = None,
     artifacts: ArtifactDeps | None = None,
     notes: NoteDeps | None = None,
+    job_activity_provider: Callable[[], JobActivity] | None = None,
     seed_onboarding: Callable[[uuid.UUID], None] | None = None,
     server_components: ServerComponents | None = None,
 ) -> FastAPI:
@@ -329,7 +334,7 @@ def build_app(
     app.include_router(build_conversation_router(deps, principal))
     app.include_router(build_notebook_overview_router(deps, principal))
     if jobs is not None:
-        app.include_router(build_job_router(deps, principal, jobs))
+        app.include_router(build_job_router(deps, principal, jobs, job_activity_provider))
     if research is not None:
         app.include_router(build_research_router(deps, principal, research))
     if artifacts is not None:
@@ -479,6 +484,7 @@ def create_app() -> FastAPI:
             note_store, _note_transform_provider(installation.chat_provider, chat_health)
         ),
         promote=PromoteNoteToSource(note_store, source_acquisition),
+        display_names=lambda ids: display_names(engine, ids),
     )
     completion_provider = _completion_provider(installation.chat_provider, chat_health)
     app = build_app(
@@ -492,6 +498,7 @@ def create_app() -> FastAPI:
         settings=settings,
         clock=clock,
         jobs=jobs,
+        job_activity_provider=lambda: job_activity(engine, clock.now()),
         retrieval=retrieval,
         index_config=index_config,
         grounding=grounding,
