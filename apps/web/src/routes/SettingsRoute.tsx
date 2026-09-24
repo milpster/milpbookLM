@@ -63,7 +63,6 @@ export function SettingsRoute(_props: RouteProps): ReactNode {
               <article key={capability.id} className="capability">
                 <div>
                   <h3>{capability.name}</h3>
-                  <code>{capability.id}</code>
                 </div>
                 <p>{capability.description}</p>
                 <p className={`status ${capability.state}`}>{capability.state}</p>
