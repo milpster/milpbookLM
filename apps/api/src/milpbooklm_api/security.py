@@ -2,11 +2,13 @@
 API security services.
 
 Session cookie discipline (Secure/HttpOnly/SameSite=Lax, rotated at login and
-on privilege change) plus origin/CSRF validation on unsafe methods (ch17 §7).
-Unsafe methods under /api/v1 require a request Origin (falling back to Referer)
-matching the installation origin; when the request carries a live session cookie
-it must also carry the stateless CSRF token (HMAC-derived from the session
-token, so validation needs no storage round-trip).
+on privilege change) plus CSRF validation on unsafe methods (ch17 §7).
+Unsafe methods under /api/v1 accept any Origin — the installation is reached
+from LAN hosts and forwarded WAN ports, so an origin allowlist cannot
+enumerate the possible origins. The remaining cross-origin defense: when a
+request carries a live session cookie it must also carry the stateless CSRF
+token (HMAC-derived from the session token, so validation needs no storage
+round-trip).
 """
 
 from __future__ import annotations
@@ -17,7 +19,6 @@ import uuid
 from collections import deque
 from dataclasses import dataclass
 from datetime import timedelta
-from urllib.parse import urlsplit
 
 from fastapi import Request
 from milpbooklm_adapters.security.session_store import derive_csrf_token
@@ -89,34 +90,6 @@ class SlidingWindowLimiter:
         return max(1, math.ceil(events[0] + window_seconds - now))
 
 
-def origin_of(url: str) -> str:
-    """Return the scheme+host+port origin of a URL."""
-    parts = urlsplit(url)
-    return f"{parts.scheme}://{parts.netloc}"
-
-
-def _origin_ok(base_url: str, request: Request) -> bool:
-    """Return True when origins match, treating localhost, IPv4, and IPv6 loopback as equivalent."""
-    expected = urlsplit(base_url)
-    loopback_hosts = frozenset({"localhost", "127.0.0.1", "::1"})
-    expected_host = "loopback" if expected.hostname in loopback_hosts else expected.hostname
-    for header in ("origin", "referer"):
-        value = request.headers.get(header)
-        if value:
-            actual = urlsplit(value)
-            actual_host = "loopback" if actual.hostname in loopback_hosts else actual.hostname
-            return (
-                actual.scheme,
-                actual_host,
-                actual.port,
-            ) == (
-                expected.scheme,
-                expected_host,
-                expected.port,
-            )
-    return False
-
-
 def principal_from_request(
     request: Request,
     *,
@@ -163,7 +136,7 @@ def clear_session_cookie(response: Response) -> None:
 
 
 class CsrfOriginMiddleware(BaseHTTPMiddleware):
-    """Origin + CSRF enforcement for unsafe methods under the API prefix."""
+    """CSRF enforcement for unsafe methods under the API prefix (origins are unrestricted)."""
 
     def __init__(
         self,
@@ -184,12 +157,8 @@ class CsrfOriginMiddleware(BaseHTTPMiddleware):
     async def dispatch(
         self, request: Request, call_next: RequestResponseEndpoint
     ) -> JSONResponse | Response:
-        """Enforce origin (all unsafe) and CSRF (unsafe with a live session)."""
+        """Enforce CSRF on unsafe methods with a live session (origins are unrestricted)."""
         if request.method in UNSAFE_METHODS and request.url.path.startswith(API_PREFIX):
-            if not _origin_ok(self._settings.base_url, request):
-                return JSONResponse(
-                    status_code=403, content={"detail": {"reason": "origin_rejected"}}
-                )
             principal = principal_from_request(
                 request,
                 sessions=self._sessions,

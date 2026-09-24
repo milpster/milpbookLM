@@ -240,13 +240,19 @@ def test_register_succeeds_when_onboarding_seed_fails() -> None:
     assert uuid.UUID(response.json()["user_id"])
 
 
-def test_unsafe_without_origin_rejected() -> None:
+def test_unsafe_without_origin_still_requires_csrf() -> None:
+    # Given: a live session, but the request carries neither an Origin header
+    # nor the CSRF token — origins are unrestricted, so only CSRF can reject it.
     client = make_client()
     register(client, "a@example.com")
     login(client, "a@example.com")
+
+    # When
     response = client.post("/api/v1/auth/logout")
+
+    # Then
     assert response.status_code == status.HTTP_403_FORBIDDEN
-    assert response.json() == {"detail": {"reason": "origin_rejected"}}
+    assert response.json() == {"detail": {"reason": "csrf_rejected"}}
 
 
 def test_unsafe_without_csrf_token_rejected() -> None:
