@@ -17,7 +17,7 @@ from milpbooklm_adapters.security.fakes import (
 from milpbooklm_adapters.security.session_store import InMemorySessionTokenStore
 from milpbooklm_api.composition import build_app
 from milpbooklm_api.deps import NoteDeps
-from milpbooklm_api.security import SecuritySettings
+from milpbooklm_api.security import ActiveUsersTracker, SecuritySettings
 from milpbooklm_application.note_core import NoteRevisionView, NoteSnapshot, NoteView
 from milpbooklm_application.note_lifecycle import (
     CreateNote,
@@ -185,26 +185,48 @@ def test_me_with_session_and_without() -> None:
     assert me.json()["csrf_token"] == logged_in["csrf_token"]
 
 
-def test_instance_stats_counts_distinct_unrevoked_unexpired_users() -> None:
+def test_instance_stats_counts_users_with_recent_authenticated_requests() -> None:
     client = make_client()
     anonymous = client.get("/api/v1/auth/instance-stats")
     assert anonymous.status_code == status.HTTP_401_UNAUTHORIZED
 
-    first_id = uuid.UUID(register(client, "first@example.com"))
-    second_id = uuid.UUID(register(client, "second@example.com"))
-    third_id = uuid.UUID(register(client, "third@example.com"))
+    register(client, "first@example.com")
+    register(client, "second@example.com")
+    register(client, "third@example.com")
     login(client, "first@example.com")
+    # Sessions issued directly (no authenticated request) are NOT activity:
+    # the counter measures request recency, never session existence.
     deps = client.app.state.deps
-    deps.sessions.issue(user_id=first_id, ttl=timedelta(hours=1))
-    deps.sessions.issue(user_id=second_id, ttl=timedelta(seconds=1))
-    revoked = deps.sessions.issue(user_id=third_id, ttl=timedelta(hours=1))
-    deps.sessions.revoke(revoked.session_id)
-    deps.clock.advance(1)
+    second_id = deps.users.get_by_email("second@example.com").id
+    deps.sessions.issue(user_id=second_id, ttl=timedelta(hours=1))
 
     response = client.get("/api/v1/auth/instance-stats")
 
     assert response.status_code == status.HTTP_200_OK
-    assert response.json() == {"registered_users": 3, "logged_in_users": 1}
+    assert response.json() == {"registered_users": 3, "active_users": 1}
+
+
+def test_active_users_window_boundary_is_fifteen_minutes() -> None:
+    clock = FakeClock()
+    tracker = ActiveUsersTracker(clock)
+    first = uuid.uuid4()
+    second = uuid.uuid4()
+    tracker.touch(first)
+    clock.advance(timedelta(minutes=10).total_seconds())
+    tracker.touch(second)
+
+    assert tracker.count_active(now=clock.now()) == len({first, second})
+
+    clock.advance(timedelta(minutes=5).total_seconds())
+    assert tracker.count_active(now=clock.now()) == 1
+
+    # The window boundary is strict: a touch 14m59s ago still counts, at
+    # exactly 15m it does not (first is re-touched; second is long outside).
+    tracker.touch(first)
+    clock.advance(timedelta(minutes=14, seconds=59).total_seconds())
+    assert tracker.count_active(now=clock.now()) == 1
+    clock.advance(1)
+    assert tracker.count_active(now=clock.now()) == 0
 
 
 def test_register_seeds_onboarding_for_the_new_user() -> None:

@@ -18,7 +18,7 @@ import math
 import uuid
 from collections import deque
 from dataclasses import dataclass
-from datetime import timedelta
+from datetime import datetime, timedelta
 
 from fastapi import Request
 from milpbooklm_adapters.security.session_store import derive_csrf_token
@@ -33,6 +33,10 @@ SESSION_COOKIE = "mb_session"
 CSRF_HEADER = "x-csrf-token"
 UNSAFE_METHODS = frozenset({"POST", "PUT", "PATCH", "DELETE"})
 API_PREFIX = "/api/v1"
+# The "users active" window: activity = an authenticated request (principal
+# resolution), counted per user. In-memory by design — the signal is request
+# recency inside this API process, not durable session existence.
+ACTIVE_USER_WINDOW = timedelta(minutes=15)
 
 
 @dataclass(frozen=True, slots=True)
@@ -89,6 +93,31 @@ class SlidingWindowLimiter:
         if not events:
             return int(window_seconds)
         return max(1, math.ceil(events[0] + window_seconds - now))
+
+
+class ActiveUsersTracker:
+    """Per-user last-authenticated-request timestamps (in-memory, single process)."""
+
+    def __init__(self, clock: Clock, window: timedelta = ACTIVE_USER_WINDOW) -> None:
+        """Wire the clock and the activity window."""
+        self._clock = clock
+        self._window = window
+        self._last_seen: dict[uuid.UUID, datetime] = {}
+
+    def touch(self, user_id: uuid.UUID) -> None:
+        """Record authenticated activity for the user."""
+        self._last_seen[user_id] = self._clock.now()
+
+    def count_active(self, *, now: datetime) -> int:
+        """Count distinct users with activity strictly inside the window."""
+        cutoff = now - self._window
+        active = 0
+        for user_id, seen_at in list(self._last_seen.items()):
+            if seen_at > cutoff:
+                active += 1
+            else:
+                del self._last_seen[user_id]
+        return active
 
 
 def principal_from_request(

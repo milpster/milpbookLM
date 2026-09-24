@@ -16,10 +16,11 @@ from milpbooklm_adapters.db.connections import make_engine
 from milpbooklm_adapters.grounding import PgGroundingStore
 from milpbooklm_adapters.grounding_completion import FakeGroundingCompletionProvider
 from milpbooklm_adapters.note_store import PgNoteStore
+from milpbooklm_adapters.security.clock import SystemClock
 from milpbooklm_adapters.security.fakes import InMemoryAuditLog, InMemoryNotebookReader
 from milpbooklm_api.deps import ApiDeps, NoteDeps
 from milpbooklm_api.note_routes import build_note_router
-from milpbooklm_api.security import Principal
+from milpbooklm_api.security import ActiveUsersTracker, Principal
 from milpbooklm_application.grounding import GenerateGroundedAnswer, GroundingRequest
 from milpbooklm_application.note_core import NoteRevisionView, NoteTransformKind
 from milpbooklm_application.note_lifecycle import (
@@ -107,6 +108,7 @@ def _api_deps(reader: InMemoryNotebookReader) -> ApiDeps:
         engine=PolicyEngine(),
         settings=Mock(),
         clock=Mock(),
+        active_users=ActiveUsersTracker(SystemClock()),
         login_limiter=Mock(),
         register_limiter=Mock(),
     )

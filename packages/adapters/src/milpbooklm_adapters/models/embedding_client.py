@@ -22,6 +22,8 @@ import time
 import httpx
 from milpbooklm_application.indexing import EmbeddingDimensionMismatchError
 
+from milpbooklm_adapters.provider_health import ProviderHealth
+
 logger = logging.getLogger(__name__)
 
 MAX_ATTEMPTS = 3
@@ -36,11 +38,19 @@ class EmbeddingProviderError(RuntimeError):
 class LlamaCppEmbeddingClient:
     """One local llama-server embedding endpoint behind the indexing port."""
 
-    def __init__(self, base_url: str, model: str, *, timeout_seconds: float = 120.0) -> None:
+    def __init__(
+        self,
+        base_url: str,
+        model: str,
+        *,
+        timeout_seconds: float = 120.0,
+        health: ProviderHealth | None = None,
+    ) -> None:
         """Bind the server root, model name, and a generous batch timeout."""
         self._base_url = base_url.rstrip("/")
         self._model = model
         self._client = httpx.Client(timeout=timeout_seconds)
+        self._health = health
 
     @property
     def model(self) -> str:
@@ -81,6 +91,8 @@ class LlamaCppEmbeddingClient:
                     self._model,
                 )
                 self._verify(texts, vectors, expected_dimension)
+                if self._health is not None:
+                    self._health.record_success()
                 return vectors
             except EmbeddingDimensionMismatchError:
                 raise
@@ -94,6 +106,8 @@ class LlamaCppEmbeddingClient:
                 last_error = exc
                 if attempt < MAX_ATTEMPTS:
                     time.sleep(_BACKOFF_BASE_SECONDS * (2 ** (attempt - 1)))
+        if self._health is not None:
+            self._health.record_failure("request failed")
         raise EmbeddingProviderError(
             f"embedding batch failed after {MAX_ATTEMPTS} attempts"
         ) from last_error

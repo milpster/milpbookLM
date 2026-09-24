@@ -36,6 +36,7 @@ from milpbooklm_adapters.note_transform import (
     LlamaCppNoteTransformProvider,
 )
 from milpbooklm_adapters.notebook_repository import InMemoryNotebookRepository
+from milpbooklm_adapters.provider_health import ProviderHealth
 from milpbooklm_adapters.research_runs import PgResearchRunStore
 from milpbooklm_adapters.security.argon2 import Argon2PasswordHasher
 from milpbooklm_adapters.security.clock import SystemClock
@@ -123,7 +124,14 @@ from .config_loader import load_config
 from .conversation_routes import build_conversation_router
 from .deps import ApiDeps, ArtifactDeps, NoteDeps, ResearchRunDeps
 from .grounding_routes import build_grounding_router
-from .health_routes import DeploymentHealth, build_health_router
+from .health_routes import (
+    DeploymentHealth,
+    ProbeOutcome,
+    ServerComponents,
+    ServerComponentStatus,
+    build_health_router,
+    probe_worker,
+)
 from .job_routes import build_job_router
 from .note_routes import build_note_router
 from .notebook_overview_routes import build_notebook_overview_router
@@ -136,6 +144,7 @@ from .observability import (
 from .research_routes import build_research_router
 from .retrieval_routes import build_retrieval_router
 from .security import (
+    ActiveUsersTracker,
     CsrfOriginMiddleware,
     Principal,
     SecuritySettings,
@@ -152,11 +161,11 @@ def build_create_notebook() -> tuple[CreateNotebook, InMemoryNotebookRepository]
 
 
 def _completion_provider(
-    provider: ChatProvider,
+    provider: ChatProvider, health: ProviderHealth | None = None
 ) -> LlamaCppCompletionProvider | FakeGroundingCompletionProvider:
     match provider:
         case ChatProvider.LLAMA_CPP:
-            return LlamaCppCompletionProvider()
+            return LlamaCppCompletionProvider(health=health)
         case ChatProvider.FAKE:
             return FakeGroundingCompletionProvider()
         case unreachable:
@@ -164,11 +173,11 @@ def _completion_provider(
 
 
 def _note_transform_provider(
-    provider: ChatProvider,
+    provider: ChatProvider, health: ProviderHealth | None = None
 ) -> LlamaCppNoteTransformProvider | FakeNoteTransformProvider:
     match provider:
         case ChatProvider.LLAMA_CPP:
-            return LlamaCppNoteTransformProvider()
+            return LlamaCppNoteTransformProvider(health=health)
         case ChatProvider.FAKE:
             return FakeNoteTransformProvider()
         case unreachable:
@@ -222,6 +231,7 @@ def build_app(
     artifacts: ArtifactDeps | None = None,
     notes: NoteDeps | None = None,
     seed_onboarding: Callable[[uuid.UUID], None] | None = None,
+    server_components: ServerComponents | None = None,
 ) -> FastAPI:
     """Build the API app from wired ports (the test/QA seam)."""
     app = FastAPI(title="milpbookLM API")
@@ -249,6 +259,7 @@ def build_app(
         if conversations is not None and retrieval is not None and grounding is not None
         else None
     )
+    active_users = ActiveUsersTracker(clock)
     deps = ApiDeps(
         users=users,
         sessions=sessions,
@@ -263,6 +274,7 @@ def build_app(
         engine=PolicyEngine(),
         settings=settings,
         clock=clock,
+        active_users=active_users,
         login_limiter=SlidingWindowLimiter(
             clock, settings.login_max_attempts, settings.login_window
         ),
@@ -301,13 +313,14 @@ def build_app(
                 status_code=status.HTTP_401_UNAUTHORIZED,
                 detail="authentication required",
             )
+        active_users.touch(resolved.user.id)
         return resolved
 
     definitions = (
         load_capability_registry() if capability_definitions is None else capability_definitions
     )
     runtime = CapabilityRuntime() if capability_runtime is None else capability_runtime
-    app.include_router(build_health_router(health, principal))
+    app.include_router(build_health_router(health, principal, server_components))
     app.include_router(build_capability_router(definitions, runtime, health))
     app.include_router(build_auth_router(deps, principal))
     app.include_router(build_notebook_router(deps, principal))
@@ -358,6 +371,7 @@ def build_job_ports(
 
 def _embedding_wiring(
     installation: InstallationConfig,
+    health: ProviderHealth | None = None,
 ) -> tuple[IndexBuildConfig | None, LlamaCppEmbeddingClient | None]:
     """Return the IDX-01 embedding wiring (None pair = a lexical-only installation)."""
     if installation.embedding_base_url is None:
@@ -374,7 +388,7 @@ def _embedding_wiring(
             normalization=DEFAULT_EMBEDDING_NORMALIZATION,
         ),
     )
-    return config, LlamaCppEmbeddingClient(base_url, model)
+    return config, LlamaCppEmbeddingClient(base_url, model, health=health)
 
 
 def create_app() -> FastAPI:
@@ -422,7 +436,12 @@ def create_app() -> FastAPI:
     # adapter, so the adapter set ships empty: imports terminate in the
     # explicit transcript_unavailable state, never a fabricated transcript.
     public_video_acquisition = AcquirePublicVideo(catalog=source_catalog, audit=audit)
-    index_config, embedding_client = _embedding_wiring(installation)
+    # Provider health is the providers' own last-call evidence (no ad hoc
+    # probing): the chat completion and note-transform providers share one
+    # recorder because they hit the same local completion endpoint.
+    chat_health = ProviderHealth(clock)
+    embedding_health = ProviderHealth(clock)
+    index_config, embedding_client = _embedding_wiring(installation, embedding_health)
     retrieval = RetrieveChunks(
         retrieval=PgRetrievalService(engine),
         embeddings=embedding_client,
@@ -457,11 +476,11 @@ def create_app() -> FastAPI:
         edit=EditNote(note_store),
         save_response=SaveResponseToNote(note_store),
         transform=TransformNotes(
-            note_store, _note_transform_provider(installation.chat_provider)
+            note_store, _note_transform_provider(installation.chat_provider, chat_health)
         ),
         promote=PromoteNoteToSource(note_store, source_acquisition),
     )
-    completion_provider = _completion_provider(installation.chat_provider)
+    completion_provider = _completion_provider(installation.chat_provider, chat_health)
     app = build_app(
         users=users,
         hasher=Argon2PasswordHasher(),
@@ -510,6 +529,33 @@ def create_app() -> FastAPI:
             NoOpBackupExpiryScheduler(),
             blob_store,
         ),
+        server_components=ServerComponents(
+            worker=lambda: probe_worker(engine, clock.now()),
+            chat_provider=(
+                _fake_chat_probe
+                if installation.chat_provider is ChatProvider.FAKE
+                else _provider_probe(chat_health)
+            ),
+            embedding_provider=(
+                None if embedding_client is None else _provider_probe(embedding_health)
+            ),
+        ),
     )
     app.router.add_event_handler("shutdown", fetch_service.aclose)
     return app
+
+
+def _provider_probe(health: ProviderHealth) -> Callable[[], ProbeOutcome]:
+    """Map a provider's last-call evidence onto the health-surface outcome."""
+
+    def probe() -> ProbeOutcome:
+        snapshot = health.snapshot()
+        state = ServerComponentStatus.OK if snapshot.healthy else ServerComponentStatus.DEGRADED
+        return ProbeOutcome(state, snapshot.detail)
+
+    return probe
+
+
+def _fake_chat_probe() -> ProbeOutcome:
+    """Report the deterministic fake provider as healthy by construction (no probing)."""
+    return ProbeOutcome(ServerComponentStatus.OK, "deterministic fake provider")

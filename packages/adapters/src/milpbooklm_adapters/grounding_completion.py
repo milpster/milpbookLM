@@ -12,6 +12,7 @@ from milpbooklm_application.grounding import AnswerDraft, AnswerSpan, Evidence, 
 from pydantic import BaseModel, ConfigDict
 
 from milpbooklm_adapters.models.openai_schema import ChatChunkPayload
+from milpbooklm_adapters.provider_health import ProviderHealth
 
 LLAMA_CPP_COMPLETIONS_URL: Final = "http://127.0.0.1:8009/v1"
 LLAMA_CPP_MODEL: Final = "/home/srcds/ai/ai/Swift-Qwen3.8-27B-Q6_K.gguf"
@@ -142,6 +143,7 @@ class LlamaCppCompletionProvider:
 
     base_url: str = LLAMA_CPP_COMPLETIONS_URL
     model: str = LLAMA_CPP_MODEL
+    health: ProviderHealth | None = None
 
     def complete(
         self,
@@ -150,15 +152,24 @@ class LlamaCppCompletionProvider:
         note_contexts: tuple[NoteContext, ...] = (),
     ) -> AnswerDraft:
         """Request structured spans citing only supplied opaque context IDs."""
-        with httpx.Client(base_url=self.base_url, timeout=120.0) as client:
-            response = client.post(
-                "/chat/completions", json=self._payload(question, evidence, note_contexts)
-            )
-            response.raise_for_status()
-        envelope = _CompletionResponsePayload.model_validate_json(response.text)
-        if not envelope.choices:
-            raise GroundingCompletionError("completion response contains no choices")
-        return _answer_draft(envelope.choices[0].message.content)
+        try:
+            with httpx.Client(base_url=self.base_url, timeout=120.0) as client:
+                response = client.post(
+                    "/chat/completions", json=self._payload(question, evidence, note_contexts)
+                )
+                response.raise_for_status()
+            envelope = _CompletionResponsePayload.model_validate_json(response.text)
+            if not envelope.choices:
+                raise GroundingCompletionError("completion response contains no choices")
+            draft = _answer_draft(envelope.choices[0].message.content)
+        except httpx.HTTPError:
+            self._record_failure("transport")
+            raise
+        except (ValueError, GroundingCompletionError):
+            self._record_failure("response")
+            raise
+        self._record_success()
+        return draft
 
     def stream(
         self,
@@ -170,26 +181,42 @@ class LlamaCppCompletionProvider:
         payload = self._payload(question, evidence, note_contexts)
         payload["stream"] = True
         fragments: list[str] = []
-        with (
-            httpx.Client(base_url=self.base_url, timeout=120.0) as client,
-            client.stream("POST", "/chat/completions", json=payload) as response,
-        ):
-            response.raise_for_status()
-            for line in response.iter_lines():
-                if not line.startswith("data: "):
-                    continue
-                data = line.removeprefix("data: ")
-                if data == "[DONE]":
-                    break
-                chunk = ChatChunkPayload.model_validate_json(data)
-                for choice in chunk.choices:
-                    if choice.delta.content is not None:
-                        fragments.append(choice.delta.content)
-                        yield ""
-        draft = _answer_draft("".join(fragments))
-        for span in draft.spans:
-            yield span.text
+        try:
+            with (
+                httpx.Client(base_url=self.base_url, timeout=120.0) as client,
+                client.stream("POST", "/chat/completions", json=payload) as response,
+            ):
+                response.raise_for_status()
+                for line in response.iter_lines():
+                    if not line.startswith("data: "):
+                        continue
+                    data = line.removeprefix("data: ")
+                    if data == "[DONE]":
+                        break
+                    chunk = ChatChunkPayload.model_validate_json(data)
+                    for choice in chunk.choices:
+                        if choice.delta.content is not None:
+                            fragments.append(choice.delta.content)
+                            yield ""
+            draft = _answer_draft("".join(fragments))
+            for span in draft.spans:
+                yield span.text
+        except httpx.HTTPError:
+            self._record_failure("transport")
+            raise
+        except (ValueError, GroundingCompletionError):
+            self._record_failure("response")
+            raise
+        self._record_success()
         return draft
+
+    def _record_success(self) -> None:
+        if self.health is not None:
+            self.health.record_success()
+
+    def _record_failure(self, reason: str) -> None:
+        if self.health is not None:
+            self.health.record_failure(reason)
 
     def probe_models(self) -> tuple[str, ...]:
         """Confirm the local endpoint exposes a model before a grounded smoke run."""

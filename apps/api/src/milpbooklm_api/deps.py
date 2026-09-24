@@ -59,7 +59,7 @@ from milpbooklm_application.research import (
 )
 from milpbooklm_application.retrieval import RetrieveChunks
 
-from .security import Principal, SecuritySettings, SlidingWindowLimiter
+from .security import ActiveUsersTracker, Principal, SecuritySettings, SlidingWindowLimiter
 
 
 @dataclass(frozen=True, slots=True)
@@ -119,6 +119,7 @@ class ApiDeps:
     engine: PolicyEngine
     settings: SecuritySettings
     clock: Clock
+    active_users: ActiveUsersTracker
     login_limiter: SlidingWindowLimiter
     register_limiter: SlidingWindowLimiter
     # UI-01: notebook creation (None = the create endpoint answers 503).

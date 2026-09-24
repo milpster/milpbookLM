@@ -19,6 +19,7 @@ from milpbooklm_adapters.grounding_completion import (
     LLAMA_CPP_MODEL,
     GroundingCompletionError,
 )
+from milpbooklm_adapters.provider_health import ProviderHealth
 
 
 class _TransformPayload(BaseModel):
@@ -79,6 +80,7 @@ class LlamaCppNoteTransformProvider:
     base_url: str = LLAMA_CPP_COMPLETIONS_URL
     model: str = LLAMA_CPP_MODEL
     transport: httpx.BaseTransport | None = None
+    health: ProviderHealth | None = None
 
     def transform(
         self, kind: NoteTransformKind, revisions: tuple[NoteRevisionView, ...]
@@ -130,22 +132,38 @@ class LlamaCppNoteTransformProvider:
                 {"role": "user", "content": selected},
             ],
         }
-        with httpx.Client(
-            base_url=self.base_url,
-            timeout=120.0,
-            transport=self.transport,
-        ) as client:
-            response = client.post("/chat/completions", json=payload)
-            response.raise_for_status()
-        envelope = _CompletionPayload.model_validate_json(response.text)
-        if not envelope.choices:
-            raise GroundingCompletionError("completion response contains no choices")
+        return self._request_transform(payload)
+
+    def _request_transform(self, payload: dict[str, object]) -> dict[str, object]:
         try:
-            transformed = _TransformPayload.model_validate_json(
-                envelope.choices[0].message.content
-            )
-        except ValueError as error:
-            raise GroundingCompletionError(
-                "completion response is not a note transform contract"
-            ) from error
+            with httpx.Client(
+                base_url=self.base_url,
+                timeout=120.0,
+                transport=self.transport,
+            ) as client:
+                response = client.post("/chat/completions", json=payload)
+                response.raise_for_status()
+            envelope = _CompletionPayload.model_validate_json(response.text)
+            if not envelope.choices:
+                raise GroundingCompletionError("completion response contains no choices")
+            try:
+                transformed = _TransformPayload.model_validate_json(
+                    envelope.choices[0].message.content
+                )
+            except ValueError as error:
+                raise GroundingCompletionError(
+                    "completion response is not a note transform contract"
+                ) from error
+        except httpx.HTTPError:
+            self._record_failure("transport")
+            raise
+        except (ValueError, GroundingCompletionError):
+            self._record_failure("response")
+            raise
+        if self.health is not None:
+            self.health.record_success()
         return transformed.content
+
+    def _record_failure(self, reason: str) -> None:
+        if self.health is not None:
+            self.health.record_failure(reason)

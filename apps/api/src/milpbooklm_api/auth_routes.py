@@ -51,7 +51,7 @@ class InstanceStatsResponse(BaseModel):
     model_config = ConfigDict(frozen=True)
 
     registered_users: int
-    logged_in_users: int
+    active_users: int
 
 
 def _client_host(request: Request) -> str:
@@ -198,11 +198,11 @@ def build_auth_router(deps: ApiDeps, principal: PrincipalDependency) -> APIRoute
 
     @router.get("/instance-stats", response_model=InstanceStatsResponse)
     async def instance_stats(principal: Principal = Depends(principal)) -> InstanceStatsResponse:
-        """Return authenticated aggregate user counts without identity details."""
+        """Return aggregate counts (activity = authenticated requests in the last 15 minutes)."""
         del principal
         return InstanceStatsResponse(
             registered_users=deps.users.count(),
-            logged_in_users=deps.sessions.count_live_users(now=deps.clock.now()),
+            active_users=deps.active_users.count_active(now=deps.clock.now()),
         )
 
     return router
