@@ -76,6 +76,9 @@ export function NotesPanel({ actorId, notebookId }: Props): ReactNode {
   const notesQuery = useQuery({ queryKey: notesKey, queryFn: () => listNotes(notebookId) });
   const noteList = notesQuery.data?.notes ?? [];
   const [selectedId, setSelectedId] = useState<string | null>(null);
+  // Which note is open in edit mode; NoteDetail remounts per note, so the mode
+  // is tracked here to survive the remount (e.g. right after a create).
+  const [editingId, setEditingId] = useState<string | null>(null);
   const [createError, setCreateError] = useState("");
   const firstId = noteList[0]?.note_id ?? null;
   const effectiveId =
@@ -90,7 +93,9 @@ export function NotesPanel({ actorId, notebookId }: Props): ReactNode {
       createNote(notebookId, input.title, serializeEditorBlocks(input.blocks)),
     onMutate: () => setCreateError(""),
     onSuccess: (snapshot) => {
+      // Creating IS editing: open the new note straight in the editor.
       setSelectedId(snapshot.note.note_id);
+      setEditingId(snapshot.note.note_id);
       void queryClient.invalidateQueries({ queryKey: notesKey });
     },
     onError: () => setCreateError("Creating the note failed. Please try again."),
@@ -155,7 +160,10 @@ export function NotesPanel({ actorId, notebookId }: Props): ReactNode {
               type="button"
               className="note-list-item"
               aria-pressed={note.note_id === effectiveId}
-              onClick={() => setSelectedId(note.note_id)}
+              onClick={() => {
+                setSelectedId(note.note_id);
+                setEditingId(null);
+              }}
             >
               <span>{note.title}</span>
               <span className="resource-meta">
@@ -173,7 +181,14 @@ export function NotesPanel({ actorId, notebookId }: Props): ReactNode {
             <p>Select a note on the left to read and edit it.</p>
           </div>
         ) : (
-          <NoteDetail actorId={actorId} notebookId={notebookId} noteId={effectiveId} />
+          <NoteDetail
+            key={effectiveId}
+            actorId={actorId}
+            notebookId={notebookId}
+            noteId={effectiveId}
+            isEditing={editingId === effectiveId}
+            onEditingChange={(editing) => setEditingId(editing ? effectiveId : null)}
+          />
         )}
       </section>
     </div>
@@ -184,10 +199,14 @@ function NoteDetail({
   actorId,
   notebookId,
   noteId,
+  isEditing,
+  onEditingChange,
 }: {
   readonly actorId: string;
   readonly notebookId: string;
   readonly noteId: string;
+  readonly isEditing: boolean;
+  readonly onEditingChange: (editing: boolean) => void;
 }): ReactNode {
   const queryClient = useQueryClient();
   const noteKey = queryKeys.note(actorId, notebookId, noteId);
@@ -230,6 +249,7 @@ function NoteDetail({
     mutationFn: (content: Record<string, unknown>) => editNote(noteId, note?.etag ?? "", content),
     onSuccess: () => {
       setViewingId(null);
+      onEditingChange(false);
       refetchAll();
     },
     onError: () => {
@@ -245,6 +265,11 @@ function NoteDetail({
   const submitEdit = (event: SyntheticEvent<HTMLFormElement>): void => {
     event.preventDefault();
     edit.mutate(draftContent);
+  };
+  const cancelEdit = (): void => {
+    setDraft({ baseline: currentContentKey, document: currentDocument });
+    edit.reset();
+    onEditingChange(false);
   };
   if (noteQuery.isPending && note === undefined)
     return (
@@ -271,26 +296,7 @@ function NoteDetail({
               {conflictMessage}
             </p>
           )}
-          <div className="note-detail">
-            {viewingHistory && displayedRevision !== null ? (
-              <div className="revision-banner" role="status">
-                <p className="muted">
-                  Viewing revision {displayedRevision.revision_number} (read-only)
-                </p>
-                <button type="button" onClick={() => setViewingId(null)}>
-                  Return to current revision
-                </button>
-              </div>
-            ) : (
-              <p className="muted">Current revision</p>
-            )}
-            {displayedRevision === null ? (
-              <p className="muted">This note has no content yet.</p>
-            ) : (
-              <ContentView content={displayedRevision.content} />
-            )}
-          </div>
-          {note.editable && !viewingHistory ? (
+          {isEditing ? (
             <form className="form-stack compact" onSubmit={submitEdit}>
               <div className="form-stack compact">
                 <h4>Content blocks</h4>
@@ -305,16 +311,61 @@ function NoteDetail({
                   disabled={edit.isPending}
                 />
               </div>
-              <button
-                className="primary"
-                disabled={edit.isPending || !hasDraftChanges}
-                type="submit"
-              >
-                {edit.isPending ? "Saving..." : "Save new revision"}
-              </button>
+              <div className="action-cluster">
+                <button
+                  className="primary"
+                  disabled={edit.isPending || !hasDraftChanges}
+                  type="submit"
+                >
+                  {edit.isPending ? "Saving..." : "Save new revision"}
+                </button>
+                <button
+                  className="secondary"
+                  disabled={edit.isPending}
+                  type="button"
+                  onClick={cancelEdit}
+                >
+                  Cancel
+                </button>
+              </div>
               {hasDraftChanges ? null : <p className="muted">No changes yet.</p>}
             </form>
-          ) : null}
+          ) : (
+            <>
+              <div className="note-detail">
+                {viewingHistory && displayedRevision !== null ? (
+                  <div className="revision-banner" role="status">
+                    <p className="muted">
+                      Viewing revision {displayedRevision.revision_number} (read-only)
+                    </p>
+                    <button type="button" onClick={() => setViewingId(null)}>
+                      Return to current revision
+                    </button>
+                  </div>
+                ) : (
+                  <p className="muted">Current revision</p>
+                )}
+                {displayedRevision === null ? (
+                  <p className="muted">This note has no content yet.</p>
+                ) : (
+                  <ContentView content={displayedRevision.content} />
+                )}
+              </div>
+              {note.editable && !viewingHistory ? (
+                <button
+                  className="primary"
+                  type="button"
+                  aria-label="Edit note"
+                  onClick={() => {
+                    edit.reset();
+                    onEditingChange(true);
+                  }}
+                >
+                  Edit
+                </button>
+              ) : null}
+            </>
+          )}
           <div className="form-stack compact">
             <p className="muted">Revisions</p>
             <ol className="plain-list">

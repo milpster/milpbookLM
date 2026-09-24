@@ -95,9 +95,9 @@ describe("NotesPanel", () => {
     }
     const firstTitle = TITLES[0];
     if (firstTitle === undefined) throw new Error("expected a first seeded title");
-    // Auto-select: the first note's body renders in the detail pane (both the
-    // read-only paragraph view and the edit textarea value).
     expect((await screen.findAllByText(`Body of ${firstTitle}`)).length).toBeGreaterThan(0);
+    expect(screen.getByRole("button", { name: "Edit note" })).toBeDefined();
+    expect(screen.queryByDisplayValue(`Body of ${firstTitle}`)).toBeNull();
   });
 
   it("marks the sole revision as current and renders no dead View button", async () => {
@@ -119,10 +119,11 @@ describe("NotesPanel", () => {
     expect(await screen.findByText("(current)")).toBeDefined();
     expect(screen.queryByRole("button", { name: "View" })).toBeNull();
     expect(screen.queryByRole("button", { name: "Hide" })).toBeNull();
-    expect(screen.getByRole("button", { name: /save new revision/i })).toBeDefined();
+    expect(screen.getByRole("button", { name: "Edit note" })).toBeDefined();
+    expect(screen.queryByRole("button", { name: /save new revision/i })).toBeNull();
   });
 
-  it("shows an old revision read-only with a banner and return action, then restores editing", async () => {
+  it("shows an old revision read-only with a banner and return action, then restores the current read mode", async () => {
     const note = {
       note_id: "00000000-0000-4000-8000-0000000000aa",
       notebook_id: NOTEBOOK_ID,
@@ -164,7 +165,8 @@ describe("NotesPanel", () => {
     expect((await screen.findAllByText("Second body")).length).toBeGreaterThan(0);
     expect(screen.getByText("(current)")).toBeDefined();
     expect(screen.getByRole("button", { name: "View" })).toBeDefined();
-    expect(screen.getByRole("button", { name: /save new revision/i })).toBeDefined();
+    expect(screen.getByRole("button", { name: "Edit note" })).toBeDefined();
+    expect(screen.queryByRole("button", { name: /save new revision/i })).toBeNull();
 
     fireEvent.click(screen.getByRole("button", { name: "View" }));
 
@@ -172,14 +174,19 @@ describe("NotesPanel", () => {
     expect((await screen.findAllByText("First body")).length).toBeGreaterThan(0);
     expect(screen.queryByText("Second body")).toBeNull();
     expect(screen.queryByRole("button", { name: /save new revision/i })).toBeNull();
+    expect(screen.queryByRole("button", { name: "Edit note" })).toBeNull();
     expect(screen.getByRole("button", { name: "Hide" })).toBeDefined();
 
     fireEvent.click(screen.getByRole("button", { name: "Return to current revision" }));
 
     expect(screen.queryByText("Viewing revision 1 (read-only)")).toBeNull();
     expect((await screen.findAllByText("Second body")).length).toBeGreaterThan(0);
-    expect(screen.getByRole("button", { name: /save new revision/i })).toBeDefined();
+    expect(screen.getByRole("button", { name: "Edit note" })).toBeDefined();
     expect(screen.getByRole("button", { name: "View" })).toBeDefined();
+    fireEvent.click(screen.getByRole("button", { name: "Edit note" }));
+    expect(screen.getByRole("button", { name: /save new revision/i })).toBeDefined();
+    fireEvent.click(screen.getByRole("button", { name: "Cancel" }));
+    expect(screen.getByRole("button", { name: "Edit note" })).toBeDefined();
   });
 
   describe("revision dirty check", () => {
@@ -244,6 +251,7 @@ describe("NotesPanel", () => {
 
     async function renderDetail() {
       renderWithClient(<NotesPanel actorId={ACTOR_ID} notebookId={NOTEBOOK_ID} />);
+      fireEvent.click(await screen.findByRole("button", { name: "Edit note" }));
       const textarea = (await screen.findByDisplayValue("Second body")) as HTMLTextAreaElement;
       const saveButton = screen.getByRole("button", {
         name: /save new revision/i,
@@ -279,7 +287,16 @@ describe("NotesPanel", () => {
       expect(saveButton.disabled).toBe(false);
       fireEvent.click(saveButton);
       await vi.waitFor(() => expect(saved).toBe(true));
-      await vi.waitFor(() => expect(saveButton.disabled).toBe(true));
+      await vi.waitFor(() =>
+        expect(screen.getByRole("button", { name: "Edit note" })).toBeDefined(),
+      );
+      expect(screen.getByText("Third body")).toBeDefined();
+      expect(screen.queryByRole("button", { name: /save new revision/i })).toBeNull();
+      fireEvent.click(screen.getByRole("button", { name: "Edit note" }));
+      const updatedSaveButton = screen.getByRole("button", {
+        name: /save new revision/i,
+      }) as HTMLButtonElement;
+      expect(updatedSaveButton.disabled).toBe(true);
       expect(screen.getByText("No changes yet.")).toBeDefined();
       expect(screen.getByDisplayValue("Third body")).toBeDefined();
     });
@@ -321,8 +338,9 @@ describe("NotesPanel", () => {
     );
     renderWithClient(<NotesPanel actorId={ACTOR_ID} notebookId={NOTEBOOK_ID} />);
     expect(await screen.findByRole("heading", { name: "Heading" })).toBeDefined();
-    expect(screen.getAllByRole("list")).toHaveLength(5);
+    expect(screen.getAllByRole("list")).toHaveLength(3);
     expect(screen.getByText(/fallback/)).toBeDefined();
+    fireEvent.click(screen.getByRole("button", { name: "Edit note" }));
     const textarea = screen.getByDisplayValue("Editable");
     fireEvent.change(textarea, { target: { value: "Edited" } });
     fireEvent.click(screen.getByRole("button", { name: /save new revision/i }));
@@ -466,7 +484,8 @@ describe("NotesPanel", () => {
     );
 
     renderWithClient(<NotesPanel actorId={ACTOR_ID} notebookId={NOTEBOOK_ID} />);
-    const heading = await screen.findByRole("textbox", { name: "Heading block 1" });
+    fireEvent.click(await screen.findByRole("button", { name: "Edit note" }));
+    const heading = screen.getByRole("textbox", { name: "Heading block 1" });
     expect(heading.className).toContain("note-editor-heading-input");
     fireEvent.change(heading, {
       target: { value: "Updated heading" },
@@ -540,6 +559,7 @@ describe("NotesPanel", () => {
     );
 
     renderWithClient(<NotesPanel actorId={ACTOR_ID} notebookId={NOTEBOOK_ID} />);
+    fireEvent.click(await screen.findByRole("button", { name: "Edit note" }));
     const paragraph = await screen.findByDisplayValue("Legacy body");
     expect(paragraph.getAttribute("aria-label")).toBe("Paragraph block 1");
     expect(paragraph.className).toContain("note-editor-paragraph");
