@@ -826,6 +826,10 @@ label {
   border-radius: 0.375rem;
 }
 .note-selection legend {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: var(--space-2);
   padding-inline: var(--space-1);
   color: var(--text-secondary);
   font-size: 0.875rem;
@@ -858,6 +862,22 @@ label {
   color: var(--text-muted);
   font-size: 0.75rem;
   font-variant-numeric: tabular-nums;
+}
+.note-selection-tree {
+  display: grid;
+  gap: var(--space-2);
+}
+.note-group {
+  display: grid;
+  gap: var(--space-1);
+}
+.note-group-row {
+  font-weight: 600;
+}
+.note-group-revisions {
+  display: grid;
+  gap: var(--space-1);
+  margin-inline-start: var(--space-5);
 }
 .composer {
   display: flex;

@@ -64,6 +64,50 @@ export function ChatPanel({ actorId, notebookId, navigate }: Props): ReactNode {
     const saved = sessionStorage.getItem(selectionKey);
     return saved === null ? [] : JSON.parse(saved) as string[];
   });
+  // Grounding defaults to ALL notes: when the visitor has never made a choice
+  // (no sessionStorage entry), select every revision once when the first query
+  // resolves. The ref makes this a one-time seed, so later user choices survive.
+  const seededDefaultSelection = useRef(false);
+  if (!seededDefaultSelection.current && noteRevisions.data !== undefined) {
+    seededDefaultSelection.current = true;
+    if (sessionStorage.getItem(selectionKey) === null) {
+      const allRevisionIds = noteRevisions.data.flatMap((entry) =>
+        entry.revisions.map((revision) => revision.revision_id),
+      );
+      if (allRevisionIds.length > 0) {
+        sessionStorage.setItem(selectionKey, JSON.stringify(allRevisionIds));
+        setSelectedNoteRevisionIds(allRevisionIds);
+      }
+    }
+  }
+  // The selection fieldset is collapsed by default so the chat stays the focus.
+  const [selectionOpen, setSelectionOpen] = useState(false);
+  const knownRevisionIds = new Set(
+    noteRevisions.data?.flatMap((entry) =>
+      entry.revisions.map((revision) => revision.revision_id),
+    ) ?? [],
+  );
+  const selectedRevisionCount = selectedNoteRevisionIds.filter((id) =>
+    knownRevisionIds.has(id),
+  ).length;
+  const setSelection = (next: readonly string[]): void => {
+    sessionStorage.setItem(selectionKey, JSON.stringify(next));
+    setSelectedNoteRevisionIds(next);
+  };
+  const toggleRevision = (revisionId: string): void => {
+    setSelection(
+      selectedNoteRevisionIds.includes(revisionId)
+        ? selectedNoteRevisionIds.filter((id) => id !== revisionId)
+        : [...selectedNoteRevisionIds, revisionId],
+    );
+  };
+  const toggleNote = (revisionIds: readonly string[], allSelected: boolean): void => {
+    setSelection(
+      allSelected
+        ? selectedNoteRevisionIds.filter((id) => !revisionIds.includes(id))
+        : [...new Set([...selectedNoteRevisionIds, ...revisionIds])],
+    );
+  };
   const create = useMutation({
     mutationFn: () => createConversation(notebookId, defaultConfig),
     onMutate: () => setCreateError(""),
@@ -221,32 +265,67 @@ export function ChatPanel({ actorId, notebookId, navigate }: Props): ReactNode {
           {status}
         </p>
         <fieldset className="note-selection">
-          <legend>Selected notes for grounding</legend>
-          <p className="muted">Only checked immutable revisions are sent with this chat request.</p>
-          {noteRevisions.data?.map(({ note, revisions }) =>
-            revisions.map((revision) => {
-              const selected = selectedNoteRevisionIds.includes(revision.revision_id);
-              return (
-                <label key={revision.revision_id}>
-                  <input
-                    type="checkbox"
-                    checked={selected}
-                    onChange={() => {
-                      const next = selected
-                        ? selectedNoteRevisionIds.filter((id) => id !== revision.revision_id)
-                        : [...selectedNoteRevisionIds, revision.revision_id];
-                      sessionStorage.setItem(selectionKey, JSON.stringify(next));
-                      setSelectedNoteRevisionIds(next);
-                    }}
-                  />
-                  <span className="note-selection-title">{note.title}</span>
-                  {revisions.length > 1 ? (
-                    <span className="note-selection-rev">rev {revision.revision_number}</span>
-                  ) : null}
-                </label>
-              );
-            }),
-          )}
+          <legend>
+            <span>Selected notes for grounding</span>
+            <span className="resource-meta">
+              {selectedRevisionCount} / {knownRevisionIds.size} selected
+            </span>
+            <button
+              className="secondary button-compact"
+              type="button"
+              aria-expanded={selectionOpen}
+              aria-controls="note-selection-tree"
+              onClick={() => setSelectionOpen((open) => !open)}
+            >
+              {selectionOpen ? "Hide notes" : "Show notes"}
+            </button>
+          </legend>
+          {selectionOpen ? (
+            <div className="note-selection-tree" id="note-selection-tree">
+              <p className="muted">
+                Only checked immutable revisions are sent with this chat request.
+              </p>
+              {noteRevisions.data?.map(({ note, revisions }) => {
+                const revisionIds = revisions.map((revision) => revision.revision_id);
+                const noteSelectedCount = revisionIds.filter((id) =>
+                  selectedNoteRevisionIds.includes(id),
+                ).length;
+                const allSelected = noteSelectedCount === revisionIds.length;
+                return (
+                  <div className="note-group" key={note.note_id}>
+                    <label className="note-group-row">
+                      <input
+                        type="checkbox"
+                        ref={(element) => {
+                          if (element !== null)
+                            element.indeterminate = noteSelectedCount > 0 && !allSelected;
+                        }}
+                        checked={allSelected}
+                        onChange={() => toggleNote(revisionIds, allSelected)}
+                      />
+                      <span className="note-selection-title">{note.title}</span>
+                    </label>
+                    {revisions.length > 1 ? (
+                      <div className="note-group-revisions">
+                        {revisions.map((revision) => (
+                          <label key={revision.revision_id}>
+                            <input
+                              type="checkbox"
+                              checked={selectedNoteRevisionIds.includes(revision.revision_id)}
+                              onChange={() => toggleRevision(revision.revision_id)}
+                            />
+                            <span className="note-selection-rev">
+                              rev {revision.revision_number}
+                            </span>
+                          </label>
+                        ))}
+                      </div>
+                    ) : null}
+                  </div>
+                );
+              })}
+            </div>
+          ) : null}
         </fieldset>
         <form className="composer" onSubmit={(event) => void send(event)}>
           <label htmlFor="chat-message">Ask about selected notes and sources</label>

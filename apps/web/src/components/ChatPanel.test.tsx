@@ -158,21 +158,28 @@ describe("ChatPanel composer", () => {
     expect(screen.queryByText(/assistant, streaming/i)).toBeNull();
   });
 
-  it("submits only explicitly selected immutable note revisions", async () => {
+  it("defaults to all notes in a foldable tree and submits only the checked revisions", async () => {
     rememberActiveConversation(NOTEBOOK_ID, CONVERSATION_ID);
+    sessionStorage.clear();
     stubApiFetch();
     renderWithClient(
       <ChatPanel actorId={ACTOR_ID} notebookId={NOTEBOOK_ID} navigate={() => undefined} />,
     );
-    const checkbox = await screen.findByRole("checkbox");
+    expect(await screen.findByText("1 / 1 selected")).toBeDefined();
+    expect(screen.queryByRole("checkbox")).toBeNull();
+    const showButton = screen.getByRole("button", { name: "Show notes" });
+    expect(showButton.getAttribute("aria-expanded")).toBe("false");
+    fireEvent.click(showButton);
+    const checkbox = (await screen.findByRole("checkbox")) as HTMLInputElement;
+    expect(checkbox.checked).toBe(true);
+    expect(screen.getByRole("button", { name: "Hide notes" })).toBeDefined();
     fireEvent.click(checkbox);
+    expect(checkbox.checked).toBe(false);
     const textarea = screen.getByRole("textbox");
     fireEvent.change(textarea, { target: { value: "Use my note" } });
     fireEvent.keyDown(textarea, { key: "Enter" });
     await vi.waitFor(() => expect(vi.mocked(streamChat)).toHaveBeenCalledTimes(1));
-    expect(vi.mocked(streamChat).mock.calls[0]?.[2]).toEqual([
-      "cccccccc-0000-4000-8000-000000000001",
-    ]);
+    expect(vi.mocked(streamChat).mock.calls[0]?.[2]).toEqual([]);
   });
 
   it("keeps the draft and does not submit on Shift+Enter", async () => {
