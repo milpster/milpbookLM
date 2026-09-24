@@ -123,10 +123,16 @@ def run_rehearsal(
             )
             notebook = _first(
                 conn.execute(
-                    "INSERT INTO notebooks (id, title, created_by_user_id) "
-                    "VALUES (%s, %s, %s) RETURNING id",
-                    (uuid.uuid4(), "Rehearsal notebook", user),
+                    "INSERT INTO notebooks (id, title, owner_user_id, created_by_user_id) "
+                    "VALUES (%s, %s, %s, %s) RETURNING id",
+                    (uuid.uuid4(), "Rehearsal notebook", user, user),
                 ).fetchone()
+            )
+            conn.execute(
+                "INSERT INTO notebook_memberships "
+                "(id, notebook_id, user_id, role, granted_by_user_id) "
+                "VALUES (%s, %s, %s, 'owner', %s)",
+                (uuid.uuid4(), notebook, user, user),
             )
             source = _first(
                 conn.execute(
