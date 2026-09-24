@@ -71,49 +71,55 @@ export function SettingsRoute(_props: RouteProps): ReactNode {
           )}
         </section>
       </div>
-      <section className="panel-stack" aria-labelledby="server-health-title">
-        <h2 id="server-health-title">Server health</h2>
-        <p className="muted">
-          Status of this installation&apos;s components. Green means ok, amber degraded, red down.
-        </p>
-        {health.isPending ? (
-          <p role="status">Loading server health...</p>
-        ) : health.isError ? (
-          <p className="notice error" role="alert">
-            Server health could not be loaded. Please try again.
+      <div className="settings-grid">
+        <section className="panel-stack" aria-labelledby="capabilities-title">
+          <h2 id="capabilities-title">Capabilities</h2>
+          <p className="muted">
+            Each feature reports whether it is available on this installation.
           </p>
-        ) : (
-          <ul className="health-list">
-            {health.data.components.map((component) => (
-              <li className="health-row" key={component.component}>
-                <span className={`health-dot ${component.status}`} aria-hidden="true" />
-                <strong>{componentLabel(component)}</strong>
-                <span className="resource-meta">{component.detail}</span>
-              </li>
-            ))}
-          </ul>
-        )}
-      </section>
-      <section className="panel-stack" aria-labelledby="capabilities-title">
-        <h2 id="capabilities-title">Capabilities</h2>
-        <p className="muted">Each feature reports whether it is available on this installation.</p>
-        {capabilities.isPending ? (
-          <p role="status">Loading capabilities...</p>
-        ) : (
-          <div className="capability-grid">
-            {capabilities.data?.capabilities.map((capability) => (
-              <article key={capability.id} className="capability">
-                <div>
-                  <h3>{capability.name}</h3>
-                </div>
-                <p>{capability.description}</p>
-                <p className={`status ${capability.state}`}>{capability.state}</p>
-                {capability.reason === null ? null : <p className="muted">{capability.reason}</p>}
-              </article>
-            ))}
-          </div>
-        )}
-      </section>
+          {capabilities.isPending ? (
+            <p role="status">Loading capabilities...</p>
+          ) : (
+            <div className="capability-grid">
+              {capabilities.data?.capabilities.map((capability) => (
+                <article key={capability.id} className="capability">
+                  <div>
+                    <h3>{capability.name}</h3>
+                  </div>
+                  <p>{capability.description}</p>
+                  <p className={`status ${capability.state}`}>{capability.state}</p>
+                  {capability.reason === null ? null : <p className="muted">{capability.reason}</p>}
+                </article>
+              ))}
+            </div>
+          )}
+        </section>
+        <section className="panel-stack" aria-labelledby="server-health-title">
+          <h2 id="server-health-title">Server health</h2>
+          <p className="muted">
+            Status of this installation&apos;s components. Green means ok, amber degraded, red down.
+          </p>
+          {health.isPending ? (
+            <p role="status">Loading server health...</p>
+          ) : health.isError ? (
+            <p className="notice error" role="alert">
+              Server health could not be loaded. Please try again.
+            </p>
+          ) : (
+            <ul className="health-list">
+              {health.data.components.map((component) => (
+                <li className="health-row" key={component.component}>
+                  <span className={`health-dot ${component.status}`} aria-hidden="true" />
+                  <strong>{componentLabel(component)}</strong>
+                  <span className="resource-meta" title={component.detail}>
+                    {component.detail}
+                  </span>
+                </li>
+              ))}
+            </ul>
+          )}
+        </section>
+      </div>
     </section>
   );
 }
