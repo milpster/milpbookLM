@@ -149,8 +149,15 @@ class GroundingStore(Protocol):
         """Freeze manifest, validate citations, and atomically publish the answer."""
         ...
 
-    def abstain(self, *, manifest: FrozenManifest, retrieval_trace: str) -> GroundedAnswer:
-        """Freeze an insufficiency manifest without publishing unsupported claims."""
+    def abstain(
+        self,
+        *,
+        request: GroundingRequest,
+        manifest: FrozenManifest,
+        retrieval_trace: str,
+        content: str,
+    ) -> GroundedAnswer:
+        """Publish a transparent limitation without unsupported claims or citations."""
         ...
 
     def jump(
@@ -189,7 +196,7 @@ class GenerateGroundedAnswer:
         """Generate against an already-frozen manifest without creating a second snapshot."""
         prepared = self.prepare(request, manifest)
         if not prepared.evidence and not manifest.note_contexts:
-            return self._store.abstain(manifest=manifest, retrieval_trace=prepared.retrieval_trace)
+            return self._abstain(prepared)
         return self._publish(prepared)
 
     def stream_generate(
@@ -201,7 +208,7 @@ class GenerateGroundedAnswer:
         """Present provider tokens, then publish only the completed validated draft."""
         prepared = self.prepare(request, manifest)
         if not prepared.evidence and not manifest.note_contexts:
-            return self._store.abstain(manifest=manifest, retrieval_trace=prepared.retrieval_trace)
+            return self._abstain(prepared)
         generation = self._completion.stream(
             request.question, prepared.evidence, manifest.note_contexts
         )
@@ -258,15 +265,31 @@ class GenerateGroundedAnswer:
         if completed_draft.insufficient_evidence:
             if completed_draft.spans:
                 raise GroundingError("an insufficiency draft must not contain factual spans")
-            return self._store.abstain(
-                manifest=prepared.manifest, retrieval_trace=prepared.retrieval_trace
-            )
+            return self._abstain(prepared)
         return self._store.publish(
             request=prepared.request,
             manifest=prepared.manifest,
             evidence=prepared.evidence,
             draft=completed_draft,
             retrieval_trace=prepared.retrieval_trace,
+        )
+
+    def _abstain(self, prepared: PreparedGroundedAnswer) -> GroundedAnswer:
+        """Publish useful, non-factual guidance when the frozen context cannot support an answer."""
+        language = (prepared.request.chat_config_snapshot or {}).get("output_language", "EN")
+        content = (
+            "Ich kann diese Frage mit den verfügbaren Belegen nicht beantworten. "
+            + "Füge eine Quelle oder Notiz hinzu oder wähle eine aus, die die Frage direkt "
+            + "behandelt, und versuche es erneut."
+            if language == "DE"
+            else "I can't answer this from the available evidence. Add or select a source or note "
+            + "that directly addresses the question, then try again."
+        )
+        return self._store.abstain(
+            request=prepared.request,
+            manifest=prepared.manifest,
+            retrieval_trace=prepared.retrieval_trace,
+            content=content,
         )
 
     def freeze(self, request: GroundingRequest) -> FrozenManifest:

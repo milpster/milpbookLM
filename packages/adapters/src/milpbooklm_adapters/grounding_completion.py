@@ -158,16 +158,7 @@ class LlamaCppCompletionProvider:
         envelope = _CompletionResponsePayload.model_validate_json(response.text)
         if not envelope.choices:
             raise GroundingCompletionError("completion response contains no choices")
-        try:
-            parsed = _AnswerPayload.model_validate_json(envelope.choices[0].message.content)
-        except ValueError as error:
-            raise GroundingCompletionError(
-                "completion response is not an answer contract"
-            ) from error
-        return AnswerDraft(
-            spans=tuple(AnswerSpan(span.text, span.evidence_ids) for span in parsed.spans),
-            insufficient_evidence=parsed.insufficient_evidence,
-        )
+        return _answer_draft(envelope.choices[0].message.content)
 
     def stream(
         self,
@@ -194,17 +185,11 @@ class LlamaCppCompletionProvider:
                 for choice in chunk.choices:
                     if choice.delta.content is not None:
                         fragments.append(choice.delta.content)
-                        yield choice.delta.content
-        try:
-            parsed = _AnswerPayload.model_validate_json("".join(fragments))
-        except ValueError as error:
-            raise GroundingCompletionError(
-                "streamed completion is not an answer contract"
-            ) from error
-        return AnswerDraft(
-            spans=tuple(AnswerSpan(span.text, span.evidence_ids) for span in parsed.spans),
-            insufficient_evidence=parsed.insufficient_evidence,
-        )
+                        yield ""
+        draft = _answer_draft("".join(fragments))
+        for span in draft.spans:
+            yield span.text
+        return draft
 
     def probe_models(self) -> tuple[str, ...]:
         """Confirm the local endpoint exposes a model before a grounded smoke run."""
@@ -250,3 +235,15 @@ class LlamaCppCompletionProvider:
                 },
             ],
         }
+
+
+def _answer_draft(content: str) -> AnswerDraft:
+    """Parse the provider protocol once before any text crosses into chat presentation."""
+    try:
+        parsed = _AnswerPayload.model_validate_json(content)
+    except ValueError as error:
+        raise GroundingCompletionError("completion response is not an answer contract") from error
+    return AnswerDraft(
+        spans=tuple(AnswerSpan(span.text, span.evidence_ids) for span in parsed.spans),
+        insufficient_evidence=parsed.insufficient_evidence,
+    )

@@ -109,10 +109,33 @@ class PgGroundingStore:
             )
         return GroundedAnswer(message_id, manifest.id, draft.spans, evidence, False)
 
-    def abstain(self, *, manifest: FrozenManifest, retrieval_trace: str) -> GroundedAnswer:
-        """Return context insufficiency without an assistant-message row."""
-        del retrieval_trace
-        return GroundedAnswer(None, manifest.id, (), (), True)
+    def abstain(
+        self,
+        *,
+        request: GroundingRequest,
+        manifest: FrozenManifest,
+        retrieval_trace: str,
+        content: str,
+    ) -> GroundedAnswer:
+        """Persist a useful limitation as uncited assistant prose."""
+        message_id = uuid.uuid4()
+        with self._engine.begin() as connection:
+            _ = connection.execute(
+                sa.insert(messages).values(
+                    id=message_id,
+                    conversation_id=request.conversation_id,
+                    sender_user_id=None,
+                    role="assistant",
+                    content=content,
+                    manifest_id=manifest.id,
+                    selected_source_refs=[],
+                    selected_note_refs=[],
+                    model_metadata={"retrieval_trace": retrieval_trace},
+                    provider_status="local",
+                    citations=[],
+                )
+            )
+        return GroundedAnswer(message_id, manifest.id, (), (), True)
 
     def jump(
         self,
@@ -128,7 +151,10 @@ class PgGroundingStore:
                     sa.select(
                         sources.c.availability,
                         sources.c.notebook_id,
+                        canonical_documents.c.id.label("canonical_document_id"),
                         canonical_documents.c.contract_json,
+                        canonical_nodes.c.parent_node_id,
+                        canonical_nodes.c.text_content,
                         canonical_locators.c.locator_kind,
                         canonical_locators.c.page,
                         canonical_locators.c.char_start,
@@ -162,6 +188,21 @@ class PgGroundingStore:
                 return {"state": "unavailable (purged)"}
             if not self._can_read(connection, actor_user_id, source_version_id, row["notebook_id"]):
                 raise GroundingError("citation is no longer authorized")
+            text_content = row["text_content"]
+            if row["parent_node_id"] is None:
+                text_content = "\n\n".join(
+                    text
+                    for text in connection.scalars(
+                        sa.select(canonical_nodes.c.text_content)
+                        .where(
+                            canonical_nodes.c.canonical_document_id
+                            == row["canonical_document_id"],
+                            canonical_nodes.c.text_content.is_not(None),
+                        )
+                        .order_by(canonical_nodes.c.seq)
+                    )
+                    if isinstance(text, str) and text != ""
+                )
         payload: dict[str, str | int | tuple[float, ...]] = {
             "state": "available",
             "source_version_id": str(source_version_id),
@@ -172,6 +213,8 @@ class PgGroundingStore:
         media_type = contract.get("mime_type")
         if isinstance(media_type, str):
             payload["media_type"] = media_type
+        if isinstance(text_content, str) and text_content != "":
+            payload["text"] = text_content
         for field in ("page", "char_start", "char_end", "time_ms_start", "time_ms_end"):
             value = row[field]
             if isinstance(value, int):

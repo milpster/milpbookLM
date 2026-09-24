@@ -33,6 +33,7 @@ export function ChatPanel({ actorId, notebookId, navigate }: Props): ReactNode {
   );
   const [streamed, setStreamed] = useState("");
   const [status, setStatus] = useState("Ready");
+  const [isGenerating, setIsGenerating] = useState(false);
   const [createError, setCreateError] = useState("");
   const controller = useRef<AbortController | null>(null);
   const capabilities = useQuery({ queryKey: queryKeys.capabilities(), queryFn: getCapabilities });
@@ -88,7 +89,8 @@ export function ChatPanel({ actorId, notebookId, navigate }: Props): ReactNode {
     if (content === "") return;
     event.currentTarget.reset();
     setStreamed("");
-    setStatus("Generating answer");
+    setStatus("Request in progress");
+    setIsGenerating(true);
     controller.current = new AbortController();
     try {
       await streamChat(conversationId, content, selectedNoteRevisionIds, controller.current.signal, {
@@ -100,11 +102,7 @@ export function ChatPanel({ actorId, notebookId, navigate }: Props): ReactNode {
               terminal.state,
             );
           setStreamed("");
-          setStatus(
-            terminal.insufficient_evidence
-              ? "Sources do not contain enough evidence"
-              : "Answer complete",
-          );
+          setStatus("Answer complete");
         },
         onCancelled: () => {
           setStreamed("");
@@ -112,7 +110,9 @@ export function ChatPanel({ actorId, notebookId, navigate }: Props): ReactNode {
         },
       });
     } catch (caught) {
-      if (!(caught instanceof DOMException && caught.name === "AbortError"))
+      if (caught instanceof DOMException && caught.name === "AbortError")
+        setStatus("Generation cancelled");
+      else
         setStatus("The connection was lost. The conversation was reloaded.");
       await queryClient.fetchQuery({
         queryKey: queryKeys.privateConversation(actorId, conversationId),
@@ -121,6 +121,7 @@ export function ChatPanel({ actorId, notebookId, navigate }: Props): ReactNode {
       setStreamed("");
     } finally {
       controller.current = null;
+      setIsGenerating(false);
     }
   };
 
@@ -201,13 +202,17 @@ export function ChatPanel({ actorId, notebookId, navigate }: Props): ReactNode {
             );
           })}
         </ol>
-        {streamed === "" ? null : (
+        {!isGenerating && streamed === "" ? null : (
           <div className="message assistant streaming">
-            <p className="resource-meta">assistant, streaming</p>
-            <div>{streamed}</div>
+            <p className="resource-meta">assistant</p>
+            <div className="message-content">
+              {streamed === ""
+                ? "Reviewing selected evidence and preparing an answer..."
+                : streamed}
+            </div>
           </div>
         )}
-        <p className="muted" role="status" aria-live="polite">
+        <p className="muted" role="status" aria-live="polite" aria-label="Assistant status">
           {status}
         </p>
         <fieldset className="note-selection">
@@ -244,12 +249,12 @@ export function ChatPanel({ actorId, notebookId, navigate }: Props): ReactNode {
             onKeyDown={onMessageKeyDown}
           />
           <div className="action-cluster">
-            <button className="primary" type="submit" disabled={controller.current !== null}>
+            <button className="primary" type="submit" disabled={isGenerating}>
               Send
             </button>
             <button
               type="button"
-              disabled={controller.current === null}
+              disabled={!isGenerating}
               onClick={() => {
                 void cancelConversation(conversationId);
                 controller.current?.abort();
