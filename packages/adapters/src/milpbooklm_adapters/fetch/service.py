@@ -47,7 +47,7 @@ from .urls import ALLOWED_PORTS, FetchPolicyError, FetchTarget, normalize_url
 
 logger = logging.getLogger(__name__)
 
-USER_AGENT: Final = "MilpBookLM/0.1 (self-hosted research notebook; static fetch)"
+USER_AGENT: Final = "milpbookLM/0.1 (self-hosted research notebook; static fetch)"
 _HTTP_ERROR_STATUS: Final = 400
 _RECORDED_HEADERS: Final = frozenset(
     {"cache-control", "content-language", "content-type", "etag", "last-modified"}

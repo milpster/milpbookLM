@@ -224,7 +224,7 @@ def build_app(
     seed_onboarding: Callable[[uuid.UUID], None] | None = None,
 ) -> FastAPI:
     """Build the API app from wired ports (the test/QA seam)."""
-    app = FastAPI(title="MilpBook LM API")
+    app = FastAPI(title="milpbookLM API")
     app.add_middleware(
         CsrfOriginMiddleware,
         settings=settings,
