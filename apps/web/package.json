@@ -5,7 +5,7 @@
   "type": "module",
   "description": "MilpBook LM browser application.",
   "scripts": {
-    "dev": "vite --host 127.0.0.1",
+    "dev": "vite",
     "build": "tsc --build && vite build",
     "typecheck": "tsc --build",
     "test": "vitest run",
