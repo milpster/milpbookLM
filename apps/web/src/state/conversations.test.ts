@@ -1,9 +1,7 @@
 import { describe, expect, it } from "vitest";
 import {
   getActiveConversation,
-  getNotebookTab,
   rememberActiveConversation,
-  rememberNotebookTab,
 } from "./conversations";
 
 describe("notebook conversation store", () => {
@@ -18,14 +16,5 @@ describe("notebook conversation store", () => {
     rememberActiveConversation("notebook-b", "conversation-2");
     expect(getActiveConversation("notebook-a")).toBe("conversation-1");
     expect(getActiveConversation("notebook-b")).toBe("conversation-2");
-  });
-
-  it("tracks the last opened tab per notebook, defaulting to notes", () => {
-    expect(getNotebookTab("notebook-c")).toBe("notes");
-    rememberNotebookTab("notebook-c", "chat");
-    expect(getNotebookTab("notebook-c")).toBe("chat");
-    expect(getNotebookTab("notebook-d")).toBe("notes");
-    rememberNotebookTab("notebook-d", "sources");
-    expect(getNotebookTab("notebook-d")).toBe("sources");
   });
 });

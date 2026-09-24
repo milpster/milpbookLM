@@ -9,16 +9,11 @@ import { NotesPanel } from "../components/NotesPanel";
 import { SourcePanel } from "../components/SourcePanel";
 import { useAuth } from "../state/auth";
 import type { NotebookTab } from "../state/conversations";
-import { getNotebookTab, rememberNotebookTab } from "../state/conversations";
 
 export function NotebookRoute({ navigate, params }: RouteProps): ReactNode {
   const notebookId = params["notebookId"] ?? "";
   const { actor } = useAuth();
-  const [tab, setTabState] = useState<NotebookTab>(() => getNotebookTab(notebookId));
-  const setTab = (next: NotebookTab): void => {
-    rememberNotebookTab(notebookId, next);
-    setTabState(next);
-  };
+  const [tab, setTab] = useState<NotebookTab>("notes");
   const notebook = useQuery({
     queryKey: queryKeys.notebook(actor?.user_id ?? "anonymous", notebookId ?? ""),
     queryFn: () => getNotebook(notebookId ?? ""),
