@@ -1,5 +1,5 @@
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
-import type { ReactNode, SyntheticEvent } from "react";
+import type { MouseEvent, ReactNode, SyntheticEvent } from "react";
 import { useState } from "react";
 import {
   createNote,
@@ -80,6 +80,8 @@ export function NotesPanel({ actorId, notebookId }: Props): ReactNode {
   // is tracked here to survive the remount (e.g. right after a create).
   const [editingId, setEditingId] = useState<string | null>(null);
   const [createError, setCreateError] = useState("");
+  // The create form is a collapsed subsection: the panel defaults to list + reading.
+  const [createOpen, setCreateOpen] = useState(false);
   const firstId = noteList[0]?.note_id ?? null;
   const effectiveId =
     selectedId !== null && noteList.some((note) => note.note_id === selectedId)
@@ -104,9 +106,11 @@ export function NotesPanel({ actorId, notebookId }: Props): ReactNode {
       createNote(notebookId, input.title, serializeEditorBlocks(input.blocks)),
     onMutate: () => setCreateError(""),
     onSuccess: (snapshot) => {
-      // Creating IS editing: open the new note straight in the editor.
+      // Creating IS editing: open the new note straight in the editor, and fold
+      // the create subsection back down.
       setSelectedId(snapshot.note.note_id);
       setEditingId(snapshot.note.note_id);
+      setCreateOpen(false);
       void queryClient.invalidateQueries({ queryKey: notesKey });
     },
     onError: () => setCreateError("Creating the note failed. Please try again."),
@@ -121,6 +125,12 @@ export function NotesPanel({ actorId, notebookId }: Props): ReactNode {
     event.currentTarget.reset();
     setCreateBlocks(emptyEditorDocument().blocks);
   };
+  const cancelCreate = (event: MouseEvent<HTMLButtonElement>): void => {
+    event.currentTarget.form?.reset();
+    setCreateBlocks(emptyEditorDocument().blocks);
+    setCreateError("");
+    setCreateOpen(false);
+  };
   return (
     <div className="split-content">
       <section className="panel-stack" aria-labelledby="notes-list-title">
@@ -130,19 +140,41 @@ export function NotesPanel({ actorId, notebookId }: Props): ReactNode {
             Every edit is saved as a new revision, so earlier versions stay intact.
           </p>
         </div>
-        <form className="form-stack compact" onSubmit={submitCreate}>
-          <label>
-            Title
-            <input name="title" required maxLength={300} />
-          </label>
-          <div className="form-stack compact">
-            <h3>Blocks</h3>
-            <BlockEditor blocks={createBlocks} onChange={setCreateBlocks} disabled={create.isPending} />
-          </div>
-          <button className="primary" disabled={create.isPending} type="submit">
-            {create.isPending ? "Creating..." : "Create note"}
+        <div className="note-create">
+          <button
+            className="primary"
+            type="button"
+            aria-expanded={createOpen}
+            aria-controls="note-create-form"
+            onClick={() => setCreateOpen((open) => !open)}
+          >
+            New note
           </button>
-        </form>
+          {createOpen ? (
+            <form className="form-stack compact" id="note-create-form" onSubmit={submitCreate}>
+              <label>
+                Title
+                <input name="title" required maxLength={300} />
+              </label>
+              <div className="form-stack compact">
+                <h3>Blocks</h3>
+                <BlockEditor
+                  blocks={createBlocks}
+                  onChange={setCreateBlocks}
+                  disabled={create.isPending}
+                />
+              </div>
+              <div className="action-cluster">
+                <button className="primary" disabled={create.isPending} type="submit">
+                  {create.isPending ? "Creating..." : "Create note"}
+                </button>
+                <button className="secondary button-compact" type="button" onClick={cancelCreate}>
+                  Cancel
+                </button>
+              </div>
+            </form>
+          ) : null}
+        </div>
         {createError === "" ? null : (
           <p className="notice error" role="alert">
             {createError}

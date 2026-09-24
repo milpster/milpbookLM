@@ -348,6 +348,10 @@ code {
   color: var(--text-primary);
   overflow-wrap: anywhere;
 }
+.note-create {
+  display: grid;
+  gap: var(--space-3);
+}
 .note-header {
   display: flex;
   flex-wrap: wrap;

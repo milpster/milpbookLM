@@ -405,6 +405,11 @@ describe("NotesPanel", () => {
     );
 
     renderWithClient(<NotesPanel actorId={ACTOR_ID} notebookId={NOTEBOOK_ID} />);
+    expect(screen.queryByRole("textbox", { name: "Title" })).toBeNull();
+    const newNoteButton = screen.getByRole("button", { name: "New note" });
+    expect(newNoteButton.getAttribute("aria-expanded")).toBe("false");
+    fireEvent.click(newNoteButton);
+    expect(newNoteButton.getAttribute("aria-expanded")).toBe("true");
     fireEvent.change(await screen.findByRole("textbox", { name: "Title" }), {
       target: { value: "Structured note" },
     });
@@ -447,6 +452,7 @@ describe("NotesPanel", () => {
         ],
       },
     });
+    expect(screen.queryByRole("textbox", { name: "Title" })).toBeNull();
   });
 
   it("edits one rich block while preserving the other blocks", async () => {
@@ -516,6 +522,7 @@ describe("NotesPanel", () => {
 
     renderWithClient(<NotesPanel actorId={ACTOR_ID} notebookId={NOTEBOOK_ID} />);
     expect(await screen.findByRole("heading", { name: "No notes yet" })).toBeDefined();
+    fireEvent.click(screen.getByRole("button", { name: "New note" }));
     fireEvent.click(screen.getByRole("button", { name: "+ Add block" }));
     fireEvent.click(screen.getByRole("button", { name: "Unordered list" }));
     fireEvent.click(screen.getByRole("button", { name: "Move block 2 up" }));
