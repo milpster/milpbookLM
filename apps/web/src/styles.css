@@ -822,15 +822,35 @@ label {
 }
 .capability {
   display: grid;
+  grid-template-areas:
+    "heading state"
+    "description description"
+    "reason reason";
   grid-template-columns: minmax(0, 1fr) auto;
   gap: var(--space-2);
+}
+.capability > :where(div) {
+  grid-area: heading;
+  min-inline-size: 0;
+}
+.capability > :where(p:not(.status):not(.muted)) {
+  grid-area: description;
+  min-inline-size: 0;
+  overflow-wrap: anywhere;
+}
+.capability > :where(.status) {
+  grid-area: state;
+  align-self: start;
+  justify-self: end;
 }
 .capability h3,
 .capability p {
   margin: 0;
 }
-.capability .muted {
-  grid-column: 1 / -1;
+.capability > :where(.muted) {
+  grid-area: reason;
+  min-inline-size: 0;
+  overflow-wrap: anywhere;
 }
 .status {
   font-size: 0.75rem;
